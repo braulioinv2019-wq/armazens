@@ -906,8 +906,11 @@ async function logHistory(type,mat,loc,wh,qty,unit) {
 function startListeners() {
   const{db,doc,onSnapshot,collection,query,orderBy,limit}=window._fb;
   unsubStock=onSnapshot(doc(db,'wms','stock'),snap=>{
-    appData=snap.exists()?snap.data():defaultData();
-    refreshAll(); showToast('Dados sincronizados');
+    const newData=snap.exists()?snap.data():defaultData();
+    // Merge: preserve selContainer panel if open
+    appData=newData;
+    refreshAll();
+    showToast('✓ Sincronizado');
   });
   const q=query(collection(db,'wms','history','entries'),orderBy('ts','desc'),limit(200));
   unsubHistory=onSnapshot(q,snap=>{
@@ -983,7 +986,13 @@ function updateBadges(){
 function refreshAll(){
   renderDashboard();
   const act=document.querySelector('.page.active')?.id;
-  if(act==='page-logistica')renderLogistica();
+  if(act==='page-logistica'){
+    renderLogistica();
+    // If a container is open, re-render its panel too
+    if(selContainer!==null&&appData.logistica[selContainer]){
+      renderContainerPanel(appData.logistica[selContainer],selContainer);
+    }
+  }
   if(act==='page-vini')renderVini();
   if(act==='page-emas')renderEmas();
   if(act==='page-alerts')renderAlerts();
@@ -1220,21 +1229,27 @@ function renderMatItems(mats,type,idx){
 }
 
 window.addMatLog=async function(idx){
-  const code=document.getElementById('add-code-log')?.value.trim()||'';
-  const name=document.getElementById('add-name-log')?.value.trim()||'';
-  const qty=document.getElementById('add-qty-log')?.value||'0';
-  const unit=document.getElementById('add-unit-log')?.value||'un';
-  const min=document.getElementById('add-min-log')?.value||'';
-  if(!name){showToast('Escreve o nome do material',true);return;}
+  const codeEl=document.getElementById('add-code-log');
+  const nameEl=document.getElementById('add-name-log');
+  const qtyEl=document.getElementById('add-qty-log');
+  const unitEl=document.getElementById('add-unit-log');
+  const minEl=document.getElementById('add-min-log');
+  const code=(codeEl?.value||'').trim();
+  const name=(nameEl?.value||'').trim();
+  const qty=(qtyEl?.value)||'0';
+  const unit=(unitEl?.value)||'un';
+  const min=(minEl?.value)||'';
+  if(!name){showToast('Escreve o nome do material',true);if(nameEl)nameEl.focus();return;}
   const mat={id:Date.now(),code,name,qty,unit,minStock:min};
-  const nd=JSON.parse(JSON.stringify(appData));
-  nd.logistica=nd.logistica.map((c,i)=>i===idx?{...c,materials:[...c.materials,mat]}:c);
-  appData=nd; // optimistic update
-  renderContainerPanel(nd.logistica[idx],idx);
-  renderLogistica();
-  await saveStock(nd);
-  await logHistory('ENTRADA',name,nd.logistica[idx].label,'Logística',qty,unit);
-  showToast('Material adicionado!');
+  // Update appData directly
+  if(!appData.logistica[idx].materials)appData.logistica[idx].materials=[];
+  appData.logistica[idx].materials.push(mat);
+  // Re-render just the panel (not the full grid)
+  renderContainerPanel(appData.logistica[idx],idx);
+  showToast('✓ '+name+' adicionado!');
+  // Save to Firebase in background
+  saveStock(JSON.parse(JSON.stringify(appData)));
+  logHistory('ENTRADA',name,appData.logistica[idx].label,'Logística',qty,unit);
 };
 
 // VINI — single zone with shelves
@@ -1317,17 +1332,20 @@ function renderViniPanel(sh,lv,si,li){
 }
 
 window.addMatVini=async function(si,li){
-  const code=document.getElementById('add-code-vini').value.trim();
-  const name=document.getElementById('add-name-vini').value.trim();
-  const qty=document.getElementById('add-qty-vini').value||'0';
-  const unit=document.getElementById('add-unit-vini').value;
-  const min=document.getElementById('add-min-vini').value;
-  if(!name)return;
-  const mat={id:Date.now(),code,name,qty,unit,minStock:min||''};
-  const nd=JSON.parse(JSON.stringify(appData));
-  nd.vini[si].levels[li].materials.push(mat);
-  await saveStock(nd);await logHistory('ENTRADA',name,appData.vini[si].label+'-'+appData.vini[si].levels[li].label,'Vini Galpão',qty,unit);
-  document.getElementById('add-code-vini').value='';document.getElementById('add-name-vini').value='';document.getElementById('add-qty-vini').value='';document.getElementById('add-min-vini').value='';
+  const code=(document.getElementById('add-code-vini')?.value||'').trim();
+  const name=(document.getElementById('add-name-vini')?.value||'').trim();
+  const qty=document.getElementById('add-qty-vini')?.value||'0';
+  const unit=document.getElementById('add-unit-vini')?.value||'un';
+  const min=document.getElementById('add-min-vini')?.value||'';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  const mat={id:Date.now(),code,name,qty,unit,minStock:min};
+  if(!appData.vini[si].levels[li].materials)appData.vini[si].levels[li].materials=[];
+  appData.vini[si].levels[li].materials.push(mat);
+  const sh=appData.vini[si];const lv=sh.levels[li];
+  renderViniPanel(sh,lv,si,li);
+  showToast('✓ '+name+' adicionado!');
+  saveStock(JSON.parse(JSON.stringify(appData)));
+  logHistory('ENTRADA',name,sh.label+'-'+lv.label,'Vini Galpão',qty,unit);
 };
 
 // EMAS — 4 zones
@@ -1417,16 +1435,18 @@ window.openAddEmasModal=function(){
 };
 
 window.confirmAddEmas=async function(){
-  const code=document.getElementById('m-code').value.trim();
-  const name=document.getElementById('m-name').value.trim();
-  const qty=document.getElementById('m-qty').value||'0';
-  const unit=document.getElementById('m-unit').value;
-  const min=document.getElementById('m-min').value;
-  if(!name)return;
-  const nd=JSON.parse(JSON.stringify(appData));
-  nd.emas.push({id:Date.now(),code,name,qty,unit,minStock:min||''});
-  await saveStock(nd);await logHistory('ENTRADA',name,'GERAL','Emas',qty,unit);
+  const code=document.getElementById('m-code')?.value.trim()||'';
+  const name=document.getElementById('m-name')?.value.trim()||'';
+  const qty=document.getElementById('m-qty')?.value||'0';
+  const unit=document.getElementById('m-unit')?.value||'un';
+  const min=document.getElementById('m-min')?.value||'';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  appData.emas.push({id:Date.now(),code,name,qty,unit,minStock:min});
   closeModal();
+  renderEmas();
+  showToast('✓ '+name+' adicionado!');
+  saveStock(JSON.parse(JSON.stringify(appData)));
+  logHistory('ENTRADA',name,'GERAL','Emas',qty,unit);
 };
 
 // REMOVE / EDIT

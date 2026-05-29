@@ -460,6 +460,9 @@ tbody tr:hover td{background:var(--bg)}
       <div class="nav-item" onclick="navTo('reports',this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Relatórios
       </div>
+      <div class="nav-item" onclick="navTo('sfs',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 9H7v-2h4v2zm4-4H7v-2h8v2z"/></svg> Guias SFS
+      </div>
       <div class="nav-item" onclick="navTo('users',this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> Utilizadores
       </div>
@@ -607,6 +610,17 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
 
+    <!-- SFS -->
+    <div class="page" id="page-sfs">
+      <div class="page-header">
+        <div><div class="page-title">Guias SFS</div><div class="page-sub">Saídas Fora do Sistema — histórico de documentos emitidos</div></div>
+      </div>
+      <div class="filters-bar">
+        <input class="filter-input" id="sfs-search" placeholder="🔍  Pesquisar..." oninput="renderSFS()" style="width:220px">
+      </div>
+      <div id="sfs-list"></div>
+    </div>
+
     <!-- USERS -->
     <div class="page" id="page-users">
       <div class="page-header">
@@ -696,6 +710,7 @@ window.doLogin=function(){
     document.getElementById('user-role-display').textContent=ROLES[USERS[u].role]||USERS[u].role;
     document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
     startListeners();
+    startSFSListener();
   } else { document.getElementById('login-error').style.display='block'; }
 };
 window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
@@ -713,7 +728,8 @@ window.navTo=function(page,el){
   if(page==='emas')renderEmas();
   if(page==='history')renderHistory();
   if(page==='alerts')renderAlerts();
-  if(page==='users')renderUsers();
+  if(page==='sfs')renderSFS();
+
 };
 
 function showToast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' error':'');t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -976,14 +992,237 @@ window.confirmAddEmas=async function(){
 };
 
 // REMOVE / EDIT
-window.removeMat=async function(type,idx,matId){
-  const nd=JSON.parse(JSON.stringify(appData));
-  let mat,loc,wh;
-  if(type==='log'){const i=parseInt(idx);mat=nd.logistica[i].materials.find(m=>m.id===matId);loc=nd.logistica[i].label;wh='Logística';nd.logistica[i].materials=nd.logistica[i].materials.filter(m=>m.id!==matId);}
-  else if(type==='vini'){const[si,li]=idx.split('-').map(Number);mat=nd.vini[si].levels[li].materials.find(m=>m.id===matId);loc=nd.vini[si].label+'-'+nd.vini[si].levels[li].label;wh='Vini Galpão';nd.vini[si].levels[li].materials=nd.vini[si].levels[li].materials.filter(m=>m.id!==matId);}
-  else{mat=nd.emas.find(m=>m.id===matId);loc='GERAL';wh='Emas';nd.emas=nd.emas.filter(m=>m.id!==matId);}
-  await saveStock(nd);if(mat)await logHistory('SAÍDA',mat.name,loc,wh,mat.qty,mat.unit);
+// SFS — Saída Fora do Sistema
+function getSFSNumber(){
+  const year=new Date().getFullYear();
+  const key='sfs-counter-'+year;
+  let n=parseInt(localStorage.getItem(key)||'0')+1;
+  localStorage.setItem(key,n);
+  return'SFS-'+year+'-'+String(n).padStart(3,'0');
+}
+
+window.removeMat=function(type,idx,matId){
+  // Find material info first
+  let mat,loc,wh,locFull;
+  if(type==='log'){const i=parseInt(idx);mat=appData.logistica[i].materials.find(m=>m.id===matId);loc=appData.logistica[i].label;locFull='Contentor '+appData.logistica[i].label;wh='Logística';}
+  else if(type==='vini'){const[si,li]=idx.split('-').map(Number);mat=appData.vini[si].levels[li].materials.find(m=>m.id===matId);loc=appData.vini[si].label+'-'+appData.vini[si].levels[li].label;locFull='Prateleira '+appData.vini[si].label+' / '+appData.vini[si].levels[li].label;wh='Vini Galpão';}
+  else{mat=appData.emas.find(m=>m.id===matId);loc='GERAL';locFull='Armazém Emas';wh='Emas';}
+  if(!mat)return;
+  openSFSModal(mat,loc,locFull,wh,type,idx,matId);
 };
+
+function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
+  const sfsNum=getSFSNumber();
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-PT');
+  const timeStr=now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+  openModal(`
+    <div class="modal-header">
+      <div>
+        <span class="modal-title">Guia de Saída</span>
+        <div style="font-size:12px;color:var(--green);font-weight:700;margin-top:2px">${sfsNum}</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">MATERIAL</div><div style="font-size:13px;font-weight:600">${mat.name}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">QUANTIDADE</div><div style="font-size:13px;font-weight:600;color:var(--amber)">${mat.qty} ${mat.unit}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">ORIGEM</div><div style="font-size:13px;font-weight:500">${locFull} · ${wh}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">DATA / HORA</div><div style="font-size:13px;font-weight:500">${dateStr} ${timeStr}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label class="modal-label">QTD A RETIRAR</label>
+        <input class="form-input" id="sfs-qty" type="number" min="0.01" max="${mat.qty}" step="0.01" value="${mat.qty}" style="width:100%">
+      </div>
+      <div>
+        <label class="modal-label">DESTINO (cliente interno)</label>
+        <input class="form-input" id="sfs-dest" placeholder="Ex: Obra Norte, Dept. Manutenção" style="width:100%">
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label class="modal-label">DESCRIÇÃO / MOTIVO DA SAÍDA</label>
+      <textarea class="form-input" id="sfs-desc" rows="2" placeholder="Ex: Material para obra de construção civil..." style="width:100%;resize:none"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label class="modal-label">QUEM RECEBE</label>
+        <input class="form-input" id="sfs-receiver" placeholder="Nome completo" style="width:100%">
+      </div>
+      <div>
+        <label class="modal-label">QUEM CONFIRMA ENTREGA</label>
+        <input class="form-input" id="sfs-confirmer" placeholder="Nome completo" style="width:100%">
+      </div>
+    </div>
+
+    <div style="margin-bottom:4px">
+      <label class="modal-label">Nº MANIFESTO (se aplicável)</label>
+      <input class="form-input" id="sfs-manifest" placeholder="Ex: MAN-2026-045" style="width:100%">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmSFS('${type}','${idx}',${matId},'${sfsNum}','${loc}','${locFull}','${wh}')">
+        ✓ Confirmar saída &amp; gerar SFS
+      </button>
+    </div>
+  `);
+}
+
+window.confirmSFS=async function(type,idx,matId,sfsNum,loc,locFull,wh){
+  const dest=document.getElementById('sfs-dest').value.trim();
+  const desc=document.getElementById('sfs-desc').value.trim();
+  const receiver=document.getElementById('sfs-receiver').value.trim();
+  const confirmer=document.getElementById('sfs-confirmer').value.trim();
+  const manifest=document.getElementById('sfs-manifest').value.trim();
+  const qtyOut=parseFloat(document.getElementById('sfs-qty').value)||0;
+  if(!dest||!receiver){showToast('Preenche o destino e quem recebe',true);return;}
+
+  // Find material
+  const nd=JSON.parse(JSON.stringify(appData));
+  let mat;
+  if(type==='log'){const i=parseInt(idx);mat=nd.logistica[i].materials.find(m=>m.id===matId);if(mat){const rem=parseFloat(mat.qty)-qtyOut;if(rem<=0)nd.logistica[i].materials=nd.logistica[i].materials.filter(m=>m.id!==matId);else mat.qty=String(rem);};}
+  else if(type==='vini'){const[si,li]=idx.split('-').map(Number);mat=nd.vini[si].levels[li].materials.find(m=>m.id===matId);if(mat){const rem=parseFloat(mat.qty)-qtyOut;if(rem<=0)nd.vini[si].levels[li].materials=nd.vini[si].levels[li].materials.filter(m=>m.id!==matId);else mat.qty=String(rem);};}
+  else{mat=nd.emas.find(m=>m.id===matId);if(mat){const rem=parseFloat(mat.qty)-qtyOut;if(rem<=0)nd.emas=nd.emas.filter(m=>m.id!==matId);else mat.qty=String(rem);}}
+
+  const origMat=getAllMaterials().find(m=>m.id===matId)||mat;
+  await saveStock(nd);
+  await logHistory('SAÍDA',origMat?.name||'Material',loc,wh,String(qtyOut),origMat?.unit||'');
+
+  // Save SFS record to Firebase
+  try{
+    const{db,collection,addDoc,serverTimestamp}=window._fb;
+    await addDoc(collection(db,'wms','sfs','records'),{
+      number:sfsNum,material:origMat?.name,qty:qtyOut,unit:origMat?.unit,
+      origem:locFull,armazem:wh,destino:dest,descricao:desc,
+      processadoPor:currentUser.name,recebidoPor:receiver,
+      confirmaEntrega:confirmer,manifesto:manifest||'N/A',
+      ts:serverTimestamp()
+    });
+  }catch(e){console.error(e);}
+
+  closeModal();
+  generateSFSPDF({number:sfsNum,material:origMat?.name,qty:qtyOut,unit:origMat?.unit,origem:locFull,armazem:wh,destino:dest,descricao:desc,processadoPor:currentUser.name,recebidoPor:receiver,confirmaEntrega:confirmer,manifesto:manifest||'N/A'});
+  showToast('Saída registada — SFS gerado!');
+};
+
+function generateSFSPDF(d){
+  const now=new Date();
+  const html=`<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>${d.number}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#1a1a1a;background:white;padding:32px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #1a6b2f}
+  .logo-area{display:flex;align-items:center;gap:12px}
+  .logo-circle{width:48px;height:48px;background:#1a6b2f;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .logo-circle span{color:white;font-size:22px;font-weight:900}
+  .company-name{font-size:24px;font-weight:900;color:#1a6b2f;letter-spacing:3px}
+  .company-sub{font-size:10px;color:#888;letter-spacing:1px;margin-top:2px}
+  .doc-info{text-align:right}
+  .doc-number{font-size:22px;font-weight:900;color:#1a6b2f;letter-spacing:2px}
+  .doc-label{font-size:10px;color:#888;letter-spacing:2px;margin-bottom:4px}
+  .doc-date{font-size:12px;color:#444;margin-top:4px}
+  .section{margin-bottom:20px}
+  .section-title{font-size:10px;font-weight:700;color:#1a6b2f;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid #e0f0e6}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .field{background:#f8fdf9;border:1px solid #d4ead9;border-radius:6px;padding:10px 12px}
+  .field-label{font-size:9px;font-weight:700;color:#2d9e4a;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+  .field-value{font-size:13px;font-weight:600;color:#1a1a1a}
+  .field-value.highlight{font-size:16px;color:#1a6b2f}
+  .field-value.amber{color:#d97706}
+  .desc-box{background:#f8fdf9;border:1px solid #d4ead9;border-radius:6px;padding:12px;min-height:48px;font-size:13px;color:#333;line-height:1.5}
+  .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:8px}
+  .sig-box{border-top:1.5px solid #1a6b2f;padding-top:8px;text-align:center}
+  .sig-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px}
+  .sig-label{font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase}
+  .sig-line{height:40px;border-bottom:1px dashed #ccc;margin-bottom:8px}
+  .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e0f0e6;display:flex;justify-content:space-between;align-items:center}
+  .footer-left{font-size:10px;color:#aaa}
+  .footer-right{font-size:10px;color:#aaa;text-align:right}
+  .status-bar{background:#1a6b2f;color:white;border-radius:6px;padding:8px 16px;text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:24px}
+  @media print{body{padding:20px}}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-area">
+      <div class="logo-circle"><span>L</span></div>
+      <div><div class="company-name">LUELE</div><div class="company-sub">WAREHOUSE MANAGEMENT SYSTEM</div></div>
+    </div>
+    <div class="doc-info">
+      <div class="doc-label">DOCUMENTO DE SAÍDA</div>
+      <div class="doc-number">${d.number}</div>
+      <div class="doc-date">${now.toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  </div>
+
+  <div class="status-bar">SFS — SAÍDA FORA DO SISTEMA</div>
+
+  <div class="section">
+    <div class="section-title">Material</div>
+    <div class="grid2">
+      <div class="field"><div class="field-label">Descrição do material</div><div class="field-value highlight">${d.material}</div></div>
+      <div class="field"><div class="field-label">Quantidade retirada</div><div class="field-value amber">${d.qty} ${d.unit}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Movimentação</div>
+    <div class="grid2">
+      <div class="field"><div class="field-label">Origem (armazém)</div><div class="field-value">${d.armazem}</div></div>
+      <div class="field"><div class="field-label">Localização exacta</div><div class="field-value">${d.origem}</div></div>
+      <div class="field"><div class="field-label">Destino</div><div class="field-value">${d.destino}</div></div>
+      <div class="field"><div class="field-label">Nº Manifesto</div><div class="field-value">${d.manifesto}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Descrição / Motivo</div>
+    <div class="desc-box">${d.descricao||'—'}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Responsabilidades</div>
+    <div class="sig-grid">
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-name">${d.processadoPor}</div>
+        <div class="sig-label">Processado por</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-name">${d.recebidoPor}</div>
+        <div class="sig-label">Recebido por</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-name">${d.confirmaEntrega}</div>
+        <div class="sig-label">Confirma entrega</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">LUELE WMS · Documento gerado automaticamente<br>Este documento é válido sem assinatura electrónica</div>
+    <div class="footer-right">${d.number} · ${now.toLocaleDateString('pt-PT')}<br>Processado por ${d.processadoPor}</div>
+  </div>
+
+  <script>window.onload=function(){window.print();}<\/script>
+</body>
+</html>`;
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(html);
+  w.document.close();
+}
 
 window.editMat=function(type,idx,matId){
   let mat;
@@ -1042,6 +1281,43 @@ function renderAlerts(){
     <div class="alert-qty-wrap"><div class="alert-qty-label">ACTUAL / MÍNIMO</div><div class="alert-qty">${a.qty} / ${a.minStock} ${a.unit}</div></div>
   </div>`).join('');
 }
+
+// SFS LIST
+let sfsData=[];
+function startSFSListener(){
+  const{db,collection,onSnapshot,query,orderBy,limit}=window._fb;
+  const q=query(collection(db,'wms','sfs','records'),orderBy('ts','desc'),limit(100));
+  onSnapshot(q,snap=>{
+    sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+    if(document.getElementById('page-sfs').classList.contains('active'))renderSFS();
+  });
+}
+
+function renderSFS(){
+  const q=(document.getElementById('sfs-search')?.value||'').toLowerCase();
+  const list=sfsData.filter(s=>!q||(s.number&&s.number.toLowerCase().includes(q))||(s.material&&s.material.toLowerCase().includes(q))||(s.destino&&s.destino.toLowerCase().includes(q)));
+  const el=document.getElementById('sfs-list');
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Sem guias emitidas</div></div>';return;}
+  el.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Nº SFS</th><th>Data</th><th>Material</th><th>Qtd</th><th>Origem</th><th>Destino</th><th>Recebido por</th><th>Manifesto</th><th></th></tr></thead>
+    <tbody>${list.map(s=>{
+      const dt=new Date(s.ts);
+      return`<tr>
+        <td><span style="font-weight:700;color:var(--green)">${s.number}</span></td>
+        <td style="font-size:12px;color:var(--text3)">${dt.toLocaleDateString('pt-PT')} ${dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</td>
+        <td style="font-weight:500">${s.material}</td>
+        <td style="font-weight:600;color:var(--amber)">${s.qty} ${s.unit}</td>
+        <td style="font-size:12px">${s.origem}</td>
+        <td style="font-size:12px">${s.destino}</td>
+        <td style="font-size:12px">${s.recebidoPor}</td>
+        <td style="font-size:12px;color:var(--text3)">${s.manifesto||'—'}</td>
+        <td><button class="mat-btn edit" onclick="reimprimirSFS(${JSON.stringify(s).split('"').join('&quot;')})">🖨 Reimprimir</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+window.reimprimirSFS=function(s){ generateSFSPDF(s); };
 
 // USERS
 function renderUsers(){

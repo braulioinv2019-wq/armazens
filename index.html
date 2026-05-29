@@ -238,7 +238,118 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .btn-export{background:var(--green3);border:1.5px solid var(--green4);color:var(--green);font-weight:600}
 .btn-export:hover{background:var(--green);color:white}
 
-/* SHELVES */
+
+
+/* -- 3D CONTAINER SCENE -- */
+.ctn-scene{height:260px;position:relative;overflow:hidden;flex-shrink:0;border-radius:var(--radius2);margin-bottom:16px;background:linear-gradient(180deg,#08141e 0%,#0a1c2e 50%,#050d18 100%)}
+.ctn-scene::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(45,158,74,0.06) 0%,transparent 100%)}
+.ctn-scene-floor{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(180deg,#060e18 0%,#030810 100%);border-top:1px solid rgba(255,255,255,0.04)}
+.ctn-scene-grid{position:absolute;bottom:0;left:0;right:0;height:40px;background-image:linear-gradient(rgba(45,158,74,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(45,158,74,0.05) 1px,transparent 1px);background-size:26px 13px}
+.ctn-scene-shadow{position:absolute;bottom:33px;left:8%;right:8%;height:8px;background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%);pointer-events:none}
+.ctns-row-3d{position:absolute;bottom:33px;left:0;right:0;display:flex;justify-content:flex-start;align-items:flex-end;gap:5px;padding:0 10px;overflow-x:auto;scrollbar-width:none}
+.ctns-row-3d::-webkit-scrollbar{display:none}
+.cu{cursor:pointer;transition:transform 0.35s cubic-bezier(.34,1.56,.64,1),filter 0.2s;position:relative;flex-shrink:0;filter:brightness(0.8) saturate(0.85)}
+.cu:hover{transform:translateY(-7px)!important;filter:brightness(1) saturate(1.1)}
+.cu.sel{transform:translateY(-12px)!important;filter:brightness(1.1) saturate(1.2)}
+.cu.sel .cu-body{box-shadow:0 0 0 2px rgba(34,197,94,0.7),0 10px 30px rgba(0,0,0,0.6)!important}
+.cu-w{width:100px;position:relative}
+.cu-top{height:6px;border-radius:3px 3px 0 0;border:1px solid rgba(0,0,0,0.5);border-bottom:none}
+.cu-top::after{content:'';position:absolute;top:1px;left:3px;right:3px;height:1px;background:rgba(255,255,255,0.1);border-radius:1px}
+.cu-body{height:145px;position:relative;border:1px solid rgba(0,0,0,0.5);border-top:none;border-bottom:none;overflow:hidden;box-shadow:0 5px 18px rgba(0,0,0,0.5),inset -3px 0 8px rgba(0,0,0,0.2),inset 3px 0 5px rgba(255,255,255,0.02)}
+.cu-corrugation{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,0) 0px,rgba(255,255,255,0) 8px,rgba(255,255,255,0.02) 8px,rgba(255,255,255,0.02) 9px,rgba(0,0,0,0.05) 9px,rgba(0,0,0,0.05) 11px,rgba(255,255,255,0) 11px);pointer-events:none}
+.cu-shade-l{position:absolute;top:0;left:0;width:14px;bottom:0;background:linear-gradient(90deg,rgba(0,0,0,0.26) 0%,transparent 100%);pointer-events:none}
+.cu-shade-r{position:absolute;top:0;right:0;width:9px;bottom:0;background:linear-gradient(270deg,rgba(0,0,0,0.18) 0%,transparent 100%);pointer-events:none}
+.cu-bar{position:absolute;top:0;bottom:0;width:4px;background:rgba(0,0,0,0.22);border-left:1px solid rgba(255,255,255,0.03)}
+.cu-warn{position:absolute;top:0;left:0;right:0;height:7px;background:repeating-linear-gradient(90deg,#f59e0b 0,#f59e0b 6px,rgba(0,0,0,0.7) 6px,rgba(0,0,0,0.7) 12px);opacity:0.65}
+.cu-logo-txt{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:8px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,0.17)}
+.cu-num{position:absolute;top:25px;left:0;right:0;text-align:center;font-size:7px;color:rgba(255,255,255,0.17);letter-spacing:1px}
+.cu-doors{position:absolute;top:11px;left:0;right:0;bottom:0}
+.cu-door-l,.cu-door-r{position:absolute;top:0;bottom:0;width:50%;transition:transform 0.5s cubic-bezier(.34,1.56,.64,1);overflow:hidden}
+.cu-door-l{left:0;transform-origin:left center;border-right:1px solid rgba(0,0,0,0.4)}
+.cu-door-r{right:0;transform-origin:right center;border-left:1px solid rgba(0,0,0,0.4)}
+.cu.open .cu-door-l{transform:perspective(260px) rotateY(-82deg)}
+.cu.open .cu-door-r{transform:perspective(260px) rotateY(82deg)}
+.door-inner{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 8px,rgba(255,255,255,0.014) 8px,rgba(255,255,255,0.014) 9px,rgba(0,0,0,0.04) 9px,rgba(0,0,0,0.04) 11px,rgba(255,255,255,0) 11px)}
+.door-rod{position:absolute;top:20%;bottom:20%;width:2px;border-radius:1px;background:rgba(255,255,255,0.14)}
+.cu-door-l .door-rod{right:4px}.cu-door-r .door-rod{left:4px}
+.door-cam{position:absolute;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18)}
+.cu-door-l .door-cam{right:2px;top:44%}.cu-door-r .door-cam{left:2px;top:44%}
+.cu-interior{position:absolute;top:11px;left:1px;right:1px;bottom:0;background:linear-gradient(180deg,#2a1600 0%,#100800 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:3px;opacity:0;transition:opacity 0.4s 0.1s;pointer-events:none}
+.cu.open .cu-interior{opacity:1}
+.int-light{position:absolute;top:0;left:6px;right:6px;height:14px;background:radial-gradient(ellipse,rgba(255,200,100,0.28) 0%,transparent 70%);border-radius:50%}
+.int-walls{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0.28) 0%,transparent 12%,transparent 88%,rgba(0,0,0,0.28) 100%)}
+.int-boxes{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-end;padding:2px}
+.int-box{border-radius:1px;border-top:1px solid rgba(255,255,255,0.1);border-left:1px solid rgba(255,255,255,0.05)}
+.int-pallet{width:100%;height:3px;background:linear-gradient(90deg,#5a3a1a,#3a2010);border-radius:1px;margin-top:2px;border-top:1px solid rgba(255,255,255,0.07)}
+.cu-bottom{height:9px;background:linear-gradient(180deg,#0a1828 0%,#050d18 100%);border:1px solid rgba(0,0,0,0.6);border-top:2px solid rgba(255,255,255,0.055);border-radius:0 0 2px 2px;display:flex;align-items:center;justify-content:space-between;padding:0 7px}
+.cu-foot{width:6px;height:6px;background:#080e18;border:1px solid rgba(255,255,255,0.06);border-radius:1px}
+.cu-label{text-align:center;margin-top:4px}
+.cu-id{font-size:9px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.7)}
+.cu-badge{display:inline-flex;align-items:center;gap:2px;font-size:7px;font-weight:600;padding:1px 5px;border-radius:6px;margin-top:2px}
+.cu-badge.open{background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.22)}
+.cu-badge.closed{background:rgba(71,85,105,0.12);color:#64748b;border:1px solid rgba(71,85,105,0.16)}
+.cu-badge.partial{background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.22)}
+.cu-badge.alert{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.22)}
+.cu.c-blue .cu-body{background:linear-gradient(160deg,#1e3a5f 0%,#142c4a 40%,#0e2038 100%)}
+.cu.c-blue .cu-top{background:linear-gradient(180deg,#243f66 0%,#1a3055 100%)}
+.cu.c-rust .cu-body{background:linear-gradient(160deg,#4a2010 0%,#381608 40%,#2a1005 100%)}
+.cu.c-rust .cu-top{background:linear-gradient(180deg,#562515 0%,#4a2010 100%)}
+.cu.c-olive .cu-body{background:linear-gradient(160deg,#2a3a1a 0%,#1e2c10 40%,#141e08 100%)}
+.cu.c-olive .cu-top{background:linear-gradient(180deg,#304520 0%,#2a3a1a 100%)}
+.cu.c-grey .cu-body{background:linear-gradient(160deg,#2a3540 0%,#1e2830 40%,#141c24 100%)}
+.cu.c-grey .cu-top{background:linear-gradient(180deg,#303d4a 0%,#2a3540 100%)}
+.cu.c-tan .cu-body{background:linear-gradient(160deg,#3a3010 0%,#2a2208 40%,#1e1806 100%)}
+.cu.c-tan .cu-top{background:linear-gradient(180deg,#453818 0%,#3a3010 100%)}
+.cu.c-red .cu-body{background:linear-gradient(160deg,#4a1010 0%,#380808 40%,#2a0505 100%)}
+.cu.c-red .cu-top{background:linear-gradient(180deg,#561515 0%,#4a1010 100%)}
+.cu-steps{display:flex;justify-content:center;margin-bottom:14px}
+.cu-steps-inner{display:flex;align-items:center;background:white;border:1px solid var(--border);border-radius:30px;padding:7px 18px;gap:0;box-shadow:var(--shadow)}
+.cus-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cus-circle{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.cus-circle.done{background:var(--green);color:white}
+.cus-circle.active{background:var(--green);color:white;box-shadow:0 0 0 3px rgba(26,107,47,0.2)}
+.cus-circle.pend{background:var(--bg2);color:var(--text3);border:1px solid var(--border)}
+.cus-label{font-size:8px;color:var(--text3);text-align:center;line-height:1.2}
+.cus-line{width:36px;height:1px;background:var(--border);margin:0 3px;margin-bottom:10px}
+.cus-line.done{background:var(--green2)}
+.log-bot{display:flex;gap:14px}
+.log-inv{flex:1;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);max-height:240px;overflow-y:auto}
+.log-sum{width:190px;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow)}
+
+/* -- WAREHOUSE NAVE SCENE -- */
+.nave-scene-wrap{height:260px;position:relative;overflow:hidden;border-radius:var(--radius2);margin-bottom:16px;background:linear-gradient(180deg,#06101c 0%,#081828 50%,#040c18 100%)}
+.wh-building{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:94%;height:225px}
+.wh-roof{position:absolute;top:-26px;left:-7px;right:-7px;height:30px;background:linear-gradient(180deg,#1e3040 0%,#152535 100%);clip-path:polygon(0% 100%,2% 0%,98% 0%,100% 100%);border-bottom:2px solid rgba(255,255,255,0.07)}
+.wh-roof-peak{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:32px;height:16px;background:linear-gradient(180deg,#243a50 0%,#1a2d40 100%);clip-path:polygon(50% 0%,100% 100%,0% 100%)}
+.wh-vent{position:absolute;top:-34px;width:16px;height:13px;background:#1a2a3a;border:1px solid rgba(255,255,255,0.05);border-radius:2px 2px 0 0}
+.wh-body{position:absolute;bottom:0;left:0;right:0;height:205px;background:linear-gradient(180deg,#192838 0%,#0e1c2a 60%,#0a1520 100%);border:1px solid rgba(255,255,255,0.065);border-bottom:none;border-radius:2px 2px 0 0}
+.wh-cladding{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 15px,rgba(255,255,255,0.016) 15px,rgba(255,255,255,0.016) 16px,rgba(0,0,0,0.04) 16px,rgba(0,0,0,0.04) 17px);pointer-events:none}
+.wh-col{position:absolute;top:0;bottom:0;width:6px;background:rgba(0,0,0,0.2);border-left:1px solid rgba(255,255,255,0.03)}
+.wh-lights-strip{position:absolute;top:0;left:0;right:0;height:3px;display:flex;justify-content:space-around;padding:0 28px;align-items:center}
+.wh-light-dot{width:5px;height:5px;border-radius:50%;background:rgba(245,158,11,0.6);box-shadow:0 0 4px rgba(245,158,11,0.35)}
+.wh-windows-strip{position:absolute;top:26px;left:0;right:0;height:18px;display:flex;gap:0;padding:0 26px}
+.wh-win{flex:1;margin:0 2px;background:rgba(59,130,246,0.065);border:1px solid rgba(59,130,246,0.09);border-radius:1px}
+.wh-zone-label{position:absolute;font-size:8px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.11);border:1px solid rgba(255,255,255,0.045);padding:1px 4px;border-radius:2px}
+.wh-door{position:absolute;bottom:0;background:linear-gradient(180deg,#09172a 0%,#050e1c 100%);border:1px solid rgba(255,255,255,0.065);border-bottom:none;overflow:hidden;cursor:pointer;transition:filter 0.2s}
+.wh-door:hover{filter:brightness(1.4)}
+.wh-door.wh-open{border-color:rgba(34,197,94,0.28);box-shadow:0 0 14px rgba(34,197,94,0.09) inset}
+.wh-door-panels{position:absolute;inset:0;display:flex}
+.wh-door-panel{flex:1;border-right:1px solid rgba(255,255,255,0.028);background:repeating-linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 6px,rgba(255,255,255,0.01) 6px,rgba(255,255,255,0.01) 7px)}
+.wh-door-panel:last-child{border-right:none}
+.wh-door-glow{display:none;position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,180,60,0.065) 0%,rgba(255,100,20,0.025) 100%)}
+.wh-door.wh-open .wh-door-glow{display:block}
+.wh-door-tag{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:7px;font-weight:600;color:rgba(255,255,255,0.22);letter-spacing:1px}
+.wh-door-stag{position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:600;padding:1px 4px;border-radius:5px;white-space:nowrap}
+.wh-door-stag.open-s{background:rgba(34,197,94,0.11);color:#22c55e;border:1px solid rgba(34,197,94,0.22)}
+.wh-door-stag.closed-s{background:rgba(71,85,105,0.11);color:#64748b;border:1px solid rgba(71,85,105,0.16)}
+.wh-apron{position:absolute;bottom:0;left:-4%;right:-4%;height:36px;background:linear-gradient(180deg,#090f1c 0%,#050b14 100%);border-top:1px solid rgba(255,255,255,0.03)}
+.wh-apron-marks{position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(245,158,11,0.065) 1px,transparent 1px);background-size:65px 100%}
+.wh-forklift{position:absolute;bottom:2px;font-size:15px;animation:fk 9s linear infinite;pointer-events:none}
+@keyframes fk{0%{left:-45px;transform:scaleX(1)}49%{left:calc(100% + 18px);transform:scaleX(1)}50%{left:calc(100% + 18px);transform:scaleX(-1)}99%{left:-45px;transform:scaleX(-1)}100%{left:-45px;transform:scaleX(1)}}
+.nave-bot{display:flex;gap:14px}
+.nave-inv{flex:1;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);max-height:240px;overflow-y:auto}
+.nave-sum{width:190px;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow)}
+
 .shelves-grid{display:flex;flex-direction:column;gap:10px}
 .shelf-row{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:16px;box-shadow:var(--shadow)}
 .shelf-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -407,15 +518,6 @@ tbody tr:hover td{background:var(--bg)}
       </div>
       <div class="login-error" id="login-error">Utilizador ou password incorrectos.</div>
       <button class="login-btn" onclick="doLogin()">Entrar no Sistema</button>
-      <div class="quick-access">
-        <div class="quick-label">ACESSO RÁPIDO</div>
-        <div class="quick-chips">
-          <span class="quick-chip" onclick="quickLogin('admin','admin')">admin</span>
-          <span class="quick-chip" onclick="quickLogin('joao','1234')">João</span>
-          <span class="quick-chip" onclick="quickLogin('maria','1234')">Maria</span>
-          <span class="quick-chip" onclick="quickLogin('carlos','1234')">Carlos</span>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -527,39 +629,160 @@ tbody tr:hover td{background:var(--bg)}
     <!-- LOGÍSTICA -->
     <div class="page" id="page-logistica">
       <div class="page-header">
-        <div><div class="page-title">Armazém Logística</div><div class="page-sub">Gestão visual dos 39 contentores</div></div>
+        <div><div class="page-title">Armazém Logística</div><div class="page-sub">Gestão visual dos contentores em tempo real</div></div>
         <button class="btn btn-secondary" onclick="openAddContainerModal()">+ Novo contentor</button>
       </div>
-      <div class="grid-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Vazio</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Parcial (≤5)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green2)"></div>Cheio (>5)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Alerta de stock</div>
+      <!-- 3D SCENE -->
+      <div class="ctn-scene" id="logistica-scene">
+        <div class="ctn-scene-floor"><div class="ctn-scene-grid"></div></div>
+        <div class="ctn-scene-shadow"></div>
+        <div class="ctns-row-3d" id="logistica-grid"></div>
       </div>
-      <div class="containers-grid" id="logistica-grid"></div>
-      <div id="logistica-panel"></div>
+      <!-- STEPS -->
+      <div class="cu-steps">
+        <div class="cu-steps-inner">
+          <div class="cus-wrap"><div class="cus-circle done" id="cus1">1</div><div class="cus-label">Seleccionar<br>Contentor</div></div>
+          <div class="cus-line done" id="cul1"></div>
+          <div class="cus-wrap"><div class="cus-circle active" id="cus2">2</div><div class="cus-label">Abrir<br>Contentor</div></div>
+          <div class="cus-line" id="cul2"></div>
+          <div class="cus-wrap"><div class="cus-circle pend" id="cus3">3</div><div class="cus-label">Visualizar<br>Inventário</div></div>
+          <div class="cus-line" id="cul3"></div>
+          <div class="cus-wrap"><div class="cus-circle pend" id="cus4">4</div><div class="cus-label">Fechar<br>Contentor</div></div>
+        </div>
+      </div>
+      <!-- BOTTOM SPLIT -->
+      <div class="log-bot">
+        <div class="log-inv">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:600" id="log-inv-title">Inventário — seleccione um contentor</div>
+            <button class="detail-close" onclick="selContainer=null;openContainerId=null;renderLogistica()" style="display:none" id="log-close-btn">✕ Fechar</button>
+          </div>
+          <div id="logistica-panel"></div>
+        </div>
+        <div class="log-sum" id="log-sum-panel">
+          <div style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:10px">RESUMO</div>
+          <div id="log-sum-content"><div style="font-size:12px;color:var(--text3)">Nenhum contentor seleccionado</div></div>
+        </div>
+      </div>
     </div>
 
     <!-- VINI -->
     <div class="page" id="page-vini">
       <div class="page-header">
-        <div><div class="page-title">Vini Galpão</div><div class="page-sub">Gestão por prateleiras e níveis</div></div>
+        <div><div class="page-title">Vini Galpão</div><div class="page-sub">Nave industrial — gestão por prateleiras</div></div>
         <button class="btn btn-secondary" onclick="openAddShelfModal()">+ Nova prateleira</button>
       </div>
-      <div class="shelves-grid" id="vini-grid"></div>
-      <div id="vini-panel"></div>
+      <!-- WAREHOUSE SCENE - SINGLE ZONE -->
+      <div class="nave-scene-wrap">
+        <div class="wh-building" id="wh-building-vini">
+          <div class="wh-roof">
+            <div class="wh-vent" style="left:20%"></div>
+            <div class="wh-vent" style="left:45%"></div>
+            <div class="wh-vent" style="left:70%"></div>
+          </div>
+          <div class="wh-roof-peak"></div>
+          <div class="wh-body">
+            <div class="wh-cladding"></div>
+            <div class="wh-lights-strip">
+              <div class="wh-light-dot"></div><div class="wh-light-dot"></div>
+              <div class="wh-light-dot"></div><div class="wh-light-dot"></div>
+            </div>
+            <div class="wh-windows-strip">
+              <div class="wh-win"></div><div class="wh-win"></div><div class="wh-win"></div>
+              <div class="wh-win"></div><div class="wh-win"></div>
+            </div>
+            <div class="wh-col" style="left:20%"></div>
+            <div class="wh-col" style="left:40%"></div>
+            <div class="wh-col" style="left:60%"></div>
+            <div class="wh-col" style="left:80%"></div>
+            <div class="wh-zone-label" style="top:56px;left:38%">VINI GALPÃO</div>
+            <!-- Single large door -->
+            <div class="wh-door" id="vini-main-door" style="left:30%;width:40%;height:130px" onclick="toggleViniDoor()">
+              <div class="wh-door-panels">
+                <div class="wh-door-panel"></div><div class="wh-door-panel"></div>
+                <div class="wh-door-panel"></div><div class="wh-door-panel"></div>
+              </div>
+              <div class="wh-door-glow"></div>
+              <div class="wh-door-stag closed-s" id="vini-door-stag">🔒 Fechado</div>
+              <div class="wh-door-tag">ENTRADA PRINCIPAL</div>
+            </div>
+            <div class="wh-forklift">🚛</div>
+          </div>
+        </div>
+        <div class="wh-apron"><div class="wh-apron-marks"></div></div>
+      </div>
+      <!-- BOTTOM -->
+      <div class="nave-bot">
+        <div class="nave-inv">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:600" id="vini-inv-title">Prateleiras — clique na porta para entrar</div>
+            <button class="detail-close" onclick="selShelf=null;viniDoorOpen=false;renderVini()" style="display:none" id="vini-close-btn">✕ Fechar</button>
+          </div>
+          <div id="vini-panel"></div>
+        </div>
+        <div class="nave-sum">
+          <div style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:10px">RESUMO</div>
+          <div id="vini-sum-content"><div style="font-size:12px;color:var(--text3)">Porta fechada</div></div>
+        </div>
+      </div>
     </div>
 
     <!-- EMAS -->
     <div class="page" id="page-emas">
       <div class="page-header">
-        <div><div class="page-title">Armazém Emas</div><div class="page-sub">Lista geral de materiais</div></div>
+        <div><div class="page-title">Armazém Emas</div><div class="page-sub">Nave industrial — 4 zonas de armazenagem</div></div>
         <button class="btn btn-primary" onclick="openAddEmasModal()">+ Adicionar material</button>
       </div>
-      <div class="filters-bar">
-        <input class="filter-input" id="emas-search" placeholder="🔍  Pesquisar..." oninput="renderEmas()" style="width:220px">
+      <!-- WAREHOUSE SCENE - 4 ZONES -->
+      <div class="nave-scene-wrap">
+        <div class="wh-building" id="wh-building-emas">
+          <div class="wh-roof">
+            <div class="wh-vent" style="left:10%"></div><div class="wh-vent" style="left:28%"></div>
+            <div class="wh-vent" style="left:50%"></div><div class="wh-vent" style="left:70%"></div>
+            <div class="wh-vent" style="left:88%"></div>
+          </div>
+          <div class="wh-roof-peak"></div>
+          <div class="wh-body">
+            <div class="wh-cladding"></div>
+            <div class="wh-lights-strip">
+              <div class="wh-light-dot"></div><div class="wh-light-dot"></div>
+              <div class="wh-light-dot"></div><div class="wh-light-dot"></div><div class="wh-light-dot"></div>
+            </div>
+            <div class="wh-windows-strip">
+              <div class="wh-win"></div><div class="wh-win"></div><div class="wh-win"></div>
+              <div class="wh-win"></div><div class="wh-win"></div><div class="wh-win"></div>
+              <div class="wh-win"></div>
+            </div>
+            <div class="wh-col" style="left:13%"></div><div class="wh-col" style="left:26%"></div>
+            <div class="wh-col" style="left:39%"></div><div class="wh-col" style="left:52%"></div>
+            <div class="wh-col" style="left:65%"></div><div class="wh-col" style="left:78%"></div>
+            <div class="wh-zone-label" style="top:56px;left:3%">ZONA A</div>
+            <div class="wh-zone-label" style="top:56px;left:28%">ZONA B</div>
+            <div class="wh-zone-label" style="top:56px;left:53%">ZONA C</div>
+            <div class="wh-zone-label" style="top:56px;left:78%">ZONA D</div>
+            <div id="emas-doors"></div>
+            <div class="wh-forklift">🚛</div>
+          </div>
+        </div>
+        <div class="wh-apron"><div class="wh-apron-marks"></div></div>
       </div>
-      <div id="emas-list"></div>
+      <!-- BOTTOM -->
+      <div class="nave-bot">
+        <div class="nave-inv">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:600" id="emas-inv-title">Materiais — seleccione uma zona</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="filter-input" id="emas-search" placeholder="🔍  Pesquisar..." oninput="renderEmas()" style="width:180px;display:none" id="emas-search-wrap">
+              <button class="detail-close" onclick="selEmasZone=null;renderEmas()" style="display:none" id="emas-close-btn">✕ Fechar</button>
+            </div>
+          </div>
+          <div id="emas-list"></div>
+        </div>
+        <div class="nave-sum">
+          <div style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:10px">ZONA EMAS</div>
+          <div id="emas-sum-content"><div style="font-size:12px;color:var(--text3)">Nenhuma zona seleccionada</div></div>
+        </div>
+      </div>
     </div>
 
     <!-- HISTORY -->
@@ -642,10 +865,7 @@ tbody tr:hover td{background:var(--bg)}
 const USERS_KEY = 'luele-users-v1';
 
 let USERS = JSON.parse(localStorage.getItem(USERS_KEY) || 'null') || {
-  admin:  { pass:'admin',  name:'Administrador', role:'admin' },
-  joao:   { pass:'1234',   name:'João Silva',    role:'operator' },
-  maria:  { pass:'1234',   name:'Maria Costa',   role:'operator' },
-  carlos: { pass:'1234',   name:'Carlos Mota',   role:'supervisor' }
+  'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' }
 };
 
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
@@ -823,22 +1043,82 @@ function renderDashboard(){
 }
 
 // LOGÍSTICA
+// Container colors
+const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive'];
+let openContainerId=null;
+function boxHtml(n){
+  const cols=['#7a3a10','#5a2a08','#6a4420','#4a3010','#8a4a18'];
+  return Array.from({length:Math.min(n*4+3,18)},(_,i)=>{
+    const w=9+Math.random()*8,h=7+Math.random()*6;
+    return`<div class="int-box" style="width:${w}px;height:${h}px;background:${cols[i%cols.length]}"></div>`;
+  }).join('')+'<div class="int-pallet"></div>';
+}
 function renderLogistica(){
   if(!appData)return;
-  const rs=[8,8,8,8,7];let rows=[],idx=0;
-  for(const s of rs){rows.push(appData.logistica.slice(idx,idx+s));idx+=s;}
-  document.getElementById('logistica-grid').innerHTML=rows.map((row,ri)=>{
-    const base=rs.slice(0,ri).reduce((a,b)=>a+b,0);
-    return`<div class="containers-row">${row.map((c,ci)=>{
-      const gi=base+ci;const st=containerStatus(c);const isSel=selContainer===gi;
-      return`<div class="container-cell ${st}${isSel?' selected':''}" onclick="selectContainer(${gi})" title="${c.label} — ${c.materials.length} materiais">
-        <span class="cc-label">${c.label}</span>
-        ${c.materials.length?`<span class="cc-count">${c.materials.length} it</span>`:''}
-      </div>`;
-    }).join('')}</div>`;
-  }).join('');
-  if(selContainer!==null)renderContainerPanel(appData.logistica[selContainer],selContainer);
-  else document.getElementById('logistica-panel').innerHTML='';
+  const row=document.getElementById('logistica-grid');
+  row.innerHTML='';
+  appData.logistica.forEach((c,i)=>{
+    const isOpen=c.id===openContainerId||i===selContainer&&openContainerId===null;
+    const isSel=selContainer===i;
+    const st=containerStatus(c);
+    const stLabel=st==='alert'?'⚠ Alerta':isSel&&isOpen?'🔓 Aberto':st==='partial'?'📦 Parcial':st==='full'?'📦 Cheio':'🔒 Vazio';
+    const col=CTN_COLORS[i%CTN_COLORS.length];
+    const div=document.createElement('div');
+    div.className=`cu ${col} ${isSel?'open sel':''}`;
+    div.innerHTML=`<div class="cu-w">
+      <div class="cu-top"></div>
+      <div class="cu-body">
+        <div class="cu-warn"></div>
+        <div class="cu-corrugation"></div>
+        <div class="cu-shade-l"></div><div class="cu-shade-r"></div>
+        <div class="cu-bar" style="left:22%"></div><div class="cu-bar" style="left:50%"></div><div class="cu-bar" style="left:78%"></div>
+        <div class="cu-logo-txt">LUELE</div>
+        <div class="cu-num">${c.label}</div>
+        <div class="cu-interior">
+          <div class="int-light"></div><div class="int-walls"></div>
+          <div class="int-boxes">${boxHtml(c.materials.length)}</div>
+        </div>
+        <div class="cu-doors">
+          <div class="cu-door-l"><div class="door-inner"></div><div class="door-rod"></div><div class="door-cam"></div></div>
+          <div class="cu-door-r"><div class="door-inner"></div><div class="door-rod"></div><div class="door-cam"></div></div>
+        </div>
+      </div>
+      <div class="cu-bottom"><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div></div>
+      <div class="cu-label"><div class="cu-id">${c.label}</div><span class="cu-badge ${isSel?'open':st==='alert'?'alert':st==='partial'||st==='full'?'partial':'closed'}">${stLabel}</span></div>
+    </div>`;
+    div.addEventListener('click',()=>selectContainer(i));
+    row.appendChild(div);
+  });
+  // Steps
+  const hasOpen=selContainer!==null;
+  ['cus1','cus2','cus3','cus4'].forEach((s,i)=>{
+    const el=document.getElementById(s);if(!el)return;
+    el.className='cus-circle '+(hasOpen&&i<3?'done':hasOpen&&i===3?'active':'pend');
+  });
+  ['cul1','cul2','cul3'].forEach(l=>{const el=document.getElementById(l);if(el&&hasOpen)el.classList.add('done');});
+  // Panel
+  if(selContainer!==null){
+    const c=appData.logistica[selContainer];
+    document.getElementById('log-inv-title').textContent=`Inventário — ${c.label}`;
+    document.getElementById('log-close-btn').style.display='flex';
+    renderContainerPanel(c,selContainer);
+    // Summary
+    const pct=Math.min(c.materials.length/8*100,100).toFixed(0);
+    document.getElementById('log-sum-content').innerHTML=`
+      <div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Código</span><span style="font-size:11px;font-weight:600">${c.label}</span></div>
+      <div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>
+      <div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">${c.materials.length}</span></div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px"><span>Utilização</span><span style="color:var(--green2)">${pct}%</span></div>
+        <div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--green2);border-radius:3px"></div></div>
+      </div>
+      <button class="btn btn-danger btn-sm" style="width:100%;margin-top:12px" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar contentor</button>`;
+  } else {
+    document.getElementById('log-inv-title').textContent='Inventário — seleccione um contentor';
+    document.getElementById('log-close-btn').style.display='none';
+    document.getElementById('logistica-panel').innerHTML='<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Clique num contentor para ver o inventário</div></div>';
+    document.getElementById('log-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhum contentor seleccionado</div>';
+  }
 }
 
 window.selectContainer=function(gi){selContainer=selContainer===gi?null:gi;renderLogistica();};
@@ -853,7 +1133,10 @@ function renderContainerPanel(c,idx){
       <div class="mat-list">${renderMatItems(c.materials,'log',idx)}</div>
       <div class="add-form">
         <div class="add-form-title">Adicionar material</div>
-        <div style="margin-bottom:10px"><input class="form-input" id="add-name-log" placeholder="Nome do material" autocomplete="off" style="width:100%"></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
+          <input class="form-input" id="add-code-log" placeholder="Código (ex: MAT-001)" autocomplete="off">
+          <input class="form-input" id="add-name-log" placeholder="Nome do material" autocomplete="off">
+        </div>
         <div class="form-row" style="margin-bottom:10px">
           <input class="form-input" id="add-qty-log" type="number" min="0" placeholder="Quantidade">
           <select class="form-select" id="add-unit-log">${unitOpts()}</select>
@@ -869,7 +1152,11 @@ function renderMatItems(mats,type,idx){
   return mats.map(m=>{
     const isAlert=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
     return`<div class="mat-item">
-      <div style="flex:1"><div class="mat-name">${m.name}</div>${isAlert?`<div class="mat-alert-tag">⚠ Abaixo do mínimo (${m.minStock} ${m.unit})</div>`:''}</div>
+      <div style="flex:1">
+        ${m.code?`<div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;margin-bottom:2px">${m.code}</div>`:''}
+        <div class="mat-name">${m.name}</div>
+        ${isAlert?`<div class="mat-alert-tag">⚠ Abaixo do mínimo (${m.minStock} ${m.unit})</div>`:''}
+      </div>
       <div class="mat-qty">${m.qty} ${m.unit}</div>
       <button class="mat-btn edit btn-sm" onclick="editMat('${type}','${idx}',${m.id})">✏</button>
       <button class="mat-btn btn-sm" onclick="removeMat('${type}','${idx}',${m.id})">✕</button>
@@ -878,38 +1165,72 @@ function renderMatItems(mats,type,idx){
 }
 
 window.addMatLog=async function(idx){
+  const code=document.getElementById('add-code-log').value.trim();
   const name=document.getElementById('add-name-log').value.trim();
   const qty=document.getElementById('add-qty-log').value||'0';
   const unit=document.getElementById('add-unit-log').value;
   const min=document.getElementById('add-min-log').value;
   if(!name)return;
-  const mat={id:Date.now(),name,qty,unit,minStock:min||''};
+  const mat={id:Date.now(),code,name,qty,unit,minStock:min||''};
   const nd=JSON.parse(JSON.stringify(appData));
   nd.logistica=appData.logistica.map((c,i)=>i===idx?{...c,materials:[...c.materials,mat]}:c);
   await saveStock(nd);await logHistory('ENTRADA',name,appData.logistica[idx].label,'Logística',qty,unit);
-  document.getElementById('add-name-log').value='';document.getElementById('add-qty-log').value='';document.getElementById('add-min-log').value='';
+  document.getElementById('add-code-log').value='';document.getElementById('add-name-log').value='';document.getElementById('add-qty-log').value='';document.getElementById('add-min-log').value='';
 };
 
-// VINI
+// VINI — single zone with shelves
+let viniDoorOpen=false;
+window.toggleViniDoor=function(){viniDoorOpen=!viniDoorOpen;renderVini();};
 function renderVini(){
   if(!appData)return;
-  document.getElementById('vini-grid').innerHTML=appData.vini.map((sh,si)=>`
-    <div class="shelf-row">
-      <div class="shelf-header"><div class="shelf-icon">🗄️</div><span class="shelf-name">Prateleira ${sh.label}</span></div>
-      <div class="shelf-levels">${sh.levels.map((lv,li)=>{
-        const hm=lv.materials.length>0;
-        const ha=lv.materials.some(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
-        const isSel=selShelf&&selShelf.si===si&&selShelf.li===li;
-        return`<div class="level-cell${hm?' has-mats':''}${isSel?' selected':''}${ha?' alert':''}" onclick="selectShelf(${si},${li})">
-          <div class="level-name">${lv.label}</div>
-          ${hm?`<div class="level-count">${lv.materials.length} it</div>`:''}
-        </div>`;
-      }).join('')}</div>
-    </div>`).join('');
-  if(selShelf)renderViniPanel(appData.vini[selShelf.si],appData.vini[selShelf.si].levels[selShelf.li],selShelf.si,selShelf.li);
-  else document.getElementById('vini-panel').innerHTML='';
+  const door=document.getElementById('vini-main-door');
+  const stag=document.getElementById('vini-door-stag');
+  if(door){
+    if(viniDoorOpen){door.classList.add('wh-open');if(stag){stag.className='wh-door-stag open-s';stag.textContent='🔓 Aberto';}}
+    else{door.classList.remove('wh-open');if(stag){stag.className='wh-door-stag closed-s';stag.textContent='🔒 Fechado';}}
+  }
+  const totalMats=appData.vini.reduce((a,sh)=>a+sh.levels.reduce((b,lv)=>b+lv.materials.length,0),0);
+  if(selShelf){
+    const sh=appData.vini[selShelf.si];const lv=sh.levels[selShelf.li];
+    document.getElementById('vini-inv-title').textContent='Prateleira '+sh.label+' — '+lv.label;
+    document.getElementById('vini-close-btn').style.display='flex';
+    renderViniPanel(sh,lv,selShelf.si,selShelf.li);
+    document.getElementById('vini-sum-content').innerHTML=
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Prateleira</span><span style="font-size:11px;font-weight:600">'+sh.label+'</span></div>'+
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Nível</span><span style="font-size:11px;font-weight:600">'+lv.label+'</span></div>'+
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+lv.materials.length+'</span></div>'+
+      '<button class="btn btn-danger btn-sm" style="width:100%;margin-top:12px" onclick="selShelf=null;renderVini()">🔒 Fechar</button>';
+  } else if(viniDoorOpen){
+    document.getElementById('vini-inv-title').textContent='Prateleiras — clique para gerir stock';
+    document.getElementById('vini-close-btn').style.display='flex';
+    document.getElementById('vini-panel').innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'+
+      appData.vini.map((sh,si)=>{
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px">'+
+          '<div style="font-size:12px;font-weight:600;margin-bottom:8px">🗄️ Prateleira '+sh.label+'</div>'+
+          '<div style="display:flex;gap:6px">'+sh.levels.map((lv,li)=>{
+            const hm=lv.materials.length>0;
+            const ha=lv.materials.some(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
+            const bc=ha?'var(--red)':hm?'var(--green2)':'var(--border)';
+            const bg=ha?'var(--red-bg)':hm?'var(--green3)':'white';
+            const tc=ha?'var(--red)':hm?'var(--green)':'var(--text2)';
+            return '<div onclick="selectShelf('+si+','+li+')" style="flex:1;padding:8px 6px;border-radius:6px;border:1.5px solid '+bc+';background:'+bg+';cursor:pointer;text-align:center">'+
+              '<div style="font-size:11px;font-weight:600;color:'+tc+'">'+lv.label+'</div>'+
+              (hm?'<div style="font-size:10px;color:'+(ha?'var(--red)':'var(--green2)')+'">'+lv.materials.length+'it</div>':'')+
+              '</div>';
+          }).join('')+'</div></div>';
+      }).join('')+'</div>';
+    document.getElementById('vini-sum-content').innerHTML=
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>'+
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Prateleiras</span><span style="font-size:11px;font-weight:600">'+appData.vini.length+'</span></div>'+
+      '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+totalMats+'</span></div>'+
+      '<button class="btn btn-danger btn-sm" style="width:100%;margin-top:12px" onclick="viniDoorOpen=false;renderVini()">🔒 Fechar porta</button>';
+  } else {
+    document.getElementById('vini-inv-title').textContent='Clique na porta para entrar no galpão';
+    document.getElementById('vini-close-btn').style.display='none';
+    document.getElementById('vini-panel').innerHTML='<div class="empty-state"><div class="empty-icon">🏭</div><div class="empty-text">Clique na porta para ver as prateleiras</div></div>';
+    document.getElementById('vini-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Porta fechada</div>';
+  }
 }
-
 window.selectShelf=function(si,li){if(selShelf&&selShelf.si===si&&selShelf.li===li)selShelf=null;else selShelf={si,li};renderVini();};
 
 function renderViniPanel(sh,lv,si,li){
@@ -922,7 +1243,10 @@ function renderViniPanel(sh,lv,si,li){
       <div class="mat-list">${renderMatItems(lv.materials,'vini',si+'-'+li)}</div>
       <div class="add-form">
         <div class="add-form-title">Adicionar material</div>
-        <div style="margin-bottom:10px"><input class="form-input" id="add-name-vini" placeholder="Nome do material" autocomplete="off" style="width:100%"></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
+          <input class="form-input" id="add-code-vini" placeholder="Código (ex: MAT-001)" autocomplete="off">
+          <input class="form-input" id="add-name-vini" placeholder="Nome do material" autocomplete="off">
+        </div>
         <div class="form-row" style="margin-bottom:10px">
           <input class="form-input" id="add-qty-vini" type="number" min="0" placeholder="Quantidade">
           <select class="form-select" id="add-unit-vini">${unitOpts()}</select>
@@ -934,43 +1258,97 @@ function renderViniPanel(sh,lv,si,li){
 }
 
 window.addMatVini=async function(si,li){
+  const code=document.getElementById('add-code-vini').value.trim();
   const name=document.getElementById('add-name-vini').value.trim();
   const qty=document.getElementById('add-qty-vini').value||'0';
   const unit=document.getElementById('add-unit-vini').value;
   const min=document.getElementById('add-min-vini').value;
   if(!name)return;
-  const mat={id:Date.now(),name,qty,unit,minStock:min||''};
+  const mat={id:Date.now(),code,name,qty,unit,minStock:min||''};
   const nd=JSON.parse(JSON.stringify(appData));
   nd.vini[si].levels[li].materials.push(mat);
   await saveStock(nd);await logHistory('ENTRADA',name,appData.vini[si].label+'-'+appData.vini[si].levels[li].label,'Vini Galpão',qty,unit);
-  document.getElementById('add-name-vini').value='';document.getElementById('add-qty-vini').value='';document.getElementById('add-min-vini').value='';
+  document.getElementById('add-code-vini').value='';document.getElementById('add-name-vini').value='';document.getElementById('add-qty-vini').value='';document.getElementById('add-min-vini').value='';
 };
 
-// EMAS
+// EMAS — 4 zones
+let selEmasZone=null;
+function renderEmasZoneDoors(){
+  const doorsEl=document.getElementById('emas-doors');
+  if(!doorsEl||!appData)return;
+  const zones=['A','B','C','D'];
+  const itemsPerZone=Math.ceil(appData.emas.length/4);
+  doorsEl.innerHTML=zones.map((z,zi)=>{
+    const zItems=appData.emas.slice(zi*itemsPerZone,(zi+1)*itemsPerZone);
+    const hasMats=zItems.length>0;
+    const hasAlert=zItems.some(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
+    const isOpen=selEmasZone===zi;
+    const left=zi*25+1;
+    return`<div class="wh-door${isOpen?' wh-open':''}" style="left:${left}%;width:22%;height:125px" onclick="selectEmasZone(${zi})">
+      <div class="wh-door-panels"><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div></div>
+      <div class="wh-door-glow"></div>
+      <div class="wh-door-stag ${isOpen?'open-s':'closed-s'}">${isOpen?'🔓 Aberto':'🔒 Fechado'}</div>
+      <div class="wh-door-tag">ZONA ${z} ${hasAlert?'⚠':hasMats?'📦':''}</div>
+    </div>`;
+  }).join('');
+}
+
+window.selectEmasZone=function(zi){
+  selEmasZone=selEmasZone===zi?null:zi;
+  renderEmas();
+};
+
 function renderEmas(){
   if(!appData)return;
-  const q=(document.getElementById('emas-search')?.value||'').toLowerCase();
-  const list=appData.emas.filter(m=>m.name.toLowerCase().includes(q));
+  renderEmasZoneDoors();
+  const closeBtn=document.getElementById('emas-close-btn');
+  const searchWrap=document.getElementById('emas-search-wrap');
+  const emasSearch=document.getElementById('emas-search');
+  if(selEmasZone===null){
+    document.getElementById('emas-inv-title').textContent='Materiais — seleccione uma zona';
+    if(closeBtn)closeBtn.style.display='none';
+    if(searchWrap)searchWrap.style.display='none';
+    document.getElementById('emas-list').innerHTML='<div class="empty-state"><div class="empty-icon">🏭</div><div class="empty-text">Clique numa porta para ver os materiais da zona</div></div>';
+    document.getElementById('emas-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhuma zona seleccionada</div>';
+    return;
+  }
+  const zones=['A','B','C','D'];
+  const itemsPerZone=Math.ceil(Math.max(appData.emas.length,1)/4);
+  const zItems=appData.emas.slice(selEmasZone*itemsPerZone,(selEmasZone+1)*itemsPerZone);
+  const q=(emasSearch?.value||'').toLowerCase();
+  const list=q?zItems.filter(m=>m.name.toLowerCase().includes(q)||(m.code||'').toLowerCase().includes(q)):zItems;
+  document.getElementById('emas-inv-title').textContent='Zona '+zones[selEmasZone]+' — '+list.length+' material'+(list.length!==1?'is':'');
+  if(closeBtn)closeBtn.style.display='flex';
+  if(searchWrap)searchWrap.style.display='block';
+  const alerts=zItems.filter(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock)).length;
+  document.getElementById('emas-sum-content').innerHTML=
+    '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Zona</span><span style="font-size:11px;font-weight:600">'+zones[selEmasZone]+'</span></div>'+
+    '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+zItems.length+'</span></div>'+
+    '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Alertas</span><span style="font-size:11px;font-weight:600;color:var(--red)">'+alerts+'</span></div>'+
+    '<button class="btn btn-danger btn-sm" style="width:100%;margin-top:12px" onclick="selEmasZone=null;renderEmas()">🔒 Fechar zona</button>';
   const el=document.getElementById('emas-list');
-  if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sem materiais registados</div></div>';return;}
-  el.innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>Material</th><th>Quantidade</th><th>Stock mínimo</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${list.map(m=>{
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sem materiais nesta zona</div></div>';return;}
+  el.innerHTML='<div class="table-wrap"><table>'+
+    '<thead><tr><th>Código</th><th>Material</th><th>Quantidade</th><th>Stock mínimo</th><th>Estado</th><th></th></tr></thead>'+
+    '<tbody>'+list.map(m=>{
       const ia=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
-      return`<tr>
-        <td style="font-weight:500">${m.name}</td>
-        <td style="font-weight:600;color:var(--amber)">${m.qty} ${m.unit}</td>
-        <td style="color:var(--text3)">${m.minStock?m.minStock+' '+m.unit:'—'}</td>
-        <td><span class="badge badge-${ia?'alert':'ok'}">${ia?'⚠ Alerta':'✓ OK'}</span></td>
-        <td><div class="emas-actions"><button class="mat-btn edit" onclick="editMat('emas','0',${m.id})">✏</button><button class="mat-btn" onclick="removeMat('emas','0',${m.id})">✕</button></div></td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div>`;
+      return'<tr>'+
+        '<td style="font-weight:700;color:var(--green);font-size:12px">'+(m.code||'—')+'</td>'+
+        '<td style="font-weight:500">'+m.name+'</td>'+
+        '<td style="font-weight:600;color:var(--amber)">'+m.qty+' '+m.unit+'</td>'+
+        '<td style="color:var(--text3)">'+(m.minStock?m.minStock+' '+m.unit:'—')+'</td>'+
+        '<td><span class="badge badge-'+(ia?'alert':'ok')+'">'+(ia?'⚠ Alerta':'✓ OK')+'</span></td>'+
+        '<td><div class="emas-actions"><button class="mat-btn edit" onclick="editMat(\'emas\',\'0\','+m.id+')">✏</button><button class="mat-btn" onclick="removeMat(\'emas\',\'0\','+m.id+')">✕</button></div></td>'+
+      '</tr>';
+    }).join('')+'</tbody></table></div>';
 }
 
 window.openAddEmasModal=function(){
   openModal(`<div class="modal-header"><span class="modal-title">Novo material — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div style="margin-bottom:12px"><label class="modal-label">Nome do material</label><input class="form-input" id="m-name" style="width:100%" placeholder="Ex: cimento, tinta..." autocomplete="off"></div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:12px">
+      <div><label class="modal-label">Código</label><input class="form-input" id="m-code" placeholder="Ex: MAT-001" style="width:100%" autocomplete="off"></div>
+      <div><label class="modal-label">Nome do material</label><input class="form-input" id="m-name" style="width:100%" placeholder="Ex: cimento, tinta..." autocomplete="off"></div>
+    </div>
     <div class="form-row" style="margin-bottom:12px">
       <div style="flex:1"><label class="modal-label">Quantidade</label><input class="form-input" id="m-qty" type="number" min="0" placeholder="0" style="width:100%"></div>
       <div style="flex:1"><label class="modal-label">Unidade</label><select class="form-select" id="m-unit" style="width:100%">${unitOpts()}</select></div>
@@ -980,13 +1358,14 @@ window.openAddEmasModal=function(){
 };
 
 window.confirmAddEmas=async function(){
+  const code=document.getElementById('m-code').value.trim();
   const name=document.getElementById('m-name').value.trim();
   const qty=document.getElementById('m-qty').value||'0';
   const unit=document.getElementById('m-unit').value;
   const min=document.getElementById('m-min').value;
   if(!name)return;
   const nd=JSON.parse(JSON.stringify(appData));
-  nd.emas.push({id:Date.now(),name,qty,unit,minStock:min||''});
+  nd.emas.push({id:Date.now(),code,name,qty,unit,minStock:min||''});
   await saveStock(nd);await logHistory('ENTRADA',name,'GERAL','Emas',qty,unit);
   closeModal();
 };

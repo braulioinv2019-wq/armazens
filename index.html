@@ -241,13 +241,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 
 
 /* -- 3D CONTAINER SCENE -- */
-.ctn-scene{height:260px;position:relative;overflow:hidden;flex-shrink:0;border-radius:var(--radius2);margin-bottom:16px;background:linear-gradient(180deg,#08141e 0%,#0a1c2e 50%,#050d18 100%)}
+.ctn-scene{height:280px;position:relative;overflow:hidden;flex-shrink:0;border-radius:var(--radius2);margin-bottom:16px;background:linear-gradient(180deg,#08141e 0%,#0a1c2e 50%,#050d18 100%)}
 .ctn-scene::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(45,158,74,0.06) 0%,transparent 100%)}
 .ctn-scene-floor{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(180deg,#060e18 0%,#030810 100%);border-top:1px solid rgba(255,255,255,0.04)}
 .ctn-scene-grid{position:absolute;bottom:0;left:0;right:0;height:40px;background-image:linear-gradient(rgba(45,158,74,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(45,158,74,0.05) 1px,transparent 1px);background-size:26px 13px}
 .ctn-scene-shadow{position:absolute;bottom:33px;left:8%;right:8%;height:8px;background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%);pointer-events:none}
-.ctns-row-3d{position:absolute;bottom:33px;left:0;right:0;display:flex;justify-content:flex-start;align-items:flex-end;gap:5px;padding:0 10px;overflow-x:auto;scrollbar-width:none}
-.ctns-row-3d::-webkit-scrollbar{display:none}
+.ctns-row-3d{position:absolute;bottom:33px;left:0;right:0;display:flex;justify-content:flex-start;align-items:flex-end;gap:5px;padding:0 10px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(45,158,74,0.4) transparent}
+.ctns-row-3d::-webkit-scrollbar{height:5px;display:block}.ctns-row-3d::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}.ctns-row-3d::-webkit-scrollbar-thumb{background:rgba(45,158,74,0.4);border-radius:3px}
 .cu{cursor:pointer;transition:transform 0.35s cubic-bezier(.34,1.56,.64,1),filter 0.2s;position:relative;flex-shrink:0;filter:brightness(0.8) saturate(0.85)}
 .cu:hover{transform:translateY(-7px)!important;filter:brightness(1) saturate(1.1)}
 .cu.sel{transform:translateY(-12px)!important;filter:brightness(1.1) saturate(1.2)}
@@ -1084,7 +1084,7 @@ function renderLogistica(){
         </div>
       </div>
       <div class="cu-bottom"><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div></div>
-      <div class="cu-label"><div class="cu-id">${c.label}</div><span class="cu-badge ${isSel?'open':st==='alert'?'alert':st==='partial'||st==='full'?'partial':'closed'}">${stLabel}</span></div>
+      <div class="cu-label"><div class="cu-id">${c.label}</div>${c.name?`<div style="font-size:8px;color:rgba(255,255,255,0.45);margin-top:1px;max-width:98px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</div>`:''}<span class="cu-badge ${isSel?'open':st==='alert'?'alert':st==='partial'||st==='full'?'partial':'closed'}">${stLabel}</span></div>
     </div>`;
     div.addEventListener('click',()=>selectContainer(i));
     row.appendChild(div);
@@ -1123,29 +1123,84 @@ function renderLogistica(){
 
 window.selectContainer=function(gi){selContainer=selContainer===gi?null:gi;renderLogistica();};
 
+function calcCapacity(materials){
+  // Estimate kg used based on qty and unit
+  const unitWeights={kg:1,t:1000,L:0.9,m:2,m2:5,cx:10,pc:0.5,rolo:8,un:1};
+  let total=0;
+  materials.forEach(m=>{
+    const w=unitWeights[m.unit]||1;
+    total+=parseFloat(m.qty||0)*w;
+  });
+  return total;
+}
+
 function renderContainerPanel(c,idx){
+  const maxKg=25000;
+  const usedKg=calcCapacity(c.materials);
+  const pct=Math.min(usedKg/maxKg*100,100).toFixed(1);
+  const barColor=pct>90?'var(--red)':pct>60?'var(--amber)':'var(--green2)';
   document.getElementById('logistica-panel').innerHTML=`
     <div class="detail-panel">
       <div class="detail-header">
-        <div><div class="detail-title">${c.label}</div><div class="detail-meta">${c.materials.length} material${c.materials.length!==1?'is':''} registado${c.materials.length!==1?'s':''}</div></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="detail-title">${c.label}</div>
+            <button class="mat-btn edit btn-sm" onclick="renameContainer(${idx})" title="Renomear contentor">✏ Renomear</button>
+          </div>
+          <div class="detail-meta">${c.materials.length} material${c.materials.length!==1?'is':''} · ${c.name||'Sem descrição'}</div>
+        </div>
         <button class="detail-close" onclick="selContainer=null;renderLogistica()">✕ Fechar</button>
+      </div>
+      <!-- CAPACITY BAR -->
+      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text2)">CAPACIDADE ESTIMADA</span>
+          <span style="font-size:12px;font-weight:700;color:${barColor}">${pct}% utilizado</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.6s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:10px;color:var(--text3)">Estimativa: ${usedKg.toLocaleString('pt-PT')} kg</span>
+          <span style="font-size:10px;color:var(--text3)">Máx: 25.000 kg</span>
+        </div>
       </div>
       <div class="mat-list">${renderMatItems(c.materials,'log',idx)}</div>
       <div class="add-form">
         <div class="add-form-title">Adicionar material</div>
         <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
           <input class="form-input" id="add-code-log" placeholder="Código (ex: MAT-001)" autocomplete="off">
-          <input class="form-input" id="add-name-log" placeholder="Nome do material" autocomplete="off">
+          <input class="form-input" id="add-name-log" placeholder="Nome do material" autocomplete="off" onkeydown="if(event.key==='Enter')addMatLog(${idx})">
         </div>
         <div class="form-row" style="margin-bottom:10px">
-          <input class="form-input" id="add-qty-log" type="number" min="0" placeholder="Quantidade">
+          <input class="form-input" id="add-qty-log" type="number" min="0" placeholder="Quantidade" onkeydown="if(event.key==='Enter')addMatLog(${idx})">
           <select class="form-select" id="add-unit-log">${unitOpts()}</select>
-          <input class="form-input" id="add-min-log" type="number" min="0" placeholder="Stock mínimo (alerta)">
+          <input class="form-input" id="add-min-log" type="number" min="0" placeholder="Stock mínimo">
         </div>
         <button class="btn btn-primary btn-sm" onclick="addMatLog(${idx})">+ Adicionar</button>
       </div>
     </div>`;
+  // Focus on name field
+  setTimeout(()=>{const f=document.getElementById('add-name-log');if(f)f.focus();},50);
 }
+
+window.renameContainer=function(idx){
+  const c=appData.logistica[idx];
+  openModal(`<div class="modal-header"><span class="modal-title">Renomear ${c.label}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="margin-bottom:12px"><label class="modal-label">ETIQUETA (código)</label><input class="form-input" id="rc-label" value="${c.label}" style="width:100%"></div>
+    <div><label class="modal-label">NOME / DESCRIÇÃO</label><input class="form-input" id="rc-name" value="${c.name||''}" placeholder="Ex: Materiais eléctricos, Ferramentas..." style="width:100%"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmRename(${idx})">Guardar</button></div>`);
+};
+
+window.confirmRename=async function(idx){
+  const label=document.getElementById('rc-label').value.trim();
+  const name=document.getElementById('rc-name').value.trim();
+  if(!label)return;
+  const nd=JSON.parse(JSON.stringify(appData));
+  nd.logistica[idx].label=label;
+  nd.logistica[idx].name=name;
+  await saveStock(nd);closeModal();
+};
 
 function renderMatItems(mats,type,idx){
   if(!mats.length)return'<div class="empty-state" style="padding:16px"><div class="empty-text">Sem materiais</div></div>';
@@ -1165,17 +1220,21 @@ function renderMatItems(mats,type,idx){
 }
 
 window.addMatLog=async function(idx){
-  const code=document.getElementById('add-code-log').value.trim();
-  const name=document.getElementById('add-name-log').value.trim();
-  const qty=document.getElementById('add-qty-log').value||'0';
-  const unit=document.getElementById('add-unit-log').value;
-  const min=document.getElementById('add-min-log').value;
-  if(!name)return;
-  const mat={id:Date.now(),code,name,qty,unit,minStock:min||''};
+  const code=document.getElementById('add-code-log')?.value.trim()||'';
+  const name=document.getElementById('add-name-log')?.value.trim()||'';
+  const qty=document.getElementById('add-qty-log')?.value||'0';
+  const unit=document.getElementById('add-unit-log')?.value||'un';
+  const min=document.getElementById('add-min-log')?.value||'';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  const mat={id:Date.now(),code,name,qty,unit,minStock:min};
   const nd=JSON.parse(JSON.stringify(appData));
-  nd.logistica=appData.logistica.map((c,i)=>i===idx?{...c,materials:[...c.materials,mat]}:c);
-  await saveStock(nd);await logHistory('ENTRADA',name,appData.logistica[idx].label,'Logística',qty,unit);
-  document.getElementById('add-code-log').value='';document.getElementById('add-name-log').value='';document.getElementById('add-qty-log').value='';document.getElementById('add-min-log').value='';
+  nd.logistica=nd.logistica.map((c,i)=>i===idx?{...c,materials:[...c.materials,mat]}:c);
+  appData=nd; // optimistic update
+  renderContainerPanel(nd.logistica[idx],idx);
+  renderLogistica();
+  await saveStock(nd);
+  await logHistory('ENTRADA',name,nd.logistica[idx].label,'Logística',qty,unit);
+  showToast('Material adicionado!');
 };
 
 // VINI — single zone with shelves
@@ -1767,13 +1826,16 @@ window.closeModal=function(){document.getElementById('modal-overlay').classList.
 
 window.openAddContainerModal=function(){
   openModal(`<div class="modal-header"><span class="modal-title">Novo contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div><label class="modal-label">Etiqueta</label><input class="form-input" id="nc-label" placeholder="Ex: C40" style="width:100%"></div>
+    <div style="margin-bottom:12px"><label class="modal-label">ETIQUETA (código)</label><input class="form-input" id="nc-label" placeholder="Ex: C40" style="width:100%"></div>
+    <div><label class="modal-label">NOME / DESCRIÇÃO</label><input class="form-input" id="nc-name" placeholder="Ex: Materiais eléctricos, Ferramentas..." style="width:100%"></div>
     <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddContainer()">Adicionar</button></div>`);
 };
 window.confirmAddContainer=async function(){
   const l=document.getElementById('nc-label').value.trim();
+  const n=document.getElementById('nc-name').value.trim();
   if(!l)return;
-  const nd=JSON.parse(JSON.stringify(appData));nd.logistica.push({id:Date.now(),label:l,materials:[]});
+  const nd=JSON.parse(JSON.stringify(appData));
+  nd.logistica.push({id:Date.now(),label:l,name:n,materials:[]});
   await saveStock(nd);closeModal();
 };
 

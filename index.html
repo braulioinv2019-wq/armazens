@@ -1226,19 +1226,41 @@ await addDoc(collection(db,'wms','history','entries'),{type,material:mat,locatio
 
 function startListeners() {
 const{db,doc,onSnapshot,collection,query,orderBy,limit}=window._fb;
-unsubStock=onSnapshot(doc(db,'wms','stock'),snap=>{
-const newData=snap.exists()?snap.data():defaultData();
-    
-appData=newData;
-refreshAll();
-showToast('✓ Sincronizado');
-});
-const q=query(collection(db,'wms','history','entries'),orderBy('ts','desc'),limit(200));
-unsubHistory=onSnapshot(q,snap=>{
-historyData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
-if(document.getElementById('page-history').classList.contains('active'))renderHistory();
-if(document.getElementById('page-dashboard').classList.contains('active'))renderDashboard();
-});
+// Stock listener
+unsubStock=onSnapshot(doc(db,'wms','stock'),
+  snap=>{
+    try{
+      const newData=snap.exists()?snap.data():defaultData();
+      appData=newData;
+      refreshAll();
+    }catch(e){console.error('Stock error:',e);}
+  },
+  err=>console.warn('Stock listener:',err)
+);
+// History listener - wrapped in try in case index is missing
+try{
+  const q=query(collection(db,'wms','history','entries'),orderBy('ts','desc'),limit(200));
+  unsubHistory=onSnapshot(q,
+    snap=>{
+      try{
+        historyData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+        if(document.getElementById('page-history')?.classList.contains('active'))renderHistory();
+        if(document.getElementById('page-dashboard')?.classList.contains('active'))renderDashboard();
+      }catch(e){console.error('History update:',e);}
+    },
+    err=>console.warn('History listener:',err)
+  );
+}catch(e){
+  console.warn('History index missing, using simple listener');
+  unsubHistory=onSnapshot(collection(db,'wms','history','entries'),
+    snap=>{
+      historyData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+      historyData.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+      historyData=historyData.slice(0,200);
+    },
+    err=>console.warn('History fallback:',err)
+  );
+}
 }
 
 window.doLogin=function(){
@@ -1252,9 +1274,9 @@ document.getElementById('user-avatar').textContent=USERS[u].name[0].toUpperCase(
 document.getElementById('user-name-display').textContent=USERS[u].name;
 document.getElementById('user-role-display').textContent=ROLES[USERS[u].role]||USERS[u].role;
 document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-startListeners();
-startSFSListener();
-startInventoryListener();
+try{startListeners();}catch(e){console.error('startListeners:',e);}
+try{startSFSListener();}catch(e){console.error('startSFS:',e);}
+try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
 } else { document.getElementById('login-error').style.display='block'; }
 };
 window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
@@ -1807,12 +1829,21 @@ el.innerHTML=alerts.map(a=>`<div class="alert-card">
 
 let sfsData=[];
 function startSFSListener(){
+try{
 const{db,collection,onSnapshot,query,orderBy,limit}=window._fb;
 const q=query(collection(db,'wms','sfs','records'),orderBy('ts','desc'),limit(100));
 onSnapshot(q,snap=>{
 sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
-if(document.getElementById('page-sfs').classList.contains('active'))renderSFS();
+if(document.getElementById('page-sfs')?.classList.contains('active'))renderSFS();
+},err=>{
+// Fallback without orderBy
+const{db,collection,onSnapshot}=window._fb;
+onSnapshot(collection(db,'wms','sfs','records'),snap=>{
+sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+sfsData.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
 });
+});
+}catch(e){console.warn('SFS listener:',e);}
 }
 
 function renderSFS(){
@@ -2952,20 +2983,25 @@ containerEl.offsetHeight;
 containerEl.style.animation='matIn 0.4s cubic-bezier(.34,1.56,.64,1)';
 }
 
-// Timeout fallback - show login even if Firebase is slow
-const loadingTimeout = setTimeout(()=>{
+// Show login immediately - don't wait for Firebase
+function showLogin(){
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
-}, 5000);
+}
+
+// Timeout - show login after 3 seconds no matter what
+const loadingTimeout = setTimeout(showLogin, 3000);
+
+// Global error handler - if ANY uncaught error, show login
+window.addEventListener('error', ()=>{ clearTimeout(loadingTimeout); showLogin(); });
+window.addEventListener('unhandledrejection', ()=>{ clearTimeout(loadingTimeout); showLogin(); });
 
 waitFirebase().then(()=>{
   clearTimeout(loadingTimeout);
-  document.getElementById('loading-screen').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
+  showLogin();
 }).catch(()=>{
   clearTimeout(loadingTimeout);
-  document.getElementById('loading-screen').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
+  showLogin();
 });
 </script>
 </body>

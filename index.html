@@ -755,7 +755,10 @@ tbody tr:hover td{background:var(--bg)}
     <div class="page" id="page-logistica">
       <div class="page-header">
         <div><div class="page-title">Armazém Logística</div><div class="page-sub">Gestão visual dos contentores em tempo real</div></div>
-        <button class="btn btn-secondary" onclick="openAddContainerModal()">+ Novo contentor</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir</button>
+          <button class="btn btn-secondary" onclick="openAddContainerModal()">+ Novo contentor</button>
+        </div>
       </div>
       <!-- 3D SCENE -->
       <div class="ctn-scene" id="logistica-scene">
@@ -795,7 +798,10 @@ tbody tr:hover td{background:var(--bg)}
     <div class="page" id="page-vini">
       <div class="page-header">
         <div><div class="page-title">Vini Galpão</div><div class="page-sub">Nave industrial — gestão por prateleiras</div></div>
-        <button class="btn btn-secondary" onclick="openAddShelfModal()">+ Nova prateleira</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir</button>
+          <button class="btn btn-secondary" onclick="openAddShelfModal()">+ Nova prateleira</button>
+        </div>
       </div>
       <!-- WAREHOUSE SCENE - SINGLE ZONE -->
       <div class="nave-scene-wrap">
@@ -856,7 +862,10 @@ tbody tr:hover td{background:var(--bg)}
     <div class="page" id="page-emas">
       <div class="page-header">
         <div><div class="page-title">Armazém Emas</div><div class="page-sub">Nave industrial — 4 zonas de armazenagem</div></div>
-        <button class="btn btn-primary" onclick="openAddEmasModal()">+ Adicionar material</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir</button>
+          <button class="btn btn-primary" onclick="openAddEmasModal()">+ Adicionar material</button>
+        </div>
       </div>
       <!-- WAREHOUSE SCENE - 4 ZONES -->
       <div class="nave-scene-wrap">
@@ -1453,7 +1462,8 @@ function renderMatItems(mats,type,idx){
         ${isAlert?`<div class="mat-alert-tag">⚠ Abaixo do mínimo (${m.minStock} ${m.unit})</div>`:''}
       </div>
       <div class="mat-qty">${m.qty} ${m.unit}</div>
-      <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" title="Dar entrada" onclick="addStockToMat('${type}','${idx}',${m.id})">+</button>
+      <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" title="Dar entrada de stock" onclick="addStockToMat('${type}','${idx}',${m.id})">+</button>
+      <button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" title="Transferir para outro local" onclick="openTransferForMat('${type}','${idx}',${m.id})">⇄</button>
       <button class="mat-btn edit btn-sm" onclick="editMat('${type}','${idx}',${m.id})">✏</button>
       <button class="mat-btn btn-sm" onclick="removeMat('${type}','${idx}',${m.id})">✕</button>
     </div>`;
@@ -2320,41 +2330,91 @@ window.confirmAddStock=async function(type,idx,matId){
 };
 
 // ── TRANSFERÊNCIA ────────────────────────────────────────────────────────
-window.openTransferModal=function(){
+window.openTransferModal=function(preType,preIdx,preMatId){
   const allMats=getAllMaterials();
   if(!allMats.length){showToast('Sem materiais para transferir',true);return;}
   const destOpts=buildDestOptions();
+  // Group materials by warehouse for optgroups
+  const byWh={};
+  allMats.forEach(m=>{if(!byWh[m.warehouse])byWh[m.warehouse]=[];byWh[m.warehouse].push(m);});
+  let matOpts='<option value="">— Seleccione o material —</option>';
+  Object.entries(byWh).forEach(([wh,mats])=>{
+    matOpts+=`<optgroup label="${wh}">`;
+    mats.forEach(m=>{
+      const sel=(preMatId&&m.id===preMatId)?' selected':'';
+      matOpts+=`<option value="${m.warehouse}|${m.location}|${m.id}"${sel}>${m.name} — ${m.locFull} (${m.qty} ${m.unit})</option>`;
+    });
+    matOpts+='</optgroup>';
+  });
   openModal(`
-    <div class="modal-header"><span class="modal-title">⇄ Transferir Material</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div style="margin-bottom:12px">
-      <label class="modal-label">MATERIAL A TRANSFERIR</label>
-      <select class="form-select" id="tr-mat" style="width:100%" onchange="updateTransferQty()">
-        <option value="">— Seleccione o material —</option>
-        ${allMats.map(m=>`<option value="${m.warehouse}|${m.location}|${m.id}">${m.name} (${m.qty} ${m.unit}) — ${m.locFull}</option>`).join('')}
+    <div class="modal-header">
+      <div><span class="modal-title">⇄ Transferência de Material</span>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Mover material entre armazéns, contentores ou prateleiras</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">ORIGEM</div>
+      <select class="form-select" id="tr-mat" style="width:100%;margin-bottom:10px" onchange="updateTransferQty()">
+        ${matOpts}
       </select>
+      <div id="tr-origin-info" style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
+        <span id="tr-origin-loc" style="background:var(--green3);border:1px solid var(--green4);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--green)">—</span>
+        <span id="tr-stock-info" style="color:var(--text3)">Seleccione um material</span>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label class="modal-label">QUANTIDADE A TRANSFERIR</label><input class="form-input" id="tr-qty" type="number" min="0" step="0.01" placeholder="0" style="width:100%"></div>
-      <div id="tr-stock-info" style="display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;color:var(--text3)">Seleccione um material</div>
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0;font-size:11px;font-weight:600;color:var(--text3)">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);padding:4px 16px;border-radius:20px">⇄ TRANSFERIR</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
-    <div class="transfer-arrow">PARA</div>
-    <div style="margin-bottom:4px">
-      <label class="modal-label">DESTINO</label>
+    <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">DESTINO</div>
       <select class="form-select" id="tr-dest" style="width:100%">${destOpts}</select>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:4px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">QUANTIDADE</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <input class="form-input" id="tr-qty" type="number" min="0" step="0.01" placeholder="0" style="flex:1">
+        <button class="btn btn-secondary btn-sm" onclick="setMaxQty()" style="white-space:nowrap">Tudo</button>
+        <span id="tr-max-info" style="font-size:11px;color:var(--text3);white-space:nowrap">máx: —</span>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmTransfer()">⇄ Confirmar transferência</button>
+      <button class="btn btn-primary" onclick="confirmTransfer()" style="min-width:180px">⇄ Confirmar transferência</button>
     </div>`);
+  // Pre-select if called from material row
+  if(preMatId){
+    setTimeout(()=>updateTransferQty(),50);
+  }
+};
+
+window.openTransferForMat=function(type,idx,matId){
+  openTransferModal(type,idx,matId);
+};
+
+window.setMaxQty=function(){
+  const sel=document.getElementById('tr-mat')?.value;
+  if(!sel)return;
+  const[,,id]=sel.split('|');
+  const mat=getAllMaterials().find(m=>m.id===parseInt(id));
+  if(mat)document.getElementById('tr-qty').value=mat.qty;
 };
 
 window.updateTransferQty=function(){
   const sel=document.getElementById('tr-mat')?.value;
   const info=document.getElementById('tr-stock-info');
+  const locBadge=document.getElementById('tr-origin-loc');
+  const maxInfo=document.getElementById('tr-max-info');
   if(!sel||!info)return;
-  const [wh,loc,id]=sel.split('|');
+  const[wh,,id]=sel.split('|');
   const mat=getAllMaterials().find(m=>m.id===parseInt(id));
-  if(mat)info.textContent=`Stock disponível: ${mat.qty} ${mat.unit}`;
+  if(mat){
+    info.textContent='Stock disponível: '+mat.qty+' '+mat.unit;
+    if(locBadge)locBadge.textContent=mat.locFull;
+    if(maxInfo)maxInfo.textContent='máx: '+mat.qty+' '+mat.unit;
+  }
 };
 
 window.confirmTransfer=async function(){

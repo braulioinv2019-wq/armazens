@@ -1640,10 +1640,13 @@ return flat;
 
 function getEmasArr(){
 if(!appData)return[];
-if(Array.isArray(appData.emas))return appData.emas;
-  
-const flat=[];
-['A','B','C','D'].forEach(z=>(appData.emas[z]||[]).forEach(m=>flat.push({...m,zone:z})));
+if(Array.isArray(appData.emas)){
+// Assign default zone 'A' to materials without zone
+return appData.emas.map(function(m){return Object.assign({},m,{zone:m.zone||'A'});});
+}
+// Legacy object with A,B,C,D keys
+var flat=[];
+['A','B','C','D'].forEach(function(z){(appData.emas[z]||[]).forEach(function(m){flat.push(Object.assign({},m,{zone:z}));});});
 return flat;
 }
 
@@ -1769,9 +1772,17 @@ renderEmas();
 
 function renderEmas(){
 if(!appData)return;
-  
+// Normalise: ensure emas is array and all items have a zone
 if(!Array.isArray(appData.emas)){
-appData.emas=getEmasArr();
+  appData.emas=getEmasArr();
+} else {
+  // Assign zone 'A' to any item missing zone (legacy data)
+  var changed=false;
+  appData.emas.forEach(function(m){if(!m.zone){m.zone='A';changed=true;}});
+  if(changed){
+    // Save the normalised data back silently
+    saveStock(JSON.parse(JSON.stringify(appData)));
+  }
 }
 renderEmasZoneDoors();
 const closeBtn=document.getElementById('emas-close-btn');

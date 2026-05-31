@@ -1677,8 +1677,9 @@ document.getElementById('vini-sum-content').innerHTML='<div style="font-size:12p
 
 function renderSimpleMatList(mats, type, idx){
 if(!mats.length)return'<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais</div></div>';
-return'<div class="mat-list">'+mats.map(m=>{
-const isAlert=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
+return'<div class="mat-list">'+mats.map(function(m){
+var isAlert=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
+var t=type; var ix=idx; var mid=m.id;
 return'<div class="mat-item">'+
 '<div style="flex:1">'+
 (m.code?'<div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;margin-bottom:2px">'+m.code+'</div>':'')+
@@ -1686,10 +1687,10 @@ return'<div class="mat-item">'+
 (isAlert?'<div class="mat-alert-tag">⚠ Abaixo do mínimo ('+m.minStock+' '+m.unit+')</div>':'')+
 '</div>'+
 '<div class="mat-qty">'+m.qty+' '+m.unit+'</div>'+
-'<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" title="Dar entrada" onclick="addStockToMat(''+type+'',''+idx+'','+m.id+')">+</button>'+
-'<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" title="Transferir" onclick="openTransferForMat(''+type+'',''+idx+'','+m.id+')">⇄</button>'+
-'<button class="mat-btn edit" onclick="editMat(''+type+'',''+idx+'','+m.id+')">✏</button>'+
-'<button class="mat-btn" onclick="removeMat(''+type+'',''+idx+'','+m.id+')">✕</button>'+
+'<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="addStockToMat(\''+t+'\',\''+ix+'\','+mid+')">+</button>'+
+'<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" onclick="openTransferForMat(\''+t+'\',\''+ix+'\','+mid+')">⇄</button>'+
+'<button class="mat-btn edit" onclick="editMat(\''+t+'\',\''+ix+'\','+mid+')">✏</button>'+
+'<button class="mat-btn" onclick="removeMat(\''+t+'\',\''+ix+'\','+mid+')">✕</button>'+
 '</div>';
 }).join('')+'</div>';
 }

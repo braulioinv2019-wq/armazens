@@ -1426,21 +1426,20 @@ const nameEl=document.getElementById('add-name-log');
 const qtyEl=document.getElementById('add-qty-log');
 const unitEl=document.getElementById('add-unit-log');
 const minEl=document.getElementById('add-min-log');
+const reorderEl=document.getElementById('add-reorder-log');
 const code=(codeEl?.value||'').trim();
 const name=(nameEl?.value||'').trim();
 const qty=(qtyEl?.value)||'0';
 const unit=(unitEl?.value)||'un';
 const min=(minEl?.value)||'';
+const reorder=(reorderEl?.value)||'';
 if(!name){showToast('Escreve o nome do material',true);if(nameEl)nameEl.focus();return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder||''};
-  
+const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder};
 if(!appData.logistica[idx].materials)appData.logistica[idx].materials=[];
 appData.logistica[idx].materials.push(mat);
-  
 renderContainerPanel(appData.logistica[idx],idx);
 showToast('✓ '+name+' adicionado!');
 spawnParticles();
-  
 saveStock(JSON.parse(JSON.stringify(appData)));
 logHistory('ENTRADA',name,appData.logistica[idx].label,'Logística',qty,unit);
 };
@@ -1549,8 +1548,9 @@ const name=(document.getElementById('add-name-'+type)?.value||'').trim();
 const qty=document.getElementById('add-qty-'+type)?.value||'0';
 const unit=document.getElementById('add-unit-'+type)?.value||'un';
 const min=document.getElementById('add-min-'+type)?.value||'';
+const reorder=document.getElementById('add-reorder-'+type)?.value||'';
 if(!name){showToast('Escreve o nome do material',true);return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder||''};
+const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder};
 let loc='',wh='';
 if(type==='vini'){
 if(!Array.isArray(appData.vini))appData.vini=[];

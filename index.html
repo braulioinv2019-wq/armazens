@@ -998,10 +998,27 @@ emasArr.forEach(m=>r.push({...m,location:'EMAS'+(m.zone?'-'+m.zone:''),warehouse
 return r;
 }
 
-function getAlerts(){return getAllMaterials().filter(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));}
+function getAlertLevel(m){
+  var qty=parseFloat(m.qty)||0;
+  var min=parseFloat(m.minStock)||0;
+  var reorder=parseFloat(m.reorderPoint)||0;
+  if(min>0&&qty<=min)return'critical'; // 🔴 Stock segurança
+  if(reorder>0&&qty<=reorder)return'warning'; // 🟡 Ponto encomenda
+  return null;
+}
+function getAlerts(){
+  return getAllMaterials().filter(function(m){return getAlertLevel(m)!==null;});
+}
+function getCriticalAlerts(){
+  return getAllMaterials().filter(function(m){return getAlertLevel(m)==='critical';});
+}
+function getWarningAlerts(){
+  return getAllMaterials().filter(function(m){return getAlertLevel(m)==='warning';});
+}
 
 function containerStatus(c){
-if(c.materials.some(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock)))return'alert';
+if(c.materials.some(m=>m.minStock&&parseFloat(m.qty)<=parseFloat(m.minStock)))return'alert';
+if(c.materials.some(m=>m.reorderPoint&&parseFloat(m.qty)<=parseFloat(m.reorderPoint)))return'warning';
 if(!c.materials.length)return'empty';
 return c.materials.length<=5?'partial':'full';
 }
@@ -1034,9 +1051,26 @@ updateBadges();
 window.topbarSearch=function(q){
 const res=document.getElementById('topbar-results');
 if(!q.trim()){res.classList.remove('show');return;}
-const found=getAllMaterials().filter(m=>m.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+const ql=q.toLowerCase();
+const found=getAllMaterials().filter(m=>m.name.toLowerCase().includes(ql)||(m.code||'').toLowerCase().includes(ql));
 if(!found.length){res.innerHTML='<div class="ts-empty">Nenhum resultado encontrado</div>';res.classList.add('show');return;}
-res.innerHTML=found.map(m=>`<div class="ts-item"><span class="ts-badge">${m.location}</span><div><div class="ts-name">${m.name}</div><div class="ts-loc">${m.locFull}</div></div><span class="ts-qty">${m.qty} ${m.unit}</span></div>`).join('');
+// Group by name+unit
+const groups={};
+found.forEach(m=>{
+  const key=m.name.toLowerCase()+'__'+m.unit;
+  if(!groups[key])groups[key]={name:m.name,code:m.code||'',unit:m.unit,totalQty:0,locations:[]};
+  groups[key].totalQty+=parseFloat(m.qty)||0;
+  groups[key].locations.push(m.location);
+});
+const grouped=Object.values(groups).slice(0,8);
+res.innerHTML=grouped.map(g=>{
+  const multi=g.locations.length>1;
+  return`<div class="ts-item">
+    <span class="ts-badge" style="${multi?'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)':''}">${multi?g.locations.length+' locais':g.locations[0]}</span>
+    <div><div class="ts-name">${g.name}</div><div class="ts-loc">${g.locations.join(' · ')}</div></div>
+    <span class="ts-qty" style="${multi?'color:var(--blue);font-weight:700':''}">${g.totalQty} ${g.unit}${multi?' (total)':''}</span>
+  </div>`;
+}).join('');
 res.classList.add('show');
 };
 document.addEventListener('click',e=>{if(!e.target.closest('.topbar-search'))document.getElementById('topbar-results').classList.remove('show');});
@@ -1044,10 +1078,55 @@ document.addEventListener('click',e=>{if(!e.target.closest('.topbar-search'))doc
 window.doSearch=function(q){
 const el=document.getElementById('search-results');
 if(!q.trim()){el.innerHTML='';return;}
-const found=getAllMaterials().filter(m=>m.name.toLowerCase().includes(q.toLowerCase()));
+const ql=q.toLowerCase();
+const found=getAllMaterials().filter(m=>m.name.toLowerCase().includes(ql)||(m.code||'').toLowerCase().includes(ql));
 if(!found.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum material encontrado para "'+q+'"</div></div>';return;}
-el.innerHTML=`<div style="font-size:12px;color:var(--text3);margin-bottom:12px;font-weight:500">${found.length} resultado${found.length>1?'s':''} encontrado${found.length>1?'s':''}</div>`+
-found.map(m=>`<div class="search-result-item"><div class="result-loc-badge">${m.location}</div><div><div class="result-name">${m.name}</div><div class="result-wh">${m.locFull}</div></div><div class="result-qty">${m.qty} ${m.unit}</div></div>`).join('');
+// Group by name+unit for consolidation
+const groups={};
+found.forEach(m=>{
+  const key=m.name.toLowerCase()+'__'+m.unit;
+  if(!groups[key])groups[key]={name:m.name,code:m.code||'',unit:m.unit,totalQty:0,items:[]};
+  groups[key].totalQty+=parseFloat(m.qty)||0;
+  groups[key].items.push(m);
+});
+const grouped=Object.values(groups);
+var html='<div style="font-size:12px;color:var(--text3);margin-bottom:16px;font-weight:500">'+
+  found.length+' resultado'+(found.length>1?'s':'')+' · '+grouped.length+' referência'+(grouped.length>1?'s':'')+
+'</div>';
+grouped.forEach(g=>{
+  const multi=g.items.length>1;
+  const alertLvl=g.items.some(i=>getAlertLevel(i)==='critical')?'critical':g.items.some(i=>getAlertLevel(i)==='warning')?'warning':null;
+  html+='<div class="search-result-item" style="flex-direction:column;align-items:stretch;gap:8px;'+(alertLvl==='critical'?'border-color:#fca5a5;background:#fff8f8':alertLvl==='warning'?'border-color:#fde68a;background:#fffdf0':'')+'">';
+  // Header row
+  html+='<div style="display:flex;align-items:center;gap:12px">';
+  if(g.code)html+='<div style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green3);padding:2px 8px;border-radius:4px">'+g.code+'</div>';
+  html+='<div class="result-name" style="flex:1">'+g.name+'</div>';
+  if(alertLvl==='critical')html+='<span style="font-size:11px;font-weight:700;color:var(--red)">🔴 CRÍTICO</span>';
+  else if(alertLvl==='warning')html+='<span style="font-size:11px;font-weight:700;color:var(--amber)">🟡 ENCOMENDA</span>';
+  html+='</div>';
+  // Total consolidado
+  if(multi){
+    html+='<div style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
+    html+='<span style="font-size:11px;font-weight:600;color:var(--blue)">📦 TOTAL CONSOLIDADO ('+g.items.length+' locais)</span>';
+    html+='<span style="font-size:16px;font-weight:700;color:var(--blue)">'+g.totalQty+' '+g.unit+'</span>';
+    html+='</div>';
+  }
+  // Individual locations
+  html+='<div style="display:flex;flex-direction:column;gap:4px">';
+  g.items.forEach(m=>{
+    var alvl=getAlertLevel(m);
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:var(--bg);border-radius:6px">';
+    html+='<span class="result-loc-badge" style="font-size:10px">'+m.location+'</span>';
+    html+='<span style="font-size:11px;color:var(--text3);flex:1">'+m.locFull+'</span>';
+    html+='<span style="font-size:13px;font-weight:600;color:'+(alvl==='critical'?'var(--red)':alvl==='warning'?'var(--amber)':'var(--amber)')+'">'+m.qty+' '+m.unit+'</span>';
+    if(alvl==='critical')html+='<span style="font-size:10px;color:var(--red)">🔴</span>';
+    else if(alvl==='warning')html+='<span style="font-size:10px;color:var(--amber)">🟡</span>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='</div>';
+});
+el.innerHTML=html;
 };
 
 function renderDashboard(){
@@ -1059,7 +1138,8 @@ const today=new Date().toISOString().slice(0,10);
 const todayMoves=historyData.filter(h=>h.ts&&h.ts.startsWith(today)).length;
 animateCount('stat-total',all.length);
 animateCount('stat-containers',occ);
-animateCount('stat-alerts',alerts.length);
+const critAlerts=getAllMaterials().filter(m=>getAlertLevel(m)==='critical').length;
+animateCount('stat-alerts',critAlerts);
 animateCount('stat-moves',todayMoves);
 document.getElementById('dash-welcome').textContent='Bem-vindo, '+currentUser.name+' · '+new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long'});
 const logM=appData.logistica.reduce((a,c)=>a+c.materials.length,0);
@@ -1278,12 +1358,14 @@ showToast('🗑 Contentor '+c.label+' eliminado');
 function renderMatItems(mats,type,idx){
 if(!mats.length)return'<div class="empty-state" style="padding:16px"><div class="empty-text">Sem materiais</div></div>';
 return mats.map(m=>{
-const isAlert=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
+const alertLvl=getAlertLevel(m);
+const isAlert=alertLvl==='critical';
+const isWarning=alertLvl==='warning';
 return`<div class="mat-item">
 <div style="flex:1">
 ${m.code?`<div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;margin-bottom:2px">${m.code}</div>`:''}
 <div class="mat-name">${m.name}</div>
-${isAlert?`<div class="mat-alert-tag">⚠ Abaixo do mínimo (${m.minStock} ${m.unit})</div>`:''}
+${isAlert?`<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico! (${m.qty}/${m.minStock} ${m.unit})</div>`:isWarning?`<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda (${m.qty}/${m.reorderPoint} ${m.unit})</div>`:''}
 </div>
 <div class="mat-qty">${m.qty} ${m.unit}</div>
 <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" title="Dar entrada de stock" onclick="addStockToMat('${type}','${idx}',${m.id})">+</button>
@@ -1306,7 +1388,7 @@ const qty=(qtyEl?.value)||'0';
 const unit=(unitEl?.value)||'un';
 const min=(minEl?.value)||'';
 if(!name){showToast('Escreve o nome do material',true);if(nameEl)nameEl.focus();return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min};
+const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder||''};
   
 if(!appData.logistica[idx].materials)appData.logistica[idx].materials=[];
 appData.logistica[idx].materials.push(mat);
@@ -1383,7 +1465,9 @@ for(var mi=0;mi<mats.length;mi++){
   html+='<div style="flex:1">';
   if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
   html+='<div class="mat-name">'+m.name+'</div>';
-  if(isAlert)html+='<div class="mat-alert-tag">⚠ Mínimo: '+m.minStock+' '+m.unit+'</div>';
+  var alvl=getAlertLevel(m);
+  if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico! ('+m.qty+'/'+m.minStock+' '+m.unit+')</div>';
+  else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+m.qty+'/'+m.reorderPoint+' '+m.unit+')</div>';
   html+='</div>';
   html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
   html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
@@ -1403,10 +1487,13 @@ return`<div class="add-form">
 <input class="form-input" id="add-code-${type}" placeholder="Código" autocomplete="off">
 <input class="form-input" id="add-name-${type}" placeholder="Nome do material" autocomplete="off" onkeydown="if(event.key==='Enter')addMatSimple('${type}','${idx}')">
 </div>
-<div class="form-row" style="margin-bottom:10px">
+<div class="form-row" style="margin-bottom:8px">
 <input class="form-input" id="add-qty-${type}" type="number" min="0" placeholder="Quantidade" onkeydown="if(event.key==='Enter')addMatSimple('${type}','${idx}')">
 <select class="form-select" id="add-unit-${type}">${unitOpts()}</select>
-<input class="form-input" id="add-min-${type}" type="number" min="0" placeholder="Stock mínimo">
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<div><label style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:1px;display:block;margin-bottom:3px">🟡 PONTO DE ENCOMENDA</label><input class="form-input" id="add-reorder-${type}" type="number" min="0" placeholder="Ex: 20"></div>
+<div><label style="font-size:9px;color:var(--red);font-weight:700;letter-spacing:1px;display:block;margin-bottom:3px">🔴 STOCK DE SEGURANÇA</label><input class="form-input" id="add-min-${type}" type="number" min="0" placeholder="Ex: 5"></div>
 </div>
 <button class="btn btn-primary btn-sm" onclick="addMatSimple('${type}','${idx}')">+ Adicionar</button>
 </div>`;
@@ -1419,7 +1506,7 @@ const qty=document.getElementById('add-qty-'+type)?.value||'0';
 const unit=document.getElementById('add-unit-'+type)?.value||'un';
 const min=document.getElementById('add-min-'+type)?.value||'';
 if(!name){showToast('Escreve o nome do material',true);return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min};
+const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder||''};
 let loc='',wh='';
 if(type==='vini'){
 if(!Array.isArray(appData.vini))appData.vini=[];
@@ -1529,12 +1616,68 @@ return`<tr><td style="font-size:12px;color:var(--text3)">${date}</td><td><span c
 function renderAlerts(){
 const alerts=getAlerts();
 const el=document.getElementById('alerts-list');
-if(!alerts.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Sem alertas activos. Todos os stocks estão dentro dos limites.</div></div>';return;}
-el.innerHTML=alerts.map(a=>`<div class="alert-card">
-<div class="alert-icon-wrap">⚠️</div>
-<div class="alert-body"><div class="alert-title">${a.name}</div><div class="alert-desc">${a.locFull} · ${a.warehouse}</div></div>
-<div class="alert-qty-wrap"><div class="alert-qty-label">ACTUAL / MÍNIMO</div><div class="alert-qty">${a.qty} / ${a.minStock} ${a.unit}</div></div>
-</div>`).join('');
+if(!alerts.length){
+  el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Sem alertas activos. Todos os stocks estão dentro dos limites.</div></div>';
+  return;
+}
+const critical=alerts.filter(a=>getAlertLevel(a)==='critical');
+const warning=alerts.filter(a=>getAlertLevel(a)==='warning');
+var html='';
+// Summary header
+html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">';
+html+='<div style="background:#fff0f0;border:2px solid #fca5a5;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px">';
+html+='<span style="font-size:28px">🔴</span>';
+html+='<div><div style="font-size:22px;font-weight:700;color:var(--red)">'+critical.length+'</div><div style="font-size:11px;color:var(--red);font-weight:600">STOCK CRÍTICO</div><div style="font-size:10px;color:#888;margin-top:2px">Abaixo do stock de segurança</div></div>';
+html+='</div>';
+html+='<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px">';
+html+='<span style="font-size:28px">🟡</span>';
+html+='<div><div style="font-size:22px;font-weight:700;color:var(--amber)">'+warning.length+'</div><div style="font-size:11px;color:var(--amber);font-weight:600">PONTO DE ENCOMENDA</div><div style="font-size:10px;color:#888;margin-top:2px">Deve encomendar em breve</div></div>';
+html+='</div>';
+html+='</div>';
+// Critical alerts
+if(critical.length){
+  html+='<div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span>🔴</span> STOCK CRÍTICO — ACÇÃO IMEDIATA NECESSÁRIA</div>';
+  html+=critical.map(a=>{
+    var pct=Math.round(parseFloat(a.qty)/parseFloat(a.minStock)*100);
+    return '<div class="alert-card" style="border-color:#fca5a5;background:#fff8f8">'+
+      '<div style="font-size:24px">🔴</div>'+
+      '<div class="alert-body" style="flex:1">'+
+        '<div class="alert-title" style="color:var(--red)">'+a.name+'</div>'+
+        '<div class="alert-desc">'+a.locFull+' · '+a.warehouse+'</div>'+
+        '<div style="margin-top:6px;background:#fca5a5;border-radius:4px;height:6px;width:100%;overflow:hidden">'+
+          '<div style="height:100%;background:var(--red);border-radius:4px;width:'+Math.min(pct,100)+'%"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="alert-qty-wrap">'+
+        '<div style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:1px">ACTUAL / SEGURANÇA</div>'+
+        '<div class="alert-qty" style="color:var(--red)">'+a.qty+' / '+a.minStock+' '+a.unit+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  html+='<div style="margin-bottom:20px"></div>';
+}
+// Warning alerts
+if(warning.length){
+  html+='<div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span>🟡</span> PONTO DE ENCOMENDA — PLANEAR REPOSIÇÃO</div>';
+  html+=warning.map(a=>{
+    var pct=Math.round(parseFloat(a.qty)/parseFloat(a.reorderPoint)*100);
+    return '<div class="alert-card" style="border-color:#fde68a;background:#fffdf0">'+
+      '<div style="font-size:24px">🟡</div>'+
+      '<div class="alert-body" style="flex:1">'+
+        '<div class="alert-title" style="color:var(--amber)">'+a.name+'</div>'+
+        '<div class="alert-desc">'+a.locFull+' · '+a.warehouse+'</div>'+
+        '<div style="margin-top:6px;background:#fde68a;border-radius:4px;height:6px;width:100%;overflow:hidden">'+
+          '<div style="height:100%;background:var(--amber);border-radius:4px;width:'+Math.min(pct,100)+'%"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="alert-qty-wrap">'+
+        '<div style="font-size:9px;font-weight:700;color:var(--amber);letter-spacing:1px">ACTUAL / ENCOMENDA</div>'+
+        '<div class="alert-qty" style="color:var(--amber)">'+a.qty+' / '+a.reorderPoint+' '+a.unit+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+el.innerHTML=html;
 }
 
 let sfsData=[];
@@ -2116,6 +2259,7 @@ window.confirmEditMat=async function(type,idx,matId){
   var qty=document.getElementById('em-qty')?.value||'0';
   var unit=document.getElementById('em-unit')?.value||'un';
   var min=document.getElementById('em-min')?.value||'';
+  var reorder=document.getElementById('em-reorder')?.value||'';
   if(!name){showToast('Escreve o nome do material',true);return;}
   var nd=JSON.parse(JSON.stringify(appData));
   var mat=null; var loc=''; var wh='';
@@ -2123,7 +2267,7 @@ window.confirmEditMat=async function(type,idx,matId){
   else if(type==='vini'){var arr=Array.isArray(nd.vini)?nd.vini:[];mat=arr.find(function(m){return m.id===matId;});loc='Vini Galpão';wh='Vini Galpão';}
   else if(type==='emas'){var arr2=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});loc='Emas — Zona '+(mat?.zone||idx||'A');wh='Emas';nd.emas=arr2;}
   else if(type==='patio'){mat=nd.patio?.find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
-  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min});}
+  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder});}
   appData=nd;
   closeModal();
   saveStock(nd);

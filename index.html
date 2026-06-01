@@ -2025,15 +2025,98 @@ return`<tr style="border-bottom:1px solid var(--border)">
 <td style="padding:10px 12px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Em Trânsito</span></td>
 <td style="padding:10px 12px">
 <div style="display:flex;gap:6px">
-<button class="mat-btn edit" onclick="addStockToMat('patio','0',${m.id})">+ Stock</button>
-<button class="mat-btn edit" style="border-color:var(--blue);color:var(--blue)" onclick="quickTransferFromPatio(${m.id})">⇄ Transferir</button>
-<button class="mat-btn" onclick="removeMat('patio','0',${m.id})">✕</button>
+<button class="mat-btn edit" onclick="editPatioMat(${m.id})" title="Editar">✏</button>
+<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="addStockToMat('patio','0',${m.id})" title="Dar entrada">+</button>
+<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" onclick="quickTransferFromPatio(${m.id})" title="Transferir">⇄</button>
+<button class="mat-btn" onclick="removeMat('patio','0',${m.id})" title="Remover">✕</button>
 </div>
 </td>
 </tr>`;
 }).join('')}</tbody>
 </table>`;
 }
+
+window.editMat=function(type,idx,matId){
+  var mat=null;
+  if(type==='log'){var i=parseInt(idx);mat=appData.logistica[i]?.materials.find(function(m){return m.id===matId;});}
+  else if(type==='vini'){var arr=Array.isArray(appData.vini)?appData.vini:[];mat=arr.find(function(m){return m.id===matId;});}
+  else if(type==='emas'){var arr2=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});}
+  else if(type==='patio'){mat=appData.patio?.find(function(m){return m.id===matId;});}
+  if(!mat)return;
+  openModal('<div class="modal-header"><span class="modal-title">✏ Editar Material</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">'+
+    '<div><label class="modal-label">CÓDIGO</label><input class="form-input" id="em-code" value="'+(mat.code||'')+'" style="width:100%"></div>'+
+    '<div><label class="modal-label">NOME DO MATERIAL</label><input class="form-input" id="em-name" value="'+mat.name+'" style="width:100%"></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:4px">'+
+    '<div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="em-qty" type="number" value="'+mat.qty+'" style="width:100%"></div>'+
+    '<div><label class="modal-label">UNIDADE</label><select class="form-select" id="em-unit" style="width:100%">'+unitOpts(mat.unit)+'</select></div>'+
+    '<div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="em-min" type="number" value="'+(mat.minStock||'')+'" style="width:100%"></div>'+
+    '</div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn btn-primary" onclick="confirmEditMat(''+type+'',''+idx+'','+matId+')">✓ Guardar</button>'+
+    '</div>');
+};
+
+window.confirmEditMat=async function(type,idx,matId){
+  var code=document.getElementById('em-code')?.value.trim()||'';
+  var name=document.getElementById('em-name')?.value.trim()||'';
+  var qty=document.getElementById('em-qty')?.value||'0';
+  var unit=document.getElementById('em-unit')?.value||'un';
+  var min=document.getElementById('em-min')?.value||'';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  var nd=JSON.parse(JSON.stringify(appData));
+  var mat=null; var loc=''; var wh='';
+  if(type==='log'){var i=parseInt(idx);mat=nd.logistica[i]?.materials.find(function(m){return m.id===matId;});loc=nd.logistica[i]?.label||'';wh='Logística';}
+  else if(type==='vini'){var arr=Array.isArray(nd.vini)?nd.vini:[];mat=arr.find(function(m){return m.id===matId;});loc='Vini Galpão';wh='Vini Galpão';}
+  else if(type==='emas'){var arr2=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});loc='Emas — Zona '+(mat?.zone||idx||'A');wh='Emas';nd.emas=arr2;}
+  else if(type==='patio'){mat=nd.patio?.find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
+  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min});}
+  appData=nd;
+  closeModal();
+  saveStock(nd);
+  logHistory('EDIÇÃO',name,loc,wh,qty,unit);
+  showToast('✓ Material actualizado!');
+  refreshAll();
+};
+
+window.editPatioMat=function(matId){
+  const mat=appData.patio?.find(m=>m.id===matId);
+  if(!mat)return;
+  openModal(`
+    <div class="modal-header"><span class="modal-title">✏ Editar Material em Trânsito</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">
+      <div><label class="modal-label">CÓDIGO</label><input class="form-input" id="ep-code" value="${mat.code||''}" style="width:100%"></div>
+      <div><label class="modal-label">NOME DO MATERIAL</label><input class="form-input" id="ep-name" value="${mat.name}" style="width:100%"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="ep-qty" type="number" value="${mat.qty}" style="width:100%"></div>
+      <div><label class="modal-label">UNIDADE</label><select class="form-select" id="ep-unit" style="width:100%">${unitOpts(mat.unit)}</select></div>
+      <div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="ep-min" type="number" value="${mat.minStock||''}" style="width:100%"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmEditPatio(${matId})">✓ Guardar</button>
+    </div>`);
+};
+
+window.confirmEditPatio=async function(matId){
+  const code=document.getElementById('ep-code')?.value.trim()||'';
+  const name=document.getElementById('ep-name')?.value.trim()||'';
+  const qty=document.getElementById('ep-qty')?.value||'0';
+  const unit=document.getElementById('ep-unit')?.value||'un';
+  const min=document.getElementById('ep-min')?.value||'';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  const mat=appData.patio?.find(m=>m.id===matId);
+  if(!mat)return;
+  Object.assign(mat,{code,name,qty,unit,minStock:min});
+  closeModal();
+  saveStock(JSON.parse(JSON.stringify(appData)));
+  logHistory('EDIÇÃO',name,'Pátio','Pátio',qty,unit);
+  showToast('✓ Material actualizado!');
+  renderPatio();
+};
 
 window.quickTransferFromPatio=function(matId){
 const mat=appData.patio?.find(m=>m.id===matId);
@@ -2655,9 +2738,9 @@ function showLogin(){
 // Timeout - show login after 3 seconds no matter what
 const loadingTimeout = setTimeout(showLogin, 3000);
 
-// Global error handler - if ANY uncaught error, show login
-window.addEventListener('error', ()=>{ clearTimeout(loadingTimeout); showLogin(); });
-window.addEventListener('unhandledrejection', ()=>{ clearTimeout(loadingTimeout); showLogin(); });
+// Log errors but don't redirect to login
+window.addEventListener('error', (e)=>{ console.error('App error:', e.message); });
+window.addEventListener('unhandledrejection', (e)=>{ console.warn('Unhandled promise:', e.reason); });
 
 waitFirebase().then(()=>{
   clearTimeout(loadingTimeout);

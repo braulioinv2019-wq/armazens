@@ -840,7 +840,8 @@ const db = getFirestore(app);
 const USERS_KEY = 'luele-users-v1';
 
 let USERS = JSON.parse(localStorage.getItem(USERS_KEY) || 'null') || {
-'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' }
+'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
+'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' }
 };
 
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
@@ -2625,79 +2626,95 @@ const items=count.items?.length?count.items:loc.items.map(m=>({...m,systemQty:pa
 generateCountSheet(count,items);
 };
 
-function generateCountSheet(count,items){
+function generateCountSheet(count,items,isReport){
 const now=new Date();
-const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0"><title>Folha de Contagem — ${count.number}</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #1a6b2f}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-sq{width:40px;height:40px;background:#1a6b2f;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:900}
-.company{font-size:20px;font-weight:900;color:#1a6b2f;letter-spacing:3px}
-.doc-num{font-size:18px;font-weight:900;color:#1a6b2f;letter-spacing:2px;text-align:right}
-.status-bar{background:#1a6b2f;color:white;padding:7px 14px;text-align:center;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:18px;border-radius:4px}
-.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px}
-.info-box{background:#f0faf2;border:1px solid #c8e6d0;border-radius:5px;padding:8px 10px}
-.info-lbl{font-size:8px;font-weight:700;color:#2d9e4a;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
-.info-val{font-size:12px;font-weight:600}
-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-th{background:#f0faf2;font-size:9px;font-weight:700;color:#1a6b2f;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;border:1px solid #c8e6d0;text-align:left}
-td{padding:9px 10px;border:1px solid #e0ead2;font-size:12px}
-tr:nth-child(even) td{background:#f8fdf9}
-.qty-cell{width:100px;text-align:center;font-weight:600;color:#1a6b2f}
-.count-box{width:80px;height:28px;border:1.5px solid #1a6b2f;border-radius:4px;display:inline-block;text-align:center;line-height:28px;color:#aaa;font-size:11px}
-.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:20px}
-.sig-box{border-top:1.5px solid #1a6b2f;padding-top:8px;text-align:center}
-.sig-line{height:36px;border-bottom:1px dashed #ccc;margin-bottom:6px}
-.sig-name{font-size:11px;font-weight:600}
-.sig-lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px}
-.footer{margin-top:18px;padding-top:12px;border-top:1px solid #e0f0e6;display:flex;justify-content:space-between;font-size:9px;color:#aaa}
-@media print{body{padding:14px}.status-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body style="background:#f4f6f8;margin:0">
-<div class="header">
-<div class="logo"><div class="logo-sq">L</div><div><div class="company">LUELE</div><div style="font-size:9px;color:#888;letter-spacing:1px">WMS</div></div></div>
-<div style="text-align:right"><div style="font-size:9px;color:#888;letter-spacing:1px;margin-bottom:3px">FOLHA DE CONTAGEM</div><div class="doc-num">${count.number}</div><div style="font-size:11px;color:#666;margin-top:3px">${now.toLocaleDateString('pt-PT')} ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</div></div>
-</div>
-<div class="status-bar">INVENTÁRIO CÍCLICO — FOLHA DE CONTAGEM FÍSICA</div>
-<div class="info-grid">
-<div class="info-box"><div class="info-lbl">Localização</div><div class="info-val">${count.location}</div></div>
-<div class="info-box"><div class="info-lbl">Responsável</div><div class="info-val">${count.responsible}</div></div>
-<div class="info-box"><div class="info-lbl">Data</div><div class="info-val">${count.date||now.toLocaleDateString('pt-PT')}</div></div>
-</div>
-<table>
-<thead><tr><th>#</th><th>Código</th><th>Descrição do Material</th><th>Unidade</th><th>Qtd. Sistema</th><th>Qtd. Contada</th><th>Diferença</th><th>Obs.</th></tr></thead>
-<tbody>${items.map((m,i)=>`<tr>
-<td style="color:#888;text-align:center">${i+1}</td>
-<td style="font-family:monospace;font-weight:600;color:#1a6b2f">${m.code||'—'}</td>
-<td style="font-weight:500">${m.name}</td>
-<td style="text-align:center;color:#666">${m.unit}</td>
-<td class="qty-cell">${m.systemQty}</td>
-<td style="text-align:center"><div class="count-box">___</div></td>
-<td style="text-align:center"><div class="count-box">___</div></td>
-<td></td>
-</tr>`).join('')}
-${items.length===0?'<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px">Nenhum material registado nesta localização</td></tr>':''}
-</tbody>
-</table>
-<div style="font-size:10px;color:#888;margin-bottom:14px">Total de referências: <strong>${items.length}</strong></div>
-${count.obs?`<div style="background:#f0faf2;border:1px solid #c8e6d0;border-radius:5px;padding:10px;margin-bottom:16px;font-size:11px"><strong>Observações:</strong> ${count.obs}</div>`:''}
-<div class="sig-row">
-<div class="sig-box"><div class="sig-line"></div><div class="sig-name">${count.responsible}</div><div class="sig-lbl">Responsável pela contagem</div></div>
-<div class="sig-box"><div class="sig-line"></div><div class="sig-name"> </div><div class="sig-lbl">Verificado por</div></div>
-<div class="sig-box"><div class="sig-line"></div><div class="sig-name"> </div><div class="sig-lbl">Aprovado por</div></div>
-</div>
-<div class="footer"><div>LUELE WMS · Documento gerado automaticamente · ${count.number}</div><div>Página 1 de 1</div></div>
-<script>window.onload=function(){window.print();}<\/script></body></html>`;
-const w=window.open('','_blank','width=900,height:700');
-w.document.write(html);w.document.close();
+const completed=isReport||count.status==='completed';
+const html='<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>'+(completed?'Relatório':'Folha')+' — '+count.number+'</title>'+
+'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}'+
+'.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #1a6b2f}'+
+'.logo-sq{width:40px;height:40px;background:#1a6b2f;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:900}'+
+'.company{font-size:20px;font-weight:900;color:#1a6b2f;letter-spacing:3px}'+
+'.status-bar{background:#1a6b2f;color:white;padding:7px 14px;text-align:center;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:18px;border-radius:4px}'+
+'.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px}'+
+'.info-box{background:#f0faf2;border:1px solid #c8e6d0;border-radius:5px;padding:8px 10px}'+
+'.info-lbl{font-size:8px;font-weight:700;color:#2d9e4a;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}'+
+'.info-val{font-size:12px;font-weight:600}'+
+'table{width:100%;border-collapse:collapse;margin-bottom:20px}'+
+'th{background:#f0faf2;font-size:9px;font-weight:700;color:#1a6b2f;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;border:1px solid #c8e6d0;text-align:left}'+
+'td{padding:9px 10px;border:1px solid #e0ead2;font-size:12px}'+
+'tr:nth-child(even) td{background:#f8fdf9}'+
+'.count-box{width:80px;height:28px;border:1.5px solid #1a6b2f;border-radius:4px;display:inline-block;text-align:center;line-height:28px;color:#aaa;font-size:11px}'+
+'.diff-pos{color:#1a6b2f;font-weight:700}.diff-neg{color:#dc3545;font-weight:700}.diff-zero{color:#888}'+
+'.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:20px}'+
+'.sig-box{border-top:1.5px solid #1a6b2f;padding-top:8px;text-align:center}'+
+'.sig-line{height:36px;border-bottom:1px dashed #ccc;margin-bottom:6px}'+
+'.footer{margin-top:18px;padding-top:12px;border-top:1px solid #e0f0e6;display:flex;justify-content:space-between;font-size:9px;color:#aaa}'+
+'@media print{.status-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
+'</style></head><body>';
+var body='<div class="header">';
+body+='<div style="display:flex;align-items:center;gap:10px"><div class="logo-sq">L</div><div><div class="company">LUELE</div><div style="font-size:9px;color:#888">WMS</div></div></div>';
+body+='<div style="text-align:right"><div style="font-size:9px;color:#888;margin-bottom:3px">'+(completed?'RELATÓRIO FINAL':'FOLHA DE CONTAGEM')+'</div>';
+body+='<div style="font-size:18px;font-weight:900;color:#1a6b2f">'+count.number+'</div>';
+body+='<div style="font-size:11px;color:#666;margin-top:3px">'+now.toLocaleDateString('pt-PT')+' '+now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
+body+='<div class="status-bar">INVENTÁRIO CÍCLICO — '+(completed?'RELATÓRIO FINAL':'FOLHA DE CONTAGEM FÍSICA')+'</div>';
+body+='<div class="info-grid">';
+body+='<div class="info-box"><div class="info-lbl">Localização</div><div class="info-val">'+count.location+'</div></div>';
+body+='<div class="info-box"><div class="info-lbl">Responsável</div><div class="info-val">'+count.responsible+'</div></div>';
+body+='<div class="info-box"><div class="info-lbl">Data</div><div class="info-val">'+(count.date||now.toLocaleDateString('pt-PT'))+'</div></div>';
+body+='</div>';
+// Differences summary
+if(completed&&count.hasDifferences&&(count.differences||[]).length>0){
+  body+='<div style="background:#fff0f0;border:1px solid #fca5a5;border-radius:6px;padding:12px;margin-bottom:16px">';
+  body+='<div style="font-size:11px;font-weight:700;color:#dc3545;margin-bottom:8px">⚠ '+count.differences.length+' diferença(s) detectada(s)</div>';
+  body+='<table style="margin:0"><thead><tr><th>Material</th><th>Sistema</th><th>Contado</th><th>Diferença</th></tr></thead><tbody>';
+  (count.differences||[]).forEach(function(d){
+    var diff=parseFloat(d.countedQty)-parseFloat(d.systemQty);
+    body+='<tr><td>'+d.name+'</td><td style="text-align:center">'+d.systemQty+' '+d.unit+'</td>';
+    body+='<td style="text-align:center;font-weight:700">'+d.countedQty+' '+d.unit+'</td>';
+    body+='<td style="text-align:center" class="'+(diff>0?'diff-pos':'diff-neg')+'">'+(diff>0?'+':'')+diff+' '+d.unit+'</td></tr>';
+  });
+  body+='</tbody></table></div>';
+}
+// Main table
+body+='<table><thead><tr><th>#</th><th>Código</th><th>Descrição do Material</th><th>Un.</th><th>Qtd. Sistema</th><th>Qtd. Contada</th><th>Diferença</th><th>Observações</th></tr></thead><tbody>';
+items.forEach(function(m,i){
+  var counted=m.countedQty!==null&&m.countedQty!==undefined;
+  var diff=counted?parseFloat(m.countedQty)-parseFloat(m.systemQty):null;
+  var diffClass=diff===null?'':diff>0?'diff-pos':diff<0?'diff-neg':'diff-zero';
+  var cqty=completed&&counted?'<span style="background:#f0faf2;border:1px solid #c8e6d0;border-radius:4px;padding:3px 10px;font-weight:700;color:#1a6b2f">'+m.countedQty+'</span>':'<div class="count-box">___</div>';
+  var cdiff=completed&&diff!==null?'<span class="'+diffClass+'">'+(diff>0?'+':'')+diff+'</span>':'<div class="count-box">___</div>';
+  body+='<tr>';
+  body+='<td style="color:#888;text-align:center">'+(i+1)+'</td>';
+  body+='<td style="font-family:monospace;font-weight:600;color:#1a6b2f">'+(m.code||'—')+'</td>';
+  body+='<td style="font-weight:500">'+m.name+'</td>';
+  body+='<td style="text-align:center;color:#666">'+m.unit+'</td>';
+  body+='<td style="text-align:center;font-weight:600;color:#1a6b2f">'+m.systemQty+'</td>';
+  body+='<td style="text-align:center">'+cqty+'</td>';
+  body+='<td style="text-align:center">'+cdiff+'</td>';
+  body+='<td style="font-size:11px;color:#666">'+(m.obs||'')+'</td>';
+  body+='</tr>';
+});
+if(items.length===0)body+='<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px">Nenhum material</td></tr>';
+body+='</tbody></table>';
+body+='<div style="font-size:10px;color:#888;margin-bottom:14px">Total: <strong>'+items.length+'</strong> referências';
+if(completed)body+=' · Diferenças: <strong style="color:'+(((count.differences||[]).length>0)?'#dc3545':'#1a6b2f')+'">'+(count.differences||[]).length+'</strong>';
+body+='</div>';
+if(count.obs)body+='<div style="background:#f0faf2;border:1px solid #c8e6d0;border-radius:5px;padding:10px;margin-bottom:16px;font-size:11px"><strong>Observações:</strong> '+count.obs+'</div>';
+body+='<div class="sig-row">';
+body+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px;font-weight:600">'+count.responsible+'</div><div style="font-size:9px;color:#888;text-transform:uppercase">Responsável</div></div>';
+body+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px;font-weight:600">'+(count.completedBy||' ')+'</div><div style="font-size:9px;color:#888;text-transform:uppercase">Verificado por</div></div>';
+body+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px"> </div><div style="font-size:9px;color:#888;text-transform:uppercase">Aprovado por</div></div>';
+body+='</div>';
+body+='<div class="footer"><div>LUELE WMS · '+count.number+' · '+(completed?'Relatório Final':'Folha de Campo')+'</div><div>'+now.toLocaleDateString('pt-PT')+'</div></div>';
+body+='<script>window.onload=function(){window.print();}<\/script></body></html>';
+var w=window.open('','_blank','width=900,height=700');
+w.document.write(html+body);w.document.close();
 }
 
 function generateCountPDF(count){
-generateCountSheet(count,count.items||[]);
+generateCountSheet(count,count.items||[],count.status==='completed');
 }
+
 
 window.exportInventoryReport=function(){
 if(!invData.length){showToast('Sem dados para exportar',true);return;}

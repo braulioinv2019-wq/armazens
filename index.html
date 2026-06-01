@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="LUELE WMS">
 <meta name="theme-color" content="#0a1f10">
 <title>LUELE WMS</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>body,input,select,button,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.loading-logo-text,.page-title,.stat-value,.login-title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:700}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
 :root {
   --green:#1a6b2f;--green2:#2d9e4a;--green3:#e8f5ec;--green4:#c8e6d0;--green5:#f0faf2;
@@ -443,9 +443,9 @@ tbody tr:hover td{background:var(--bg)}
 }
 </style>
 </head>
-<body>
+<body style="background:#f4f6f8;margin:0">
 
-<div id="loading-screen">
+<div id="loading-screen" style="position:fixed;inset:0;background:#0f4a20;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999">
   <div class="loading-logo-wrap">
     <div class="loading-logo-icon">L</div>
     <div>
@@ -1749,7 +1749,7 @@ const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
 .field-label{font-size:9px;font-weight:700;color:#2563eb;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
 .field-value{font-size:13px;font-weight:600}
 .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e0f0e6;display:flex;justify-content:space-between;font-size:10px;color:#aaa}
-</style></head><body>
+</style></head><body style="background:#f4f6f8;margin:0">
 <div class="header">
 <div style="display:flex;align-items:center;gap:12px"><div class="logo-circle">L</div><div><div class="company-name">LUELE</div><div style="font-size:10px;color:#888;letter-spacing:1px">WAREHOUSE MANAGEMENT SYSTEM</div></div></div>
 <div style="text-align:right"><div style="font-size:10px;color:#888;letter-spacing:2px">GUIA DE ENTRADA</div><div class="doc-number">${d.geNum}</div><div style="font-size:12px;color:#444;margin-top:4px">${now.toLocaleDateString('pt-PT')} · ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</div></div>
@@ -2055,7 +2055,7 @@ window.editMat=function(type,idx,matId){
     '</div>'+
     '<div class="modal-actions">'+
     '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
-    '<button class="btn btn-primary" onclick="confirmEditMat(''+type+'',''+idx+'','+matId+')">✓ Guardar</button>'+
+    '<button class="btn btn-primary" onclick="confirmEditMat(\''+type+'\',\''+idx+'\','+matId+')">✓ Guardar</button>'+
     '</div>');
 };
 
@@ -2623,7 +2623,7 @@ tr:nth-child(even) td{background:#f8fdf9}
 .sig-lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px}
 .footer{margin-top:18px;padding-top:12px;border-top:1px solid #e0f0e6;display:flex;justify-content:space-between;font-size:9px;color:#aaa}
 @media print{body{padding:14px}.status-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
+</style></head><body style="background:#f4f6f8;margin:0">
 <div class="header">
 <div class="logo"><div class="logo-sq">L</div><div><div class="company">LUELE</div><div style="font-size:9px;color:#888;letter-spacing:1px">WMS</div></div></div>
 <div style="text-align:right"><div style="font-size:9px;color:#888;letter-spacing:1px;margin-bottom:3px">FOLHA DE CONTAGEM</div><div class="doc-num">${count.number}</div><div style="font-size:11px;color:#666;margin-top:3px">${now.toLocaleDateString('pt-PT')} ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</div></div>

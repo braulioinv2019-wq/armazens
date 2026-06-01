@@ -1328,24 +1328,27 @@ document.getElementById('vini-sum-content').innerHTML='<div style="font-size:12p
 }
 }
 
-function renderSimpleMatList(mats, type, idx){
-if(!mats.length)return'<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais</div></div>';
-return'<div class="mat-list">'+mats.map(function(m){
-var isAlert=m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock);
-var t=type; var ix=idx; var mid=m.id;
-return'<div class="mat-item">'+
-'<div style="flex:1">'+
-(m.code?'<div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;margin-bottom:2px">'+m.code+'</div>':'')+
-'<div class="mat-name">'+m.name+'</div>'+
-(isAlert?'<div class="mat-alert-tag">⚠ Abaixo do mínimo ('+m.minStock+' '+m.unit+')</div>':'')+
-'</div>'+
-'<div class="mat-qty">'+m.qty+' '+m.unit+'</div>'+
-'<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="addStockToMat(\''+t+'\',\''+ix+'\','+mid+')">+</button>'+
-'<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" onclick="openTransferForMat(\''+t+'\',\''+ix+'\','+mid+')">⇄</button>'+
-'<button class="mat-btn edit" onclick="editMat(\''+t+'\',\''+ix+'\','+mid+')">✏</button>'+
-'<button class="mat-btn" onclick="removeMat(\''+t+'\',\''+ix+'\','+mid+')">✕</button>'+
-'</div>';
-}).join('')+'</div>';
+function renderSimpleMatList(mats,type,idx){
+if(!mats.length)return '<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais</div></div>';
+var html='<div class="mat-list">';
+for(var mi=0;mi<mats.length;mi++){
+  var m=mats[mi];
+  var isAlert=!!(m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
+  html+='<div class="mat-item">';
+  html+='<div style="flex:1">';
+  if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
+  html+='<div class="mat-name">'+m.name+'</div>';
+  if(isAlert)html+='<div class="mat-alert-tag">⚠ Mínimo: '+m.minStock+' '+m.unit+'</div>';
+  html+='</div>';
+  html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
+  html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
+  html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
+  html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
+  html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
+  html+='</div>';
+}
+html+='</div>';
+return html;
 }
 
 function renderSimpleAddForm(type, idx){
@@ -2038,26 +2041,29 @@ return`<tr style="border-bottom:1px solid var(--border)">
 
 window.editMat=function(type,idx,matId){
   var mat=null;
-  if(type==='log'){var i=parseInt(idx);mat=appData.logistica[i]?.materials.find(function(m){return m.id===matId;});}
-  else if(type==='vini'){var arr=Array.isArray(appData.vini)?appData.vini:[];mat=arr.find(function(m){return m.id===matId;});}
-  else if(type==='emas'){var arr2=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});}
-  else if(type==='patio'){mat=appData.patio?.find(function(m){return m.id===matId;});}
-  if(!mat)return;
-  openModal('<div class="modal-header"><span class="modal-title">✏ Editar Material</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
-    '<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">'+
-    '<div><label class="modal-label">CÓDIGO</label><input class="form-input" id="em-code" value="'+(mat.code||'')+'" style="width:100%"></div>'+
-    '<div><label class="modal-label">NOME DO MATERIAL</label><input class="form-input" id="em-name" value="'+mat.name+'" style="width:100%"></div>'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:4px">'+
-    '<div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="em-qty" type="number" value="'+mat.qty+'" style="width:100%"></div>'+
-    '<div><label class="modal-label">UNIDADE</label><select class="form-select" id="em-unit" style="width:100%">'+unitOpts(mat.unit)+'</select></div>'+
-    '<div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="em-min" type="number" value="'+(mat.minStock||'')+'" style="width:100%"></div>'+
-    '</div>'+
-    '<div class="modal-actions">'+
-    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
-    '<button class="btn btn-primary" onclick="confirmEditMat(\''+type+'\',\''+idx+'\','+matId+')">✓ Guardar</button>'+
-    '</div>');
+  if(type==='log'){var ci=parseInt(idx);if(appData.logistica[ci])mat=appData.logistica[ci].materials.find(function(m){return m.id===matId;});}
+  else if(type==='vini'){var va=Array.isArray(appData.vini)?appData.vini:[];mat=va.find(function(m){return m.id===matId;});}
+  else if(type==='emas'){var ea=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});}
+  else if(type==='patio'){mat=(appData.patio||[]).find(function(m){return m.id===matId;});}
+  if(!mat){showToast('Material não encontrado',true);return;}
+  var html='<div class="modal-header"><span class="modal-title">Editar Material</span><button class="modal-close" onclick="closeModal()">x</button></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">';
+  html+='<div><label class="modal-label">CÓDIGO</label><input class="form-input" id="em-code" value="'+(mat.code||'')+'" style="width:100%"></div>';
+  html+='<div><label class="modal-label">NOME</label><input class="form-input" id="em-name" value="'+mat.name+'" style="width:100%"></div>';
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">';
+  html+='<div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="em-qty" type="number" value="'+mat.qty+'" style="width:100%"></div>';
+  html+='<div><label class="modal-label">UNIDADE</label><select class="form-select" id="em-unit" style="width:100%">'+unitOpts(mat.unit)+'</select></div>';
+  html+='<div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="em-min" type="number" value="'+(mat.minStock||'')+'" style="width:100%"></div>';
+  html+='</div>';
+  html+='<div class="modal-actions">';
+  html+='<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>';
+  html+='<button class="btn btn-primary" id="em-save-btn">Guardar</button>';
+  html+='</div>';
+  openModal(html);
+  document.getElementById('em-save-btn').onclick=function(){confirmEditMat(type,idx,matId);};
 };
+
 
 window.confirmEditMat=async function(type,idx,matId){
   var code=document.getElementById('em-code')?.value.trim()||'';

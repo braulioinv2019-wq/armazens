@@ -824,7 +824,7 @@ tbody tr:hover td{background:var(--bg)}
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
 authDomain:"armazens-7a4de.firebaseapp.com",
@@ -837,18 +837,44 @@ const app = initializeApp(cfg);
 const db = getFirestore(app);
 // Firebase vars available directly in this scope
 
-const USERS_KEY = 'luele-users-v1';
-
-let USERS = JSON.parse(localStorage.getItem(USERS_KEY) || 'null') || {
+// USERS — Firebase sync for cross-device login
+let USERS = {
 'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
 'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' },
 'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator' }
 };
+let usersLoaded = false;
 
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
 
-function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }
+async function saveUsers() {
+  try {
+    await setDoc(doc(db,'wms','users'), USERS);
+    console.log('Users saved to Firebase:', Object.keys(USERS).length, 'users');
+  } catch(e) {
+    console.error('saveUsers error:', e);
+    showToast('Erro ao guardar utilizador no servidor', true);
+  }
+}
+
+async function loadUsersFromFirebase() {
+  try {
+    const snap = await getDoc(doc(db,'wms','users'));
+    if(snap.exists()) {
+      // Firebase has priority over defaults
+      USERS = Object.assign({}, USERS, snap.data());
+    } else {
+      // First time: save defaults to Firebase so they're available everywhere
+      await saveUsers();
+    }
+    usersLoaded = true;
+    console.log('Users loaded from Firebase:', Object.keys(USERS).length, 'users');
+  } catch(e) {
+    console.warn('loadUsers error, using defaults:', e);
+    usersLoaded = true;
+  }
+}
 
 let currentUser = null;
 let selContainer = null;
@@ -914,9 +940,10 @@ try{
 }
 }
 
-window.doLogin=function(){
+window.doLogin=async function(){
 const u=document.getElementById('login-user').value.trim().toLowerCase();
 const p=document.getElementById('login-pass').value;
+if(!usersLoaded) await loadUsersFromFirebase();
 if(USERS[u]&&USERS[u].pass===p){
 currentUser={id:u,...USERS[u]};
 document.getElementById('login-screen').style.display='none';
@@ -929,6 +956,22 @@ document.getElementById('topbar-date').textContent=new Date().toLocaleDateString
 try{startListeners();}catch(e){console.error('startListeners:',e);}
 try{startSFSListener();}catch(e){console.error('startSFS:',e);}
 try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
+// Users listener — sync users across all devices in real time
+try {
+  onSnapshot(doc(db,'wms','users'), snap=>{
+    if(snap.exists()){
+      USERS = Object.assign({}, {
+        'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
+        'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' },
+        'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator' }
+      }, snap.data());
+      usersLoaded = true;
+      if(document.getElementById('page-users')?.classList.contains('active')) renderUsers();
+    }
+  });
+} catch(e) { console.warn('users listener:', e); }
+// Pre-load users in background
+loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
 } else { document.getElementById('login-error').style.display='block'; }
 };
 window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
@@ -1752,14 +1795,14 @@ openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddUser()">Criar utilizador</button></div>`);
 };
 
-window.confirmAddUser=function(){
+window.confirmAddUser=async function(){
 const name=document.getElementById('u-name').value.trim();
 const id=document.getElementById('u-id').value.trim().toLowerCase();
 const pass=document.getElementById('u-pass').value;
 const role=document.getElementById('u-role').value;
 if(!name||!id||!pass){showToast('Preenche todos os campos',true);return;}
 if(USERS[id]){showToast('Username já existe',true);return;}
-USERS[id]={name,pass,role};saveUsers();closeModal();renderUsers();showToast('Utilizador criado com sucesso');
+USERS[id]={name,pass,role};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
 };
 
 window.openEditUserModal=function(uid){
@@ -1771,19 +1814,19 @@ openModal(`<div class="modal-header"><span class="modal-title">Editar — ${u.na
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmEditUser('${uid}')">Guardar</button></div>`);
 };
 
-window.confirmEditUser=function(uid){
+window.confirmEditUser=async function(uid){
 const name=document.getElementById('eu-name').value.trim();
 const pass=document.getElementById('eu-pass').value;
 const role=document.getElementById('eu-role').value;
 if(!name)return;
 USERS[uid].name=name;USERS[uid].role=role;
 if(pass)USERS[uid].pass=pass;
-saveUsers();closeModal();renderUsers();showToast('Utilizador actualizado');
+await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador actualizado e sincronizado!');
 };
 
-window.deleteUser=function(uid){
+window.deleteUser=async function(uid){
 if(!confirm('Eliminar utilizador "'+USERS[uid].name+'"?'))return;
-delete USERS[uid];saveUsers();renderUsers();showToast('Utilizador eliminado');
+delete USERS[uid];await saveUsers();renderUsers();showToast('✓ Utilizador eliminado');
 };
 
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
@@ -2247,10 +2290,9 @@ window.editMat=function(type,idx,matId){
   html+='</div>';
   html+='<div class="modal-actions">';
   html+='<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>';
-  html+='<button class="btn btn-primary" id="em-save-btn">Guardar</button>';
+  html+='<button class="btn btn-primary" onclick="confirmEditMat(\''+type+'\',\''+idx+'\','+matId+')">✓ Guardar</button>';
   html+='</div>';
   openModal(html);
-  document.getElementById('em-save-btn').onclick=function(){confirmEditMat(type,idx,matId);};
 };
 
 

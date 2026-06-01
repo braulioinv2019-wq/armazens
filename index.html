@@ -932,6 +932,23 @@ try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
 };
 window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
 window.doLogout=function(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+
+// ── GLOBAL DELEGATED CLICK HANDLER ──────────────────────────────────────
+// Handles all mat-btn actions using data-act attributes (avoids inline onclick issues)
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('[data-act]');
+  if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  var action=btn.getAttribute('data-act');
+  var type=btn.getAttribute('data-t');
+  var idx=btn.getAttribute('data-x');
+  var id=parseInt(btn.getAttribute('data-id'));
+  if(isNaN(id))return;
+  if(action==='addstock')addStockToMat(type,idx,id);
+  else if(action==='transfer')openTransferForMat(type,idx,id);
+  else if(action==='edit')editMat(type,idx,id);
+  else if(action==='remove')removeMat(type,idx,id);
+});
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 window.navTo=function(page,el){

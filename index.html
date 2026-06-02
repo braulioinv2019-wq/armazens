@@ -737,6 +737,7 @@ tbody tr:hover td{background:var(--bg)}
         <div style="display:flex;gap:10px">
           <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir Material</button>
           <button class="btn btn-secondary" onclick="openImportModal('patio','Pátio')" style="border-color:var(--blue);color:var(--blue)">⬆ Importar Excel</button>
+          <button class="btn btn-secondary" id="restore-btn" onclick="restorePatioItems()" style="border-color:var(--amber);color:var(--amber)">♻ Repor artigos removidos</button>
           <button class="btn btn-primary" onclick="openEntryModal()">+ Dar Entrada</button>
         </div>
       </div>
@@ -3118,8 +3119,9 @@ window.removeMat=function(type,idx,matId){
   else if(type==='emas'){var ea=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});loc='Emas — Zona '+(mat?mat.zone||idx||'A':'');locFull=loc;wh='Emas';}
   else if(type==='patio'){
     mat=(appData.patio||[]).find(function(m){return m.id===matId;});
-    if(mat){appData.patio=appData.patio.filter(function(m){return m.id!==matId;});saveStock(JSON.parse(JSON.stringify(appData)));logHistory('SAÍDA',mat.name,'Pátio','Pátio',mat.qty,mat.unit);showToast('Material removido do Pátio');renderPatio();}
-    return;
+    if(!mat)return;
+    // Open SFS modal for patio too - allows partial quantity removal
+    loc='Pátio';locFull='Pátio (Trânsito)';wh='Pátio';
   }
   if(!mat)return;
   openSFSModal(mat,loc,locFull,wh,type,idx,matId);
@@ -3155,6 +3157,32 @@ function getSFSNumber(){
   return'SFS-'+y+'-'+String(n).padStart(3,'0');
 }
 
+
+// ── RESTAURAR ARTIGOS PÁTIO (02/06/2026) ─────────────────────────────────
+window._patioRestored = false;
+window.restorePatioItems = async function(){
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  if(!Array.isArray(appData.patio))appData.patio=[];
+  const items = [
+    {id:Date.now()+1, code:'', name:'Óleo Gear Oil 220 - 210L', qty:'6', unit:'un', minStock:'', reorderPoint:'', arrivedAt:new Date().toISOString(), status:'transit'},
+    {id:Date.now()+2, code:'', name:'SAE 30 - 208L', qty:'7', unit:'un', minStock:'', reorderPoint:'', arrivedAt:new Date().toISOString(), status:'transit'},
+    {id:Date.now()+3, code:'', name:'Óleo ATF 3 - 208L', qty:'23', unit:'un', minStock:'', reorderPoint:'', arrivedAt:new Date().toISOString(), status:'transit'},
+    {id:Date.now()+4, code:'', name:'Óleo 15W40 - 1000L', qty:'3', unit:'un', minStock:'', reorderPoint:'', arrivedAt:new Date().toISOString(), status:'transit'},
+  ];
+  // Only add if not already present
+  items.forEach(function(item){
+    var exists = appData.patio.some(function(m){return m.name===item.name;});
+    if(!exists) appData.patio.push(item);
+  });
+  await saveStock(JSON.parse(JSON.stringify(appData)));
+  showToast('✓ 4 artigos repostos no Pátio!');
+  spawnParticles();
+  renderPatio();
+  // Remove button after use
+  var btn = document.getElementById('restore-btn');
+  if(btn) btn.style.display='none';
+};
+
 window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
   var qty=parseFloat(document.getElementById('sfs-qty')?.value||'0');
   var dest=document.getElementById('sfs-dest')?.value.trim()||'';
@@ -3165,6 +3193,7 @@ window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
   if(type==='log'){var ci=parseInt(idx);var arr=nd.logistica[ci].materials;mat=arr.find(function(m){return m.id===matId;});if(mat){var rem=parseFloat(mat.qty)-qty;if(rem<=0)nd.logistica[ci].materials=arr.filter(function(m){return m.id!==matId;});else mat.qty=String(rem);}}
   else if(type==='vini'){var va=Array.isArray(nd.vini)?nd.vini:[];mat=va.find(function(m){return m.id===matId;});if(mat){var rem2=parseFloat(mat.qty)-qty;if(rem2<=0)nd.vini=va.filter(function(m){return m.id!==matId;});else mat.qty=String(rem2);}}
   else if(type==='emas'){var ea=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});if(mat){var rem3=parseFloat(mat.qty)-qty;if(rem3<=0)nd.emas=ea.filter(function(m){return m.id!==matId;});else mat.qty=String(rem3);nd.emas=ea;}}
+  else if(type==='patio'){var pa=nd.patio||[];mat=pa.find(function(m){return m.id===matId;});if(mat){var rem4=parseFloat(mat.qty)-qty;if(rem4<=0)nd.patio=pa.filter(function(m){return m.id!==matId;});else mat.qty=String(rem4);}}
   if(!mat){showToast('Material não encontrado',true);return;}
   appData=nd;closeModal();
   await saveStock(nd);

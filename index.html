@@ -885,6 +885,7 @@ async function loadUsersFromFirebase() {
 
 let currentUser = null;
 let selContainer = null;
+let _saving = false;
 let selShelf = null;
 let appData = null;
 let historyData = [];
@@ -903,7 +904,17 @@ patio: []
 }
 
 async function saveStock(data) {
-await setDoc(doc(db,'wms','stock'),data);
+_saving = true;
+appData = data; // update local immediately
+refreshAll();   // re-render immediately without waiting for Firebase
+try {
+  await setDoc(doc(db,'wms','stock'), data);
+} catch(e) {
+  console.error('saveStock error:', e);
+  showToast('Erro ao guardar no servidor', true);
+} finally {
+  setTimeout(function(){ _saving = false; }, 2000);
+}
 }
 
 async function logHistory(type,mat,loc,wh,qty,unit) {
@@ -914,6 +925,7 @@ function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
   snap=>{
     try{
+      if(_saving){return;} // skip - local save in progress
       const newData=snap.exists()?snap.data():defaultData();
       appData=newData;
       refreshAll();
@@ -1261,9 +1273,11 @@ renderDashboard();
 const act=document.querySelector('.page.active')?.id;
 if(act==='page-logistica'){
 renderLogistica();
-
 if(selContainer!==null&&appData.logistica[selContainer]){
-renderContainerPanel(appData.logistica[selContainer],selContainer);
+  renderContainerPanel(appData.logistica[selContainer],selContainer);
+  // Keep container open after refresh
+  const cuEl=document.querySelector('.cu[data-idx="'+selContainer+'"]');
+  if(cuEl&&!cuEl.classList.contains('open'))cuEl.classList.add('open','sel');
 }
 }
 if(act==='page-vini')renderVini();

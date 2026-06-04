@@ -1188,6 +1188,8 @@ document.addEventListener('click',function(e){
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 window.navTo=function(page,el){
+if(page==='sfs')setTimeout(renderSFS,100);
+if(page==='history')setTimeout(renderHistory,100);
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 if(el)el.classList.add('active');
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1916,6 +1918,9 @@ if(document.getElementById('page-sfs')?.classList.contains('active'))renderSFS()
 onSnapshot(collection(db,'wms','sfs','records'),snap=>{
 sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
 sfsData.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+// Always update SFS page and badges
+if(document.getElementById('page-sfs')?.classList.contains('active'))renderSFS();
+updateBadges();
 });
 });
 }catch(e){console.warn('SFS listener:',e);}
@@ -1927,7 +1932,7 @@ const list=sfsData.filter(s=>!q||(s.number&&s.number.toLowerCase().includes(q))|
 const el=document.getElementById('sfs-list');
 if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Sem guias emitidas</div></div>';return;}
 el.innerHTML=`<div class="table-wrap"><table>
-<thead><tr><th>Nº SFS</th><th>Data</th><th>Material</th><th>Qtd</th><th>Origem</th><th>Destino</th><th>Recebido por</th><th>Manifesto</th><th></th></tr></thead>
+<thead><tr><th>Nº SFS</th><th>Data</th><th>Material</th><th>Qtd</th><th>Origem</th><th>Destino</th><th>Emitido por</th><th>Destino/Obs</th><th></th></tr></thead>
 <tbody>${list.map(s=>{
 const dt=new Date(s.ts);
 return`<tr>
@@ -1937,15 +1942,27 @@ return`<tr>
 <td style="font-weight:600;color:var(--amber)">${s.qty} ${s.unit}</td>
 <td style="font-size:12px">${s.origem}</td>
 <td style="font-size:12px">${s.destino}</td>
-<td style="font-size:12px">${s.recebidoPor}</td>
-<td style="font-size:12px;color:var(--text3)">${s.manifesto||'—'}</td>
+<td style="font-size:12px">${s.emitidoPor||'—'}</td>
+<td style="font-size:12px;color:var(--text3)">${s.obs||'-'}</td>
 <td><button class="mat-btn edit" onclick="reimprimirSFS(${JSON.stringify(s).split('"').join('&quot;')})">🖨 Reimprimir</button></td>
 </tr>`;
 }).join('')}</tbody>
 </table></div>`;
 }
 
-window.reimprimirSFS=function(s){ generateSFSPDF(s); };
+window.reimprimirSFS=function(s){
+  generateSFSPDF({
+    sfsNum: s.number,
+    matName: s.material,
+    matCode: s.code||'',
+    qty: s.qty,
+    unit: s.unit,
+    origem: s.origem||'',
+    destino: s.destino||'',
+    obs: s.obs||'',
+    emitidoPor: s.emitidoPor||'—'
+  });
+};
 
 function renderUsers(){
 const el=document.getElementById('users-grid');

@@ -693,7 +693,7 @@ tbody tr:hover td{background:var(--bg)}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir</button>
           <button class="btn btn-secondary" onclick="openGroupExitModal()" style="border-color:var(--red);color:var(--red)">📤 Saída em Grupo</button>
-          <button class="btn btn-secondary" onclick="openImportModal(selEmasZone?'emas-'+selEmasZone:'emas-A', selEmasZone?'Emas Zona '+selEmasZone:'Emas Zona A')" style="border-color:var(--blue);color:var(--blue)">⬆ Importar Excel</button>
+          <button class="btn btn-secondary" onclick="openEmasImportModal()" style="border-color:var(--blue);color:var(--blue)">⬆ Importar Excel</button>
           <button class="btn btn-primary" onclick="openAddEmasModal()">+ Adicionar material</button>
         </div>
       </div>
@@ -793,6 +793,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="report-card" onclick="exportLogistica()"><div class="report-icon">🏭</div><div class="report-name">Logística</div><div class="report-desc">Por contentor</div></div>
         <div class="report-card" onclick="exportVini()"><div class="report-icon">🏗️</div><div class="report-name">Vini Galpão</div><div class="report-desc">Stock geral</div></div>
         <div class="report-card" onclick="exportEmasReport()"><div class="report-icon">📋</div><div class="report-name">Emas</div><div class="report-desc">Stock por zona</div></div>
+        <div class="report-card" onclick="openUndoImportModal()" style="border-color:#fca5a5"><div class="report-icon" style="background:#fff0f0">↩</div><div class="report-name" style="color:var(--red)">Cancelar Importação</div><div class="report-desc">Remove materiais importados</div></div>
       </div>
     </div>
     
@@ -992,6 +993,69 @@ loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
 window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
 window.doLogout=function(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
 
+
+window.openEmasImportModal = function(){
+  openModal(
+    '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="margin-bottom:16px"><label class="modal-label">SELECCIONAR ZONA DE DESTINO</label>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-A" data-x="Emas Zona A">Zona A</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-B" data-x="Emas Zona B">Zona B</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-C" data-x="Emas Zona C">Zona C</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-D" data-x="Emas Zona D">Zona D</button>'+
+    '</div></div>'
+  );
+};
+
+window.openUndoImportModal = function(){
+  openModal(
+    '<div class="modal-header"><span class="modal-title">↩ Cancelar Importação</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="background:#fff0f0;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
+    '⚠️ Esta acção remove materiais importados. Escolhe a localização que queres limpar.</div>'+
+    '<div style="margin-bottom:16px"><label class="modal-label">LOCALIZAÇÃO A LIMPAR</label>'+
+    '<select class="form-select" id="undo-dest" style="width:100%;margin-top:6px">'+
+    '<option value="">— Seleccionar —</option>'+
+    '<option value="emas-A">Emas — Zona A</option>'+
+    '<option value="emas-B">Emas — Zona B</option>'+
+    '<option value="emas-C">Emas — Zona C</option>'+
+    '<option value="emas-D">Emas — Zona D</option>'+
+    '<option value="vini">Vini Galpão (todos)</option>'+
+    '<option value="patio">Pátio (todos)</option>'+
+    '</select></div>'+
+    '<div style="margin-bottom:16px"><label class="modal-label">CONFIRMAR — escreve CONFIRMAR para prosseguir</label>'+
+    '<input class="form-input" id="undo-confirm-text" placeholder="CONFIRMAR" style="width:100%;margin-top:6px"></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn btn-danger" id="undo-exec-btn">🗑 Limpar localização</button>'+
+    '</div>'
+  );
+  document.getElementById('undo-exec-btn').onclick = async function(){
+    var dest = document.getElementById('undo-dest').value;
+    var conf = document.getElementById('undo-confirm-text').value.trim();
+    if(!dest){showToast('Selecciona a localização',true);return;}
+    if(conf !== 'CONFIRMAR'){showToast('Escreve CONFIRMAR para prosseguir',true);return;}
+    var nd = JSON.parse(JSON.stringify(appData));
+    var removed = 0;
+    if(dest.startsWith('emas-')){
+      var zone = dest.split('-')[1];
+      var before = nd.emas.length;
+      nd.emas = nd.emas.filter(function(m){return m.zone !== zone;});
+      removed = before - nd.emas.length;
+    } else if(dest==='vini'){
+      removed = (nd.vini||[]).length;
+      nd.vini = [];
+    } else if(dest==='patio'){
+      removed = (nd.patio||[]).length;
+      nd.patio = [];
+    }
+    appData = nd;
+    closeModal();
+    await saveStock(nd);
+    showToast('✓ '+removed+' materiais removidos de '+dest);
+    refreshAll();
+  };
+};
+
 window.openImportModal = function(destType, destLabel){
   openModal(
     '<div class="modal-header">'+
@@ -1184,6 +1248,7 @@ document.addEventListener('click',function(e){
   else if(action==='transfer')openTransferForMat(type,idx,id);
   else if(action==='edit')editMat(type,idx,id);
   else if(action==='remove')removeMat(type,idx,id);
+  else if(action==='impzone'){var lbl=btn.getAttribute('data-x');closeModal();openImportModal(type,lbl);}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 

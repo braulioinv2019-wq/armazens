@@ -1248,7 +1248,7 @@ document.addEventListener('click',function(e){
   else if(action==='transfer')openTransferForMat(type,idx,id);
   else if(action==='edit')editMat(type,idx,id);
   else if(action==='remove')removeMat(type,idx,id);
-  else if(action==='impzone'){var lbl=btn.getAttribute('data-x');closeModal();openImportModal(type,lbl);}
+  else if(action==='impzone'){var lbl=btn.getAttribute('data-x');var tp=type;closeModal();setTimeout(function(){openImportModal(tp,lbl);},150);}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 

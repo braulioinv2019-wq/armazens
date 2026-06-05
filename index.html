@@ -11,6 +11,7 @@
 <title>LUELE WMS</title>
 <style>body,input,select,button,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.loading-logo-text,.page-title,.stat-value,.login-title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:700}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <style>
 :root {
   --green:#1a6b2f;--green2:#2d9e4a;--green3:#e8f5ec;--green4:#c8e6d0;--green5:#f0faf2;
@@ -876,12 +877,23 @@ async function loadUsersFromFirebase() {
   try {
     const snap = await getDoc(doc(db,'wms','users'));
     if(snap.exists()) {
-      USERS = Object.assign({}, USERS, snap.data());
+      // Merge Firebase data but KEEP local passwords
+      const fbData = snap.data();
+      Object.keys(fbData).forEach(function(email){
+        if(USERS[email]) {
+          // Keep password from local, update name/role from Firebase
+          USERS[email].name = fbData[email].name || USERS[email].name;
+          USERS[email].role = fbData[email].role || USERS[email].role;
+        } else {
+          // New user from Firebase — no password means they can't login
+          USERS[email] = fbData[email];
+        }
+      });
     } else {
+      // First time — save defaults to Firebase (without passwords)
       await saveUsers();
     }
     usersLoaded = true;
-    console.log('Users loaded from Firebase:', Object.keys(USERS).length, 'users');
   } catch(e) {
     console.warn('loadUsers error, using defaults:', e);
     usersLoaded = true;
@@ -907,12 +919,15 @@ patio: []
 };
 }
 
+var _lastSaveTime = 0;
+
 async function saveStock(data) {
 appData = data;
 refreshAll();
 var syncEl = document.getElementById('sync-status');
 if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span> A guardar...';
 try {
+  _lastSaveTime = Date.now();
   await setDoc(doc(db,'wms','stock'), data);
   if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado';
 } catch(e) {
@@ -930,6 +945,12 @@ function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
   snap=>{
     try{
+      // Ignore snapshot if it arrived within 4 seconds of our own save
+      // This prevents Firebase echo from overwriting our local changes
+      if(Date.now() - _lastSaveTime < 4000){
+        console.log('Snapshot ignored — own save echo');
+        return;
+      }
       const newData=snap.exists()?snap.data():defaultData();
       appData=newData;
       refreshAll();
@@ -980,6 +1001,7 @@ if(USERS[u]&&USERS[u].pass===p){
   try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
   loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
   navTo('dashboard',document.querySelector('.nav-item'));
+  setTimeout(checkURLParams, 1000);
 } else {
   const el=document.getElementById('login-error');
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
@@ -993,13 +1015,17 @@ window.openEmasImportModal = function(){
   openModal(
     '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="margin-bottom:16px"><label class="modal-label">SELECCIONAR ZONA DE DESTINO</label>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'+
-    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-A" data-x="Emas Zona A">Zona A</button>'+
-    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-B" data-x="Emas Zona B">Zona B</button>'+
-    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-C" data-x="Emas Zona C">Zona C</button>'+
-    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:13px;padding:14px" data-act="impzone" data-t="emas-D" data-x="Emas Zona D">Zona D</button>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:14px;padding:16px;font-weight:700" id="ez-A">🅰 Zona A</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:14px;padding:16px;font-weight:700" id="ez-B">🅱 Zona B</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:14px;padding:16px;font-weight:700" id="ez-C">🅲 Zona C</button>'+
+    '<button class="btn btn-secondary" style="border-color:var(--green2);color:var(--green);font-size:14px;padding:16px;font-weight:700" id="ez-D">🅳 Zona D</button>'+
     '</div></div>'
   );
+  document.getElementById('ez-A').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-A','Emas — Zona A');},200);};
+  document.getElementById('ez-B').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-B','Emas — Zona B');},200);};
+  document.getElementById('ez-C').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-C','Emas — Zona C');},200);};
+  document.getElementById('ez-D').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-D','Emas — Zona D');},200);};
 };
 
 window.openUndoImportModal = function(){
@@ -1535,9 +1561,10 @@ document.getElementById('log-sum-content').innerHTML=`
 <div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--green2);border-radius:3px"></div></div>
 </div>
 <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="renameContainer(${selContainer})">✏ Renomear contentor</button>
-  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar contentor</button>
-  <button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteContainer(${selContainer})">🗑 Eliminar contentor</button>
+  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="showContainerQR(${selContainer})">📱 QR Code</button>
+  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="renameContainer(${selContainer})">✏ Renomear</button>
+  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar</button>
+  <button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteContainer(${selContainer})">🗑 Eliminar</button>
 </div>`;
 } else {
 document.getElementById('log-inv-title').textContent='Inventário — seleccione um contentor';
@@ -1649,6 +1676,102 @@ saveStock(nd);
 logHistory('ELIMINAÇÃO','Contentor '+c.label,'Logística','Logística',String(c.materials.length),'materiais');
 showToast('🗑 Contentor '+c.label+' eliminado');
 };
+
+// ── QR CODE SYSTEM ────────────────────────────────────────────────────────
+window.showContainerQR=function(idx){
+  var c=appData.logistica[idx];
+  if(!c)return;
+  var baseUrl=window.location.href.split('?')[0];
+  var url=baseUrl+'?c='+encodeURIComponent(c.label);
+  var matCount=(c.materials||[]).length;
+  openModal(
+    '<div class="modal-header">'+
+    '<div><span class="modal-title">📱 QR Code — '+c.label+'</span>'+
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+matCount+' materiais</div></div>'+
+    '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="text-align:center;padding:16px 0">'+
+    '<div id="qr-canvas" style="display:inline-block;padding:16px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'+
+    '<div style="margin-top:12px;font-size:10px;color:var(--text3);word-break:break-all;padding:0 10px">'+url+'</div>'+
+    '</div>'+
+    '<div style="background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;text-align:center">'+
+    '📌 Cola este QR code na porta do contentor <strong>'+c.label+'</strong><br>'+
+    '<span style="color:var(--text3);font-size:11px">Ao ler com o telemóvel abre directamente o inventário</span>'+
+    '</div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Fechar</button>'+
+    '<button class="btn btn-primary" onclick="printContainerQR('+idx+')">🖨 Imprimir etiqueta</button>'+
+    '</div>'
+  );
+  setTimeout(function(){
+    var el=document.getElementById('qr-canvas');
+    if(!el)return;
+    if(typeof QRCode!=='undefined'){
+      new QRCode(el,{text:url,width:200,height:200,colorDark:'#0f4a20',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    } else {
+      el.innerHTML='<div style="padding:16px;font-size:10px;color:#333;word-break:break-all;max-width:200px">'+url+'</div>';
+    }
+  },300);
+};
+
+window.printContainerQR=function(idx){
+  var c=appData.logistica[idx];
+  if(!c)return;
+  var baseUrl=window.location.href.split('?')[0];
+  var url=baseUrl+'?c='+encodeURIComponent(c.label);
+  var mats=(c.materials||[]).slice(0,8).map(function(m){
+    return '<tr><td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee">'+(m.code||'—')+'</td>'+
+           '<td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee">'+m.name+'</td>'+
+           '<td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">'+m.qty+' '+m.unit+'</td></tr>';
+  }).join('');
+  var more=(c.materials||[]).length>8?'<div style="font-size:9px;color:#aaa;text-align:center;margin-top:4px">... e mais '+((c.materials||[]).length-8)+' materiais</div>':'';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'</title>'+
+  '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'+
+  '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;padding:16px}'+
+  '.label{border:2px solid #0f4a20;border-radius:12px;padding:16px;max-width:300px;margin:0 auto}'+
+  '.header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0f4a20}'+
+  '.logo{width:34px;height:34px;background:#1a6b2f;border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900}'+
+  '.ctn-id{font-size:26px;font-weight:900;color:#0f4a20;text-align:center;margin:8px 0 4px}'+
+  '.ctn-name{font-size:11px;color:#666;text-align:center;margin-bottom:12px}'+
+  '.qr-wrap{text-align:center;margin:10px 0}'+
+  'table{width:100%;border-collapse:collapse;margin-top:8px}'+
+  'th{background:#f0faf2;font-size:9px;font-weight:700;color:#1a6b2f;padding:4px 6px;text-align:left}'+
+  '.footer{font-size:9px;color:#aaa;text-align:center;margin-top:10px}'+
+  '@media print{.label{border:2px solid #0f4a20!important}}</style></head><body>'+
+  '<div class="label">'+
+  '<div class="header"><div class="logo">L</div><div><div style="font-size:15px;font-weight:900;color:#1a6b2f;letter-spacing:2px">LUELE WMS</div><div style="font-size:9px;color:#888">Armazém Logística</div></div></div>'+
+  '<div class="ctn-id">'+c.label+'</div>'+
+  '<div class="ctn-name">'+(c.name||'Contentor '+c.label)+'</div>'+
+  '<div class="qr-wrap"><div id="qrp"></div></div>'+
+  '<div style="font-size:8px;color:#aaa;text-align:center;word-break:break-all;margin-bottom:8px">'+url+'</div>'+
+  (mats?'<table><thead><tr><th>CÓD.</th><th>MATERIAL</th><th>QTD</th></tr></thead><tbody>'+mats+'</tbody></table>'+more:'')+
+  '<div class="footer">'+new Date().toLocaleDateString('pt-PT')+' · LUELE WMS</div>'+
+  '</div>'+
+  '<script>window.onload=function(){new QRCode(document.getElementById("qrp"),{text:"'+url+'",width:150,height:150,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
+  '</body></html>';
+  var w=window.open('','_blank','width=400,height=700');
+  if(w){w.document.write(html);w.document.close();}
+};
+
+function checkURLParams(){
+  try{
+    var params=new URLSearchParams(window.location.search);
+    var cLabel=params.get('c');
+    if(cLabel&&appData){
+      var idx=appData.logistica.findIndex(function(c){return c.label===cLabel;});
+      if(idx>=0){
+        navTo('logistica',document.querySelector('.nav-item'));
+        setTimeout(function(){
+          selContainer=idx;
+          openContainerId=appData.logistica[idx].id||idx;
+          renderLogistica();
+          renderContainerPanel(appData.logistica[idx],idx);
+          showToast('📱 Contentor '+cLabel+' aberto via QR Code');
+        },800);
+      }
+    }
+  }catch(e){console.warn('URL params:',e);}
+}
+
 
 function renderMatItems(mats,type,idx){
 if(!mats.length)return'<div class="empty-state" style="padding:16px"><div class="empty-text">Sem materiais</div></div>';
@@ -3194,7 +3317,8 @@ function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
     '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+locFull+' · '+wh+'</div></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
     '<div><label class="modal-label">QUANTIDADE A RETIRAR</label>'+
-    '<input class="form-input" id="sfs-qty" type="number" min="0" max="'+mat.qty+'" value="'+mat.qty+'" style="width:100%"></div>'+
+    '<input class="form-input" id="sfs-qty" type="number" min="0.01" max="'+mat.qty+'" value="'+mat.qty+'" style="width:100%"></div>'+
+'<div style="font-size:10px;color:var(--text3);margin-top:3px">Máximo disponível: <strong>'+mat.qty+' '+mat.unit+'</strong></div>'+
     '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+
     '<input class="form-input" id="sfs-dest" placeholder="Ex: Oficina..." style="width:100%"></div></div>'+
     '<div><label class="modal-label">MOTIVO / OBSERVAÇÕES</label>'+
@@ -3339,7 +3463,7 @@ window.updateGroupQty = function(id, val){
   if(q > item.maxQty){
     document.getElementById('grp-qty-'+id).value = item.maxQty;
     q = item.maxQty;
-    showToast('Quantidade máxima: '+item.maxQty+' '+item.unit, true);
+    showToast('⚠️ Máximo disponível: '+item.maxQty+' '+item.unit, true);
   }
   item.qty = q;
 };
@@ -3529,6 +3653,13 @@ window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
   var dest=document.getElementById('sfs-dest')?.value.trim()||'';
   var obs=document.getElementById('sfs-obs')?.value.trim()||'';
   if(!qty||qty<=0){showToast('Introduz uma quantidade válida',true);return;}
+  // Validate stock not negative
+  var currentQty=0;
+  if(type==='log'){var ci2=parseInt(idx);var mm=appData.logistica[ci2]?.materials.find(function(m){return m.id===matId;});if(mm)currentQty=parseFloat(mm.qty)||0;}
+  else if(type==='vini'){var vv=Array.isArray(appData.vini)?appData.vini:[];var mm2=vv.find(function(m){return m.id===matId;});if(mm2)currentQty=parseFloat(mm2.qty)||0;}
+  else if(type==='emas'){var ee=Array.isArray(appData.emas)?appData.emas:[];var mm3=ee.find(function(m){return m.id===matId;});if(mm3)currentQty=parseFloat(mm3.qty)||0;}
+  else if(type==='patio'){var pp=(appData.patio||[]).find(function(m){return m.id===matId;});if(pp)currentQty=parseFloat(pp.qty)||0;}
+  if(qty>currentQty){showToast('⚠️ Stock insuficiente! Disponível: '+currentQty+' '+mat.unit,true);return;}
   var nd=JSON.parse(JSON.stringify(appData));
   var mat=null;
   if(type==='log'){var ci=parseInt(idx);var arr=nd.logistica[ci].materials;mat=arr.find(function(m){return m.id===matId;});if(mat){var rem=parseFloat(mat.qty)-qty;if(rem<=0)nd.logistica[ci].materials=arr.filter(function(m){return m.id!==matId;});else mat.qty=String(rem);}}

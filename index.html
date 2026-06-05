@@ -3654,12 +3654,12 @@ window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
   var obs=document.getElementById('sfs-obs')?.value.trim()||'';
   if(!qty||qty<=0){showToast('Introduz uma quantidade válida',true);return;}
   // Validate stock not negative
-  var currentQty=0;
-  if(type==='log'){var ci2=parseInt(idx);var mm=appData.logistica[ci2]?.materials.find(function(m){return m.id===matId;});if(mm)currentQty=parseFloat(mm.qty)||0;}
-  else if(type==='vini'){var vv=Array.isArray(appData.vini)?appData.vini:[];var mm2=vv.find(function(m){return m.id===matId;});if(mm2)currentQty=parseFloat(mm2.qty)||0;}
-  else if(type==='emas'){var ee=Array.isArray(appData.emas)?appData.emas:[];var mm3=ee.find(function(m){return m.id===matId;});if(mm3)currentQty=parseFloat(mm3.qty)||0;}
-  else if(type==='patio'){var pp=(appData.patio||[]).find(function(m){return m.id===matId;});if(pp)currentQty=parseFloat(pp.qty)||0;}
-  if(qty>currentQty){showToast('⚠️ Stock insuficiente! Disponível: '+currentQty+' '+mat.unit,true);return;}
+  var currentQty=0; var currentUnit='un';
+  if(type==='log'){var ci2=parseInt(idx);var mm=appData.logistica[ci2]?.materials.find(function(m){return m.id===matId;});if(mm){currentQty=parseFloat(mm.qty)||0;currentUnit=mm.unit||'un';}}
+  else if(type==='vini'){var vv=Array.isArray(appData.vini)?appData.vini:[];var mm2=vv.find(function(m){return m.id===matId;});if(mm2){currentQty=parseFloat(mm2.qty)||0;currentUnit=mm2.unit||'un';}}
+  else if(type==='emas'){var ee=Array.isArray(appData.emas)?appData.emas:[];var mm3=ee.find(function(m){return m.id===matId;});if(mm3){currentQty=parseFloat(mm3.qty)||0;currentUnit=mm3.unit||'un';}}
+  else if(type==='patio'){var pp=(appData.patio||[]).find(function(m){return m.id===matId;});if(pp){currentQty=parseFloat(pp.qty)||0;currentUnit=pp.unit||'un';}}
+  if(qty>currentQty){showToast('⚠️ Stock insuficiente! Disponível: '+currentQty+' '+currentUnit,true);return;}
   var nd=JSON.parse(JSON.stringify(appData));
   var mat=null;
   if(type==='log'){var ci=parseInt(idx);var arr=nd.logistica[ci].materials;mat=arr.find(function(m){return m.id===matId;});if(mat){var rem=parseFloat(mat.qty)-qty;if(rem<=0)nd.logistica[ci].materials=arr.filter(function(m){return m.id!==matId;});else mat.qty=String(rem);}}

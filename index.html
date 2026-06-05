@@ -897,7 +897,6 @@ let historyData = [];
 let unsubStock = null;
 let unsubHistory = null;
 
-function waitFirebase() { return Promise.resolve(); }
 
 function defaultData() {
 return {
@@ -3573,7 +3572,24 @@ function showLogin(){
 const loadingTimeout = setTimeout(showLogin, 3000);
 
 window.addEventListener('error', function(e){ console.error('App error:', e.message); });
-window.addEventListener('unhandledrejection', (e)=>{ console.warn('Unhandled promise:', e.reason); });
+window.addEventListener('unhandledrejection', function(e){ console.warn('Unhandled promise:', e.reason); });
+
+// Start app — show login when Firebase is ready (or timeout after 3s)
+function waitFirebase(){
+  return new Promise(function(resolve){
+    // Firebase Firestore is ready when db is defined
+    if(db){ resolve(); return; }
+    setTimeout(resolve, 1000);
+  });
+}
+
+waitFirebase().then(function(){
+  clearTimeout(loadingTimeout);
+  showLogin();
+}).catch(function(){
+  clearTimeout(loadingTimeout);
+  showLogin();
+});
 
 
 

@@ -848,10 +848,12 @@ appId:"1:28060645948:web:6644b36e81fcdedb266139"
 const app = initializeApp(cfg);
 const db = getFirestore(app);
 
+// Passwords removed — authentication now handled by Firebase Auth
+// Only names and roles stored here; passwords managed securely in Firebase
 let USERS = {
-'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
-'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' },
-'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator' }
+'f.miguel@luele.co.ao': { name:'Fernando Bráulio Miguel', role:'admin' },
+'brinciof7@gmail.com': { name:'Brincio F.', role:'operator' },
+'adao.domingos@luele.co.ao': { name:'Adão Domingos', role:'operator' }
 };
 let usersLoaded = false;
 
@@ -859,12 +861,16 @@ const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operad
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
 
 async function saveUsers() {
+  // Save only name and role — passwords managed by Firebase Auth
+  const usersToSave = {};
+  Object.entries(USERS).forEach(function([email, u]){
+    usersToSave[email] = {name: u.name, role: u.role};
+  });
   try {
-    await setDoc(doc(db,'wms','users'), USERS);
-    console.log('Users saved to Firebase:', Object.keys(USERS).length, 'users');
+    await setDoc(doc(db,'wms','users'), usersToSave);
   } catch(e) {
     console.error('saveUsers error:', e);
-    showToast('Erro ao guardar utilizador no servidor', true);
+    showToast('Erro ao guardar utilizador', true);
   }
 }
 
@@ -962,36 +968,84 @@ try{
 window.doLogin=async function(){
 const u=document.getElementById('login-user').value.trim().toLowerCase();
 const p=document.getElementById('login-pass').value;
-if(!usersLoaded) await loadUsersFromFirebase();
-if(USERS[u]&&USERS[u].pass===p){
-currentUser={id:u,...USERS[u]};
-document.getElementById('login-screen').style.display='none';
-document.getElementById('app').style.display='block';
-document.getElementById('user-avatar').textContent=USERS[u].name[0].toUpperCase();
-document.getElementById('user-name-display').textContent=USERS[u].name;
-document.getElementById('user-role-display').textContent=ROLES[USERS[u].role]||USERS[u].role;
-document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-try{startListeners();}catch(e){console.error('startListeners:',e);}
-try{startSFSListener();}catch(e){console.error('startSFS:',e);}
-try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
-try {
-  onSnapshot(doc(db,'wms','users'), snap=>{
-    if(snap.exists()){
-      USERS = Object.assign({}, {
-        'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
-        'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' },
-        'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator' }
-      }, snap.data());
-      usersLoaded = true;
-      if(document.getElementById('page-users')?.classList.contains('active')) renderUsers();
-    }
-  });
-} catch(e) { console.warn('users listener:', e); }
-loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
-} else { document.getElementById('login-error').style.display='block'; }
+if(!u||!p){showLoginError('Preenche o email e a password.');return;}
+const btn=document.querySelector('.login-btn');
+btn.textContent='A entrar...';btn.disabled=true;
+try{
+  await signInWithEmailAndPassword(auth,u,p);
+} catch(e){
+  btn.textContent='Entrar no Sistema';btn.disabled=false;
+  let msg='Email ou password incorrectos.';
+  if(e.code==='auth/too-many-requests')msg='Demasiadas tentativas. Aguarda e tenta novamente.';
+  if(e.code==='auth/network-request-failed')msg='Sem ligação. Verifica a internet.';
+  if(e.code==='auth/invalid-email')msg='Email inválido.';
+  showLoginError(msg);
+}
 };
-window.quickLogin=function(u,p){document.getElementById('login-user').value=u;document.getElementById('login-pass').value=p;doLogin();};
-window.doLogout=function(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+
+function showLoginError(msg){
+const el=document.getElementById('login-error');
+if(el){el.textContent=msg;el.style.display='block';}
+}
+
+// Firebase Auth state listener — handles login/logout automatically
+onAuthStateChanged(auth, async function(firebaseUser){
+  clearTimeout(loadingTimeout);
+  if(firebaseUser){
+    // User is logged in
+    const u=firebaseUser.email.toLowerCase();
+    // Load user profile from USERS
+    if(!usersLoaded) await loadUsersFromFirebase();
+    const profile=USERS[u]||{name:firebaseUser.email,role:'operator',pass:''};
+    currentUser={id:u,email:u,...profile};
+    // Update UI
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('user-avatar').textContent=(profile.name||u)[0].toUpperCase();
+    document.getElementById('user-name-display').textContent=profile.name||u;
+    document.getElementById('user-role-display').textContent=ROLES[profile.role]||profile.role||'Operador';
+    document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+    const btn=document.querySelector('.login-btn');
+    if(btn){btn.textContent='Entrar no Sistema';btn.disabled=false;}
+    document.getElementById('login-error').style.display='none';
+    try{startListeners();}catch(e){console.error('startListeners:',e);}
+    try{startSFSListener();}catch(e){console.error('startSFS:',e);}
+    try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
+    try{
+      onSnapshot(doc(db,'wms','users'),snap=>{
+        if(snap.exists()){
+          USERS=Object.assign({},{
+            'f.miguel@luele.co.ao':{pass:'',name:'Fernando Bráulio Miguel',role:'admin'},
+            'brinciof7@gmail.com':{pass:'',name:'Brincio F.',role:'operator'},
+            'adao.domingos@luele.co.ao':{pass:'',name:'Adão Domingos',role:'operator'}
+          },snap.data());
+          usersLoaded=true;
+          if(document.getElementById('page-users')?.classList.contains('active'))renderUsers();
+        }
+      });
+    }catch(e){console.warn('users listener:',e);}
+    loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
+    navTo('dashboard',document.querySelector('.nav-item'));
+    renderDashboard();
+  } else {
+    // User is logged out
+    currentUser=null;
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    if(unsubStock)unsubStock();
+    if(unsubHistory)unsubHistory();
+  }
+});
+
+
+window.doLogout=async function(){
+try{await signOut(auth);}catch(e){console.error('signOut:',e);}
+if(unsubStock)unsubStock();
+if(unsubHistory)unsubHistory();
+currentUser=null;
+};
 
 
 window.openEmasImportModal = function(){
@@ -2058,6 +2112,10 @@ openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</
 };
 
 window.confirmAddUser=async function(){
+// Note: password management now via Firebase Auth Console
+// Users added here get profile (name/role) saved to Firestore
+// For password, admin must add user in Firebase Auth Console
+
 const name=document.getElementById('u-name').value.trim();
 const id=document.getElementById('u-id').value.trim().toLowerCase();
 const pass=document.getElementById('u-pass').value;
@@ -3575,13 +3633,14 @@ const loadingTimeout = setTimeout(showLogin, 3000);
 window.addEventListener('error', (e)=>{ console.error('App error:', e.message); });
 window.addEventListener('unhandledrejection', (e)=>{ console.warn('Unhandled promise:', e.reason); });
 
-waitFirebase().then(()=>{
-  clearTimeout(loadingTimeout);
-  showLogin();
-}).catch(()=>{
-  clearTimeout(loadingTimeout);
-  showLogin();
-});
+// Auth state handled by onAuthStateChanged above
+// Timeout fallback in case Firebase is slow
+setTimeout(function(){
+  if(document.getElementById('loading-screen').style.display!=='none'){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+}, 5000);
 
 </script>
 </body>

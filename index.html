@@ -1489,11 +1489,12 @@ const critAlerts=getAllMaterials().filter(m=>getAlertLevel(m)==='critical').leng
 animateCount('stat-alerts',critAlerts);
 animateCount('stat-moves',todayMoves);
 document.getElementById('dash-welcome').textContent='Bem-vindo, '+currentUser.name+' · '+new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long'});
-const logM=appData.logistica.reduce((a,c)=>a+c.materials.length,0);
-const viniM=appData.vini.reduce((a,sh)=>a+sh.levels.reduce((b,lv)=>b+lv.materials.length,0),0);
-const emasM=appData.emas.length;
-const mx=Math.max(logM,viniM,emasM,1);
-document.getElementById('dash-warehouses').innerHTML=[{n:'Logística',c:logM},{n:'Vini Galpão',c:viniM},{n:'Emas',c:emasM}].map(w=>`
+const logM=appData.logistica.reduce(function(a,c){return a+(c.materials?c.materials.length:0);},0);
+const viniM=Array.isArray(appData.vini)?appData.vini.length:0;
+const emasM=Array.isArray(appData.emas)?appData.emas.length:0;
+const patioM=Array.isArray(appData.patio)?appData.patio.length:0;
+const mx=Math.max(logM,viniM,emasM,patioM,1);
+document.getElementById('dash-warehouses').innerHTML=[{n:'Logística',c:logM},{n:'Vini Galpão',c:viniM},{n:'Emas',c:emasM},{n:'Pátio',c:patioM}].map(w=>`
 <div class="wh-bar-row">
 <span class="wh-bar-label">${w.n}</span>
 <div class="wh-bar-track"><div class="wh-bar-fill" style="width:${w.c/mx*100}%"></div></div>

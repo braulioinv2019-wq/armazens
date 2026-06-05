@@ -991,6 +991,7 @@ if(el){el.textContent=msg;el.style.display='block';}
 // Firebase Auth state listener — handles login/logout automatically
 onAuthStateChanged(auth, async function(firebaseUser){
   clearTimeout(loadingTimeout);
+  clearTimeout(loadingTimeout2);
   if(firebaseUser){
     // User is logged in
     const u=firebaseUser.email.toLowerCase();
@@ -1029,13 +1030,13 @@ onAuthStateChanged(auth, async function(firebaseUser){
     navTo('dashboard',document.querySelector('.nav-item'));
     renderDashboard();
   } else {
-    // User is logged out
+    // No user — show login immediately
     currentUser=null;
     document.getElementById('loading-screen').style.display='none';
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app').style.display='none';
-    if(unsubStock)unsubStock();
-    if(unsubHistory)unsubHistory();
+    if(unsubStock){try{unsubStock();}catch(e){}}
+    if(unsubHistory){try{unsubHistory();}catch(e){}}
   }
 });
 
@@ -3628,19 +3629,20 @@ function showLogin(){
   document.getElementById('login-screen').style.display='flex';
 }
 
-const loadingTimeout = setTimeout(showLogin, 3000);
+const loadingTimeout = setTimeout(function(){/* handled by onAuthStateChanged */}, 3000);
 
-window.addEventListener('error', (e)=>{ console.error('App error:', e.message); });
+window.addEventListener('error', function(e){ console.error('App error:', e.message); });
 window.addEventListener('unhandledrejection', (e)=>{ console.warn('Unhandled promise:', e.reason); });
 
 // Auth state handled by onAuthStateChanged above
-// Timeout fallback in case Firebase is slow
-setTimeout(function(){
-  if(document.getElementById('loading-screen').style.display!=='none'){
-    document.getElementById('loading-screen').style.display='none';
-    document.getElementById('login-screen').style.display='flex';
+// Timeout fallback — show login after 3s no matter what
+const loadingTimeout2 = setTimeout(function(){
+  const ls = document.getElementById('loading-screen');
+  if(ls && ls.style.display !== 'none'){
+    ls.style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
   }
-}, 5000);
+}, 3000);
 
 </script>
 </body>

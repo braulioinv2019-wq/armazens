@@ -919,44 +919,58 @@ patio: []
 };
 }
 
-var _lastSaveTime = 0;
-
 async function saveStock(data) {
 appData = data;
 refreshAll();
 var syncEl = document.getElementById('sync-status');
 if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span> A guardar...';
 try {
-  _lastSaveTime = Date.now();
   await setDoc(doc(db,'wms','stock'), data);
-  if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado';
+  if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado ✓';
+  setTimeout(function(){
+    if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado';
+  }, 2000);
+  console.log('✅ saveStock OK — '+Object.keys(data).join(', '));
 } catch(e) {
-  console.error('saveStock error:', e);
-  if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block"></span> Erro ao guardar';
-  showToast('Erro ao guardar no servidor — verifique a ligação', true);
+  console.error('❌ saveStock FAILED:', e.code, e.message);
+  if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block"></span> ERRO ao guardar!';
+  showToast('❌ ERRO: '+e.message+' (código: '+e.code+')', true);
 }
 }
 
 async function logHistory(type,mat,loc,wh,qty,unit) {
-await addDoc(collection(db,'wms','history','entries'),{type,material:mat,location:loc,warehouse:wh,qty:qty+' '+unit,user:currentUser.name,ts:serverTimestamp()});
+try {
+  await addDoc(collection(db,'wms','history','entries'),{
+    type:type,
+    material:mat,
+    location:loc,
+    wh:wh,
+    warehouse:wh,
+    qty:qty,
+    unit:unit,
+    user:currentUser?currentUser.name:'Sistema',
+    ts:serverTimestamp()
+  });
+  console.log('✅ logHistory OK:', type, mat);
+} catch(e) {
+  console.error('❌ logHistory FAILED:', e.code, e.message);
+}
 }
 
 function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
   snap=>{
     try{
-      // Ignore snapshot if it arrived within 4 seconds of our own save
-      // This prevents Firebase echo from overwriting our local changes
-      if(Date.now() - _lastSaveTime < 4000){
-        console.log('Snapshot ignored — own save echo');
-        return;
-      }
       const newData=snap.exists()?snap.data():defaultData();
       appData=newData;
       refreshAll();
-    }catch(e){console.error('Stock error:',e);}
+      console.log('📥 Stock updated from Firebase');
+    }catch(e){console.error('Stock snapshot error:',e);}
   },
-  err=>console.warn('Stock listener:',err)
+  err=>{
+    console.error('Stock listener error:',err.code, err.message);
+    showToast('Erro de ligação ao servidor: '+err.message, true);
+  }
 );
 try{
   const q=query(collection(db,'wms','history','entries'),orderBy('ts','desc'),limit(200));
@@ -1000,6 +1014,16 @@ if(USERS[u]&&USERS[u].pass===p){
   try{startSFSListener();}catch(e){console.error('startSFS:',e);}
   try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
   loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
+  // Test Firestore write permission on login
+  (async function(){
+    try{
+      await setDoc(doc(db,'wms','_ping'),{ts:serverTimestamp(),user:currentUser.name});
+      console.log('✅ Firestore write permission OK');
+    }catch(e){
+      console.error('❌ Firestore PERMISSION ERROR:', e.code, e.message);
+      showToast('⚠️ Sem permissão para guardar dados! Verifique as regras do Firestore.', true);
+    }
+  })();
   navTo('dashboard',document.querySelector('.nav-item'));
   setTimeout(checkURLParams, 1000);
 } else {
@@ -1250,10 +1274,12 @@ window.confirmImport = async function(){
 
   closeModal();
   var nd = JSON.parse(JSON.stringify(appData));
+  console.log('Importing to:', dest, 'added:', added, 'updated:', updated);
   await saveStock(nd);
   await logHistory('ENTRADA','Importação Excel — '+window._importLabel,window._importLabel,dest.startsWith('emas')?'Emas':dest==='vini'?'Vini Galpão':dest==='patio'?'Pátio':'Logística',String(added+updated),'materiais');
   showToast('✓ '+added+' adicionados, '+updated+' actualizados em '+window._importLabel+'!');
   spawnParticles();
+  refreshAll();
 };
 
 document.addEventListener('click',function(e){

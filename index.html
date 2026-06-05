@@ -837,6 +837,7 @@ tbody tr:hover td{background:var(--bg)}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
 authDomain:"armazens-7a4de.firebaseapp.com",
@@ -847,6 +848,7 @@ appId:"1:28060645948:web:6644b36e81fcdedb266139"
 };
 const app = initializeApp(cfg);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Passwords removed — authentication now handled by Firebase Auth
 // Only names and roles stored here; passwords managed securely in Firebase
@@ -983,6 +985,11 @@ try{
 }
 };
 
+function showLogin(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
 function showLoginError(msg){
 const el=document.getElementById('login-error');
 if(el){el.textContent=msg;el.style.display='block';}
@@ -991,7 +998,6 @@ if(el){el.textContent=msg;el.style.display='block';}
 // Firebase Auth state listener — handles login/logout automatically
 onAuthStateChanged(auth, async function(firebaseUser){
   clearTimeout(loadingTimeout);
-  clearTimeout(loadingTimeout2);
   if(firebaseUser){
     // User is logged in
     const u=firebaseUser.email.toLowerCase();
@@ -3629,20 +3635,12 @@ function showLogin(){
   document.getElementById('login-screen').style.display='flex';
 }
 
-const loadingTimeout = setTimeout(function(){/* handled by onAuthStateChanged */}, 3000);
+const loadingTimeout = setTimeout(showLogin, 3000);
 
 window.addEventListener('error', function(e){ console.error('App error:', e.message); });
 window.addEventListener('unhandledrejection', (e)=>{ console.warn('Unhandled promise:', e.reason); });
 
-// Auth state handled by onAuthStateChanged above
-// Timeout fallback — show login after 3s no matter what
-const loadingTimeout2 = setTimeout(function(){
-  const ls = document.getElementById('loading-screen');
-  if(ls && ls.style.display !== 'none'){
-    ls.style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-  }
-}, 3000);
+// onAuthStateChanged handles login/logout
 
 </script>
 </body>

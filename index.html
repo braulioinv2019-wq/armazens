@@ -566,7 +566,7 @@ tbody tr:hover td{background:var(--bg)}
     </div>
     <div class="topbar-right">
       <div class="topbar-date" id="topbar-date"></div>
-      <div class="sync-badge"><span class="sync-dot"></span>Sincronizado</div>
+      <div class="sync-badge" id="sync-status"><span class="sync-dot"></span>Sincronizado</div>
     </div>
   </div>
 
@@ -905,16 +905,17 @@ patio: []
 }
 
 async function saveStock(data) {
-_saving = true;
-appData = data; // update local immediately
-refreshAll();   // re-render immediately without waiting for Firebase
+appData = data;
+refreshAll();
+var syncEl = document.getElementById('sync-status');
+if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span> A guardar...';
 try {
   await setDoc(doc(db,'wms','stock'), data);
+  if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado';
 } catch(e) {
   console.error('saveStock error:', e);
-  showToast('Erro ao guardar no servidor', true);
-} finally {
-  setTimeout(function(){ _saving = false; }, 2000);
+  if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block"></span> Erro ao guardar';
+  showToast('Erro ao guardar no servidor — verifique a ligação', true);
 }
 }
 
@@ -926,7 +927,6 @@ function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
   snap=>{
     try{
-      if(_saving){return;} // skip - local save in progress
       const newData=snap.exists()?snap.data():defaultData();
       appData=newData;
       refreshAll();
@@ -1228,11 +1228,11 @@ window.confirmImport = async function(){
   }
 
   closeModal();
-  await saveStock(JSON.parse(JSON.stringify(appData)));
-  await logHistory('ENTRADA','Importação Excel — '+window._importLabel,window._importLabel,dest.startsWith('emas')?'Emas':dest==='vini'?'Vini':dest==='patio'?'Pátio':'Logística',String(added+updated),'materiais');
+  var nd = JSON.parse(JSON.stringify(appData));
+  await saveStock(nd);
+  await logHistory('ENTRADA','Importação Excel — '+window._importLabel,window._importLabel,dest.startsWith('emas')?'Emas':dest==='vini'?'Vini Galpão':dest==='patio'?'Pátio':'Logística',String(added+updated),'materiais');
   showToast('✓ '+added+' adicionados, '+updated+' actualizados em '+window._importLabel+'!');
   spawnParticles();
-  refreshAll();
 };
 
 document.addEventListener('click',function(e){

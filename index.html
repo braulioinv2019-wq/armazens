@@ -11,6 +11,7 @@
 <title>LUELE WMS</title>
 <style>body,input,select,button,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.loading-logo-text,.page-title,.stat-value,.login-title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:700}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <style>
 :root {
@@ -584,6 +585,23 @@ tbody tr:hover td{background:var(--bg)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div class="card"><div class="card-header"><span class="card-title">Ocupação por armazém</span></div><div id="dash-warehouses"></div></div>
         <div class="card"><div class="card-header"><span class="card-title">Últimos movimentos</span></div><div id="dash-history"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📈 Movimentos mensais (últimos 6 meses)</span></div>
+          <canvas id="chart-monthly" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🥧 Stock por armazém</span></div>
+          <canvas id="chart-pie" height="120"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔮 Previsão de consumo — próximos 30 dias</span>
+          <span style="font-size:11px;color:var(--text3)">Baseado no histórico de saídas dos últimos 3 meses</span>
+        </div>
+        <div id="dash-forecast"></div>
       </div>
     </div>
     
@@ -1479,645 +1497,181 @@ el.innerHTML=html;
 function renderDashboard(){
 if(!appData)return;
 const all=getAllMaterials();
-const occ=appData.logistica.filter(c=>c.materials.length>0).length;
-const alerts=getAlerts();
+const occ=appData.logistica.filter(function(c){return c.materials&&c.materials.length>0;}).length;
 const today=new Date().toISOString().slice(0,10);
-const todayMoves=historyData.filter(h=>h.ts&&h.ts.startsWith(today)).length;
+const todayMoves=historyData.filter(function(h){return h.ts&&h.ts.startsWith(today);}).length;
 animateCount('stat-total',all.length);
 animateCount('stat-containers',occ);
-const critAlerts=getAllMaterials().filter(m=>getAlertLevel(m)==='critical').length;
+const critAlerts=getAllMaterials().filter(function(m){return getAlertLevel(m)==='critical';}).length;
 animateCount('stat-alerts',critAlerts);
 animateCount('stat-moves',todayMoves);
-document.getElementById('dash-welcome').textContent='Bem-vindo, '+currentUser.name+' · '+new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long'});
+const wel=document.getElementById('dash-welcome');
+if(wel)wel.textContent='Bem-vindo, '+currentUser.name+' · '+new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long'});
 const logM=appData.logistica.reduce(function(a,c){return a+(c.materials?c.materials.length:0);},0);
 const viniM=Array.isArray(appData.vini)?appData.vini.length:0;
 const emasM=Array.isArray(appData.emas)?appData.emas.length:0;
 const patioM=Array.isArray(appData.patio)?appData.patio.length:0;
 const mx=Math.max(logM,viniM,emasM,patioM,1);
-document.getElementById('dash-warehouses').innerHTML=[{n:'Logística',c:logM},{n:'Vini Galpão',c:viniM},{n:'Emas',c:emasM},{n:'Pátio',c:patioM}].map(w=>`
-<div class="wh-bar-row">
-<span class="wh-bar-label">${w.n}</span>
-<div class="wh-bar-track"><div class="wh-bar-fill" style="width:${w.c/mx*100}%"></div></div>
-<span class="wh-bar-count">${w.c}</span>
-</div>`).join('');
-document.getElementById('dash-history').innerHTML=historyData.slice(0,6).map(h=>`
-<div class="dash-hist-item">
-<span class="badge badge-${h.type==='ENTRADA'?'in':h.type==='SAÍDA'?'out':'edit'}">${h.type}</span>
-<div><div class="dash-hist-name">${h.material}</div><div class="dash-hist-loc">${h.location} · ${h.user}</div></div>
-</div>`).join('')||'<div class="empty-state" style="padding:16px"><div class="empty-text">Sem movimentos</div></div>';
-updateBadges();
+var whEl=document.getElementById('dash-warehouses');
+if(whEl)whEl.innerHTML=[{n:'Logística',c:logM,col:'var(--green)'},{n:'Vini Galpão',c:viniM,col:'var(--blue)'},{n:'Emas',c:emasM,col:'var(--amber)'},{n:'Pátio',c:patioM,col:'#8b5cf6'}].map(function(w){return(
+'<div class="wh-bar-row">'+
+'<span class="wh-bar-label">'+w.n+'</span>'+
+'<div class="wh-bar-track"><div class="wh-bar-fill" style="width:'+Math.round(w.c/mx*100)+'%;background:'+w.col+'"></div></div>'+
+'<span class="wh-bar-count" style="color:'+w.col+'">'+w.c+'</span>'+
+'</div>');}).join('');
+var hEl=document.getElementById('dash-history');
+if(hEl)hEl.innerHTML=historyData.slice(0,8).map(function(h){return(
+'<div class="dash-hist-item">'+
+'<span class="badge badge-'+(h.type==='ENTRADA'?'in':h.type==='SAÍDA'?'out':'edit')+'">'+h.type+'</span>'+
+'<div class="dash-hist-name">'+h.material+'<div class="dash-hist-loc">'+h.wh+' · '+(h.location||'')+'</div></div>'+
+'<span style="font-size:11px;color:var(--text3)">'+(h.ts?new Date(h.ts).toLocaleDateString('pt-PT'):'')+'</span>'+
+'</div>');}).join('')||'<div class="empty-state" style="padding:20px"><div class="empty-text">Sem movimentos registados</div></div>';
+
+// ── CHARTS (only if Chart.js is loaded)
+if(typeof Chart !== 'undefined'){
+  renderMonthlyChart();
+  renderPieChart(logM,viniM,emasM,patioM);
 }
 
-const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive','c-grey','c-tan','c-red','c-blue','c-rust','c-olive'];
-let openContainerId=null;
-function boxHtml(n){
-const cols=['#7a3a10','#5a2a08','#6a4420','#4a3010','#8a4a18'];
-return Array.from({length:Math.min(n*4+3,18)},(_,i)=>{
-const w=9+Math.random()*8,h=7+Math.random()*6;
-return`<div class="int-box" style="width:${w}px;height:${h}px;background:${cols[i%cols.length]}"></div>`;
-}).join('')+'<div class="int-pallet"></div>';
-}
-function renderLogistica(){
-if(!appData)return;
-const row=document.getElementById('logistica-grid');
-row.innerHTML='';
-appData.logistica.forEach((c,i)=>{
-const isOpen=c.id===openContainerId||i===selContainer&&openContainerId===null;
-const isSel=selContainer===i;
-const st=containerStatus(c);
-const stLabel=st==='alert'?'⚠ Alerta':isSel&&isOpen?'🔓 Aberto':st==='partial'?'📦 Parcial':st==='full'?'📦 Cheio':'🔒 Vazio';
-const col=CTN_COLORS[i%CTN_COLORS.length];
-const div=document.createElement('div');
-div.className=`cu ${col} ${isSel?'open sel':''}`;
-div.innerHTML=`<div class="cu-w">
-<div class="cu-top"></div>
-<div class="cu-body">
-<div class="cu-warn"></div>
-<div class="cu-corrugation"></div>
-<div class="cu-shade-l"></div><div class="cu-shade-r"></div>
-<div class="cu-bar" style="left:22%"></div><div class="cu-bar" style="left:50%"></div><div class="cu-bar" style="left:78%"></div>
-<div class="cu-logo-txt">LUELE</div>
-<div class="cu-num">${c.label}</div>
-<div class="cu-interior">
-<div class="int-light"></div><div class="int-walls"></div>
-<div class="int-boxes">${boxHtml(c.materials.length)}</div>
-</div>
-<div class="cu-doors">
-<div class="cu-door-l"><div class="door-inner"></div><div class="door-rod"></div><div class="door-cam"></div></div>
-<div class="cu-door-r"><div class="door-inner"></div><div class="door-rod"></div><div class="door-cam"></div></div>
-</div>
-</div>
-<div class="cu-bottom"><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div><div class="cu-foot"></div></div>
-<div class="cu-label"><div class="cu-id">${c.label}</div>${c.name?`<div style="font-size:8px;color:rgba(255,255,255,0.45);margin-top:1px;max-width:98px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</div>`:''}<span class="cu-badge ${isSel?'open':st==='alert'?'alert':st==='partial'||st==='full'?'partial':'closed'}">${stLabel}</span></div>
-</div>`;
-div.addEventListener('click',()=>selectContainer(i));
-div.addEventListener('mousemove',e=>{
-const r=div.getBoundingClientRect();
-const x=(e.clientX-r.left)/r.width-0.5;
-const y=(e.clientY-r.top)/r.height-0.5;
-div.style.transform='translateY(-7px) rotateY('+(x*8)+'deg) rotateX('+(-y*4)+'deg)';
-});
-div.addEventListener('mouseleave',()=>{
-div.style.transform='';
-});
-if(st==='alert')div.classList.add('alert-pulse');
-row.appendChild(div);
-});
-
-const hasOpen=selContainer!==null;
-['cus1','cus2','cus3','cus4'].forEach((s,i)=>{
-const el=document.getElementById(s);if(!el)return;
-el.className='cus-circle '+(hasOpen&&i<3?'done':hasOpen&&i===3?'active':'pend');
-});
-['cul1','cul2','cul3'].forEach(l=>{const el=document.getElementById(l);if(el&&hasOpen)el.classList.add('done');});
-
-if(selContainer!==null){
-const c=appData.logistica[selContainer];
-document.getElementById('log-inv-title').textContent=`Inventário — ${c.label}`;
-document.getElementById('log-close-btn').style.display='flex';
-renderContainerPanel(c,selContainer);
-
-const pct=Math.min(c.materials.length/8*100,100).toFixed(0);
-document.getElementById('log-sum-content').innerHTML=`
-<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Código</span><span style="font-size:11px;font-weight:600">${c.label}</span></div>
-<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Nome</span><span style="font-size:11px;font-weight:600">${c.name||'—'}</span></div>
-<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>
-<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">${c.materials.length}</span></div>
-<div style="margin-top:10px">
-<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px"><span>Utilização</span><span style="color:var(--green2)">${pct}%</span></div>
-<div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--green2);border-radius:3px"></div></div>
-</div>
-<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="showContainerQR(${selContainer})">📱 QR Code</button>
-  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="renameContainer(${selContainer})">✏ Renomear</button>
-  <button class="btn btn-secondary btn-sm" style="width:100%" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar</button>
-  <button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteContainer(${selContainer})">🗑 Eliminar</button>
-</div>`;
-} else {
-document.getElementById('log-inv-title').textContent='Inventário — seleccione um contentor';
-document.getElementById('log-close-btn').style.display='none';
-document.getElementById('logistica-panel').innerHTML='<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Clique num contentor para ver o inventário</div></div>';
-document.getElementById('log-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhum contentor seleccionado</div>';
-}
+// ── FORECAST
+renderForecast();
 }
 
-window.selectContainer=function(gi){selContainer=selContainer===gi?null:gi;renderLogistica();};
-
-function calcCapacity(materials){
-
-const unitWeights={kg:1,t:1000,L:0.9,m:2,m2:5,cx:10,pc:0.5,rolo:8,un:1};
-let total=0;
-materials.forEach(m=>{
-const w=unitWeights[m.unit]||1;
-total+=parseFloat(m.qty||0)*w;
-});
-return total;
+function renderMonthlyChart(){
+var canvas=document.getElementById('chart-monthly');
+if(!canvas)return;
+// Destroy previous chart if exists
+if(canvas._chartInstance){canvas._chartInstance.destroy();}
+// Build last 6 months data
+var months=[];
+var entriesData=[];
+var saidasData=[];
+for(var i=5;i>=0;i--){
+  var d=new Date();
+  d.setMonth(d.getMonth()-i);
+  var ym=d.toISOString().slice(0,7);
+  var label=d.toLocaleDateString('pt-PT',{month:'short',year:'2-digit'});
+  months.push(label);
+  var entries=historyData.filter(function(h){return h.ts&&h.ts.startsWith(ym)&&h.type==='ENTRADA';}).length;
+  var saidas=historyData.filter(function(h){return h.ts&&h.ts.startsWith(ym)&&h.type==='SAÍDA';}).length;
+  entriesData.push(entries);
+  saidasData.push(saidas);
 }
-
-function renderContainerPanel(c,idx){
-const maxKg=25000;
-const usedKg=calcCapacity(c.materials);
-const pct=Math.min(usedKg/maxKg*100,100).toFixed(1);
-const barColor=pct>90?'var(--red)':pct>60?'var(--amber)':'var(--green2)';
-document.getElementById('logistica-panel').innerHTML=`
-<div class="detail-panel">
-<div class="detail-header">
-<div>
-<div style="display:flex;align-items:center;gap:10px">
-<div class="detail-title">${c.label}</div>
-<button class="mat-btn edit btn-sm" onclick="renameContainer(${idx})" title="Renomear contentor">✏ Renomear</button>
-</div>
-<div class="detail-meta">${c.materials.length} material${c.materials.length!==1?'is':''} · ${c.name||'Sem descrição'}</div>
-</div>
-<button class="detail-close" onclick="selContainer=null;renderLogistica()">✕ Fechar</button>
-</div>
-
-<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-<span style="font-size:11px;font-weight:600;color:var(--text2)">CAPACIDADE ESTIMADA</span>
-<span style="font-size:12px;font-weight:700;color:${barColor}">${pct}% utilizado</span>
-</div>
-<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-<div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.6s"></div>
-</div>
-<div style="display:flex;justify-content:space-between;margin-top:4px">
-<span style="font-size:10px;color:var(--text3)">Estimativa: ${usedKg.toLocaleString('pt-PT')} kg</span>
-<span style="font-size:10px;color:var(--text3)">Máx: 25.000 kg</span>
-</div>
-</div>
-<div class="mat-list">${renderMatItems(c.materials,'log',idx)}</div>
-<div class="add-form">
-<div class="add-form-title">Adicionar material</div>
-<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
-<input class="form-input" id="add-code-log" placeholder="Código (ex: MAT-001)" autocomplete="off">
-<input class="form-input" id="add-name-log" placeholder="Nome do material" autocomplete="off" onkeydown="if(event.key==='Enter')addMatLog(${idx})">
-</div>
-<div class="form-row" style="margin-bottom:10px">
-<input class="form-input" id="add-qty-log" type="number" min="0" placeholder="Quantidade" onkeydown="if(event.key==='Enter')addMatLog(${idx})">
-<select class="form-select" id="add-unit-log">${unitOpts()}</select>
-<input class="form-input" id="add-min-log" type="number" min="0" placeholder="Stock mínimo">
-</div>
-<button class="btn btn-primary btn-sm" onclick="addMatLog(${idx})">+ Adicionar</button>
-</div>
-</div>`;
-
-setTimeout(()=>{const f=document.getElementById('add-name-log');if(f)f.focus();},50);
-}
-
-window.renameContainer=function(idx){
-const c=appData.logistica[idx];
-openModal(`<div class="modal-header"><span class="modal-title">Renomear ${c.label}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-<div style="margin-bottom:12px"><label class="modal-label">ETIQUETA (código)</label><input class="form-input" id="rc-label" value="${c.label}" style="width:100%"></div>
-<div><label class="modal-label">NOME / DESCRIÇÃO</label><input class="form-input" id="rc-name" value="${c.name||''}" placeholder="Ex: Materiais eléctricos, Ferramentas..." style="width:100%"></div>
-<div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmRename(${idx})">Guardar</button></div>`);
-};
-
-window.confirmRename=async function(idx){
-const label=document.getElementById('rc-label').value.trim();
-const name=document.getElementById('rc-name').value.trim();
-if(!label)return;
-const nd=JSON.parse(JSON.stringify(appData));
-nd.logistica[idx].label=label;
-nd.logistica[idx].name=name;
-appData=nd;
-closeModal();
-renderLogistica();
-await saveStock(nd);
-showToast('✓ Contentor actualizado!');
-};
-
-window.deleteContainer=function(idx){
-const c=appData.logistica[idx];
-if(!c)return;
-const hasMats=c.materials&&c.materials.length>0;
-var msg='Eliminar o contentor '+c.label+'?';
-if(hasMats)msg='⚠ O contentor '+c.label+' tem '+c.materials.length+' material(is).\nTodos os materiais serão eliminados!\n\nTem a certeza?';
-if(!confirm(msg))return;
-const nd=JSON.parse(JSON.stringify(appData));
-nd.logistica.splice(idx,1);
-appData=nd;
-selContainer=null;
-openContainerId=null;
-renderLogistica();
-saveStock(nd);
-logHistory('ELIMINAÇÃO','Contentor '+c.label,'Logística','Logística',String(c.materials.length),'materiais');
-showToast('🗑 Contentor '+c.label+' eliminado');
-};
-
-// ── QR CODE SYSTEM ────────────────────────────────────────────────────────
-window.showContainerQR=function(idx){
-  var c=appData.logistica[idx];
-  if(!c)return;
-  var baseUrl=window.location.href.split('?')[0];
-  var url=baseUrl+'?c='+encodeURIComponent(c.label);
-  var matCount=(c.materials||[]).length;
-  openModal(
-    '<div class="modal-header">'+
-    '<div><span class="modal-title">📱 QR Code — '+c.label+'</span>'+
-    '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+matCount+' materiais</div></div>'+
-    '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
-    '<div style="text-align:center;padding:16px 0">'+
-    '<div id="qr-canvas" style="display:inline-block;padding:16px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'+
-    '<div style="margin-top:12px;font-size:10px;color:var(--text3);word-break:break-all;padding:0 10px">'+url+'</div>'+
-    '</div>'+
-    '<div style="background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;text-align:center">'+
-    '📌 Cola este QR code na porta do contentor <strong>'+c.label+'</strong><br>'+
-    '<span style="color:var(--text3);font-size:11px">Ao ler com o telemóvel abre directamente o inventário</span>'+
-    '</div>'+
-    '<div class="modal-actions">'+
-    '<button class="btn btn-secondary" onclick="closeModal()">Fechar</button>'+
-    '<button class="btn btn-primary" onclick="printContainerQR('+idx+')">🖨 Imprimir etiqueta</button>'+
-    '</div>'
-  );
-  setTimeout(function(){
-    var el=document.getElementById('qr-canvas');
-    if(!el)return;
-    if(typeof QRCode!=='undefined'){
-      new QRCode(el,{text:url,width:200,height:200,colorDark:'#0f4a20',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
-    } else {
-      el.innerHTML='<div style="padding:16px;font-size:10px;color:#333;word-break:break-all;max-width:200px">'+url+'</div>';
+canvas._chartInstance=new Chart(canvas,{
+  type:'bar',
+  data:{
+    labels:months,
+    datasets:[
+      {label:'Entradas',data:entriesData,backgroundColor:'rgba(45,158,74,0.7)',borderColor:'#2d9e4a',borderWidth:1,borderRadius:4},
+      {label:'Saídas',data:saidasData,backgroundColor:'rgba(220,53,69,0.7)',borderColor:'#dc3545',borderWidth:1,borderRadius:4}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top',labels:{font:{size:11},padding:12}}},
+    scales:{
+      y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},
+      x:{ticks:{font:{size:10}},grid:{display:false}}
     }
-  },300);
-};
-
-window.printContainerQR=function(idx){
-  var c=appData.logistica[idx];
-  if(!c)return;
-  var baseUrl=window.location.href.split('?')[0];
-  var url=baseUrl+'?c='+encodeURIComponent(c.label);
-  var mats=(c.materials||[]).slice(0,8).map(function(m){
-    return '<tr><td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee">'+(m.code||'—')+'</td>'+
-           '<td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee">'+m.name+'</td>'+
-           '<td style="padding:3px 6px;font-size:10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">'+m.qty+' '+m.unit+'</td></tr>';
-  }).join('');
-  var more=(c.materials||[]).length>8?'<div style="font-size:9px;color:#aaa;text-align:center;margin-top:4px">... e mais '+((c.materials||[]).length-8)+' materiais</div>':'';
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'</title>'+
-  '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'+
-  '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;padding:16px}'+
-  '.label{border:2px solid #0f4a20;border-radius:12px;padding:16px;max-width:300px;margin:0 auto}'+
-  '.header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0f4a20}'+
-  '.logo{width:34px;height:34px;background:#1a6b2f;border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900}'+
-  '.ctn-id{font-size:26px;font-weight:900;color:#0f4a20;text-align:center;margin:8px 0 4px}'+
-  '.ctn-name{font-size:11px;color:#666;text-align:center;margin-bottom:12px}'+
-  '.qr-wrap{text-align:center;margin:10px 0}'+
-  'table{width:100%;border-collapse:collapse;margin-top:8px}'+
-  'th{background:#f0faf2;font-size:9px;font-weight:700;color:#1a6b2f;padding:4px 6px;text-align:left}'+
-  '.footer{font-size:9px;color:#aaa;text-align:center;margin-top:10px}'+
-  '@media print{.label{border:2px solid #0f4a20!important}}</style></head><body>'+
-  '<div class="label">'+
-  '<div class="header"><div class="logo">L</div><div><div style="font-size:15px;font-weight:900;color:#1a6b2f;letter-spacing:2px">LUELE WMS</div><div style="font-size:9px;color:#888">Armazém Logística</div></div></div>'+
-  '<div class="ctn-id">'+c.label+'</div>'+
-  '<div class="ctn-name">'+(c.name||'Contentor '+c.label)+'</div>'+
-  '<div class="qr-wrap"><div id="qrp"></div></div>'+
-  '<div style="font-size:8px;color:#aaa;text-align:center;word-break:break-all;margin-bottom:8px">'+url+'</div>'+
-  (mats?'<table><thead><tr><th>CÓD.</th><th>MATERIAL</th><th>QTD</th></tr></thead><tbody>'+mats+'</tbody></table>'+more:'')+
-  '<div class="footer">'+new Date().toLocaleDateString('pt-PT')+' · LUELE WMS</div>'+
-  '</div>'+
-  '<script>window.onload=function(){new QRCode(document.getElementById("qrp"),{text:"'+url+'",width:150,height:150,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
-  '</body></html>';
-  var w=window.open('','_blank','width=400,height=700');
-  if(w){w.document.write(html);w.document.close();}
-};
-
-function checkURLParams(){
-  try{
-    var params=new URLSearchParams(window.location.search);
-    var cLabel=params.get('c');
-    if(cLabel&&appData){
-      var idx=appData.logistica.findIndex(function(c){return c.label===cLabel;});
-      if(idx>=0){
-        navTo('logistica',document.querySelector('.nav-item'));
-        setTimeout(function(){
-          selContainer=idx;
-          openContainerId=appData.logistica[idx].id||idx;
-          renderLogistica();
-          renderContainerPanel(appData.logistica[idx],idx);
-          showToast('📱 Contentor '+cLabel+' aberto via QR Code');
-        },800);
-      }
-    }
-  }catch(e){console.warn('URL params:',e);}
-}
-
-
-function renderMatItems(mats,type,idx){
-if(!mats.length)return'<div class="empty-state" style="padding:16px"><div class="empty-text">Sem materiais</div></div>';
-return mats.map(m=>{
-const alertLvl=getAlertLevel(m);
-const isAlert=alertLvl==='critical';
-const isWarning=alertLvl==='warning';
-return`<div class="mat-item">
-<div style="flex:1">
-${m.code?`<div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;margin-bottom:2px">${m.code}</div>`:''}
-<div class="mat-name">${m.name}</div>
-${isAlert?`<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico! (${m.qty}/${m.minStock} ${m.unit})</div>`:isWarning?`<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda (${m.qty}/${m.reorderPoint} ${m.unit})</div>`:''}
-</div>
-<div class="mat-qty">${m.qty} ${m.unit}</div>
-<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" title="Dar entrada de stock" onclick="addStockToMat('${type}','${idx}',${m.id})">+</button>
-<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" title="Transferir para outro local" onclick="openTransferForMat('${type}','${idx}',${m.id})">⇄</button>
-<button class="mat-btn edit btn-sm" onclick="editMat('${type}','${idx}',${m.id})">✏</button>
-<button class="mat-btn btn-sm" onclick="removeMat('${type}','${idx}',${m.id})">✕</button>
-</div>`;
-}).join('');
-}
-
-window.addMatLog=async function(idx){
-const codeEl=document.getElementById('add-code-log');
-const nameEl=document.getElementById('add-name-log');
-const qtyEl=document.getElementById('add-qty-log');
-const unitEl=document.getElementById('add-unit-log');
-const minEl=document.getElementById('add-min-log');
-const reorderEl=document.getElementById('add-reorder-log');
-const code=(codeEl?.value||'').trim();
-const name=(nameEl?.value||'').trim();
-const qty=(qtyEl?.value)||'0';
-const unit=(unitEl?.value)||'un';
-const min=(minEl?.value)||'';
-const reorder=(reorderEl?.value)||'';
-if(!name){showToast('Escreve o nome do material',true);if(nameEl)nameEl.focus();return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder};
-if(!appData.logistica[idx].materials)appData.logistica[idx].materials=[];
-appData.logistica[idx].materials.push(mat);
-renderContainerPanel(appData.logistica[idx],idx);
-showToast('✓ '+name+' adicionado!');
-spawnParticles();
-saveStock(JSON.parse(JSON.stringify(appData)));
-logHistory('ENTRADA',name,appData.logistica[idx].label,'Logística',qty,unit);
-};
-
-let viniDoorOpen=false;
-window.toggleViniDoor=function(){viniDoorOpen=!viniDoorOpen;renderVini();};
-
-function getViniArr(){
-if(!appData)return[];
-if(Array.isArray(appData.vini))return appData.vini;
-
-const flat=[];
-if(Array.isArray(appData.vini)){
-appData.vini.forEach(sh=>sh.levels&&sh.levels.forEach(lv=>lv.materials&&lv.materials.forEach(m=>flat.push({...m,zone:'A'}))));
-}
-return flat;
-}
-
-function getEmasArr(){
-if(!appData)return[];
-if(Array.isArray(appData.emas)){
-return appData.emas.map(function(m){return Object.assign({},m,{zone:m.zone||'A'});});
-}
-var flat=[];
-['A','B','C','D'].forEach(function(z){(appData.emas[z]||[]).forEach(function(m){flat.push(Object.assign({},m,{zone:z}));});});
-return flat;
-}
-
-function renderVini(){
-if(!appData)return;
-const door=document.getElementById('vini-main-door');
-const stag=document.getElementById('vini-door-stag');
-if(door){
-if(viniDoorOpen){door.classList.add('wh-open');if(stag){stag.className='wh-door-stag open-s';stag.textContent='🔓 Aberto';}}
-else{door.classList.remove('wh-open');if(stag){stag.className='wh-door-stag closed-s';stag.textContent='🔒 Fechado';}}
-}
-const mats=getViniArr();
-const totalMats=mats.length;
-if(viniDoorOpen){
-document.getElementById('vini-inv-title').textContent='Vini Galpão — '+totalMats+' material'+(totalMats!==1?'is':'');
-document.getElementById('vini-close-btn').style.display='flex';
-
-const panel=document.getElementById('vini-panel');
-panel.innerHTML=renderSimpleMatList(mats,'vini','0')+renderSimpleAddForm('vini','0');
-document.getElementById('vini-sum-content').innerHTML=
-'<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>'+
-'<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+totalMats+'</span></div>'+
-'<button class="btn btn-danger btn-sm" style="width:100%;margin-top:12px" onclick="viniDoorOpen=false;renderVini()">🔒 Fechar porta</button>';
-} else {
-document.getElementById('vini-inv-title').textContent='Clique na porta para entrar no galpão';
-document.getElementById('vini-close-btn').style.display='none';
-document.getElementById('vini-panel').innerHTML='<div class="empty-state"><div class="empty-icon">🏭</div><div class="empty-text">Clique na porta para ver os materiais</div></div>';
-document.getElementById('vini-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Porta fechada</div>';
-}
-}
-
-function renderSimpleMatList(mats,type,idx){
-if(!mats.length)return '<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais</div></div>';
-var html='<div class="mat-list">';
-for(var mi=0;mi<mats.length;mi++){
-  var m=mats[mi];
-  var isAlert=!!(m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
-  html+='<div class="mat-item">';
-  html+='<div style="flex:1">';
-  if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
-  html+='<div class="mat-name">'+m.name+'</div>';
-  var alvl=getAlertLevel(m);
-  if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico! ('+m.qty+'/'+m.minStock+' '+m.unit+')</div>';
-  else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+m.qty+'/'+m.reorderPoint+' '+m.unit+')</div>';
-  html+='</div>';
-  html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
-  html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
-  html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
-  html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
-  html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
-  html+='</div>';
-}
-html+='</div>';
-return html;
-}
-
-function renderSimpleAddForm(type, idx){
-return`<div class="add-form">
-<div class="add-form-title">Adicionar material</div>
-<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
-<input class="form-input" id="add-code-${type}" placeholder="Código" autocomplete="off">
-<input class="form-input" id="add-name-${type}" placeholder="Nome do material" autocomplete="off" onkeydown="if(event.key==='Enter')addMatSimple('${type}','${idx}')">
-</div>
-<div class="form-row" style="margin-bottom:8px">
-<input class="form-input" id="add-qty-${type}" type="number" min="0" placeholder="Quantidade" onkeydown="if(event.key==='Enter')addMatSimple('${type}','${idx}')">
-<select class="form-select" id="add-unit-${type}">${unitOpts()}</select>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-<div><label style="font-size:9px;color:var(--amber);font-weight:700;letter-spacing:1px;display:block;margin-bottom:3px">🟡 PONTO DE ENCOMENDA</label><input class="form-input" id="add-reorder-${type}" type="number" min="0" placeholder="Ex: 20"></div>
-<div><label style="font-size:9px;color:var(--red);font-weight:700;letter-spacing:1px;display:block;margin-bottom:3px">🔴 STOCK DE SEGURANÇA</label><input class="form-input" id="add-min-${type}" type="number" min="0" placeholder="Ex: 5"></div>
-</div>
-<button class="btn btn-primary btn-sm" onclick="addMatSimple('${type}','${idx}')">+ Adicionar</button>
-</div>`;
-}
-
-window.addMatSimple=async function(type,idx){
-const code=(document.getElementById('add-code-'+type)?.value||'').trim();
-const name=(document.getElementById('add-name-'+type)?.value||'').trim();
-const qty=document.getElementById('add-qty-'+type)?.value||'0';
-const unit=document.getElementById('add-unit-'+type)?.value||'un';
-const min=document.getElementById('add-min-'+type)?.value||'';
-const reorder=document.getElementById('add-reorder-'+type)?.value||'';
-if(!name){showToast('Escreve o nome do material',true);return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min,reorderPoint:reorder};
-let loc='',wh='';
-if(type==='vini'){
-if(!Array.isArray(appData.vini))appData.vini=[];
-appData.vini.push(mat);loc='Vini Galpão';wh='Vini Galpão';
-} else if(type==='emas'){
-const zone=idx||'A';
-mat.zone=zone;
-if(!Array.isArray(appData.emas))appData.emas=[];
-appData.emas.push(mat);loc='Emas — Zona '+zone;wh='Emas';
-}
-document.getElementById('add-code-'+type).value='';
-document.getElementById('add-name-'+type).value='';
-document.getElementById('add-qty-'+type).value='';
-document.getElementById('add-min-'+type).value='';
-showToast('✓ '+name+' adicionado!');spawnParticles();
-saveStock(JSON.parse(JSON.stringify(appData)));
-logHistory('ENTRADA',name,loc,wh,qty,unit);
-if(type==='vini')renderVini();
-else renderEmas();
-};
-
-let selEmasZone=null;
-
-function renderEmasZoneDoors(){
-const doorsEl=document.getElementById('emas-doors');
-if(!doorsEl||!appData)return;
-const zones=['A','B','C','D'];
-const emasArr=getEmasArr();
-doorsEl.innerHTML=zones.map((z,zi)=>{
-const zItems=emasArr.filter(m=>m.zone===z);
-const hasMats=zItems.length>0;
-const hasAlert=zItems.some(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock));
-const isOpen=selEmasZone===z;
-const left=zi*25+1;
-return`<div class="wh-door${isOpen?' wh-open':''}" style="left:${left}%;width:22%;height:125px" onclick="selectEmasZone('${z}')">
-<div class="wh-door-panels"><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div></div>
-<div class="wh-door-glow"></div>
-<div class="wh-door-stag ${isOpen?'open-s':'closed-s'}">${isOpen?'🔓 Aberto':'🔒 Fechado'}</div>
-<div class="wh-door-tag">ZONA ${z} ${hasAlert?'⚠':hasMats?'('+zItems.length+'it)':''}</div>
-</div>`;
-}).join('');
-}
-
-window.selectEmasZone=function(z){
-selEmasZone=selEmasZone===z?null:z;
-renderEmas();
-};
-
-function renderEmas(){
-if(!appData)return;
-if(!Array.isArray(appData.emas)){
-  appData.emas=getEmasArr();
-} else {
-  var changed=false;
-  appData.emas.forEach(function(m){if(!m.zone){m.zone='A';changed=true;}});
-  if(changed){
-    saveStock(JSON.parse(JSON.stringify(appData)));
   }
-}
-renderEmasZoneDoors();
-const closeBtn=document.getElementById('emas-close-btn');
-const emasSearch=document.getElementById('emas-search');
-if(!selEmasZone){
-document.getElementById('emas-inv-title').textContent='Materiais — seleccione uma zona';
-if(closeBtn)closeBtn.style.display='none';
-if(emasSearch)emasSearch.style.display='none';
-document.getElementById('emas-list').innerHTML='<div class="empty-state"><div class="empty-icon">🏭</div><div class="empty-text">Clique numa porta para ver os materiais da zona</div></div>';
-document.getElementById('emas-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhuma zona seleccionada</div>';
-return;
-}
-const emasArr=getEmasArr();
-const q=(emasSearch?.value||'').toLowerCase();
-const zItems=emasArr.filter(m=>m.zone===selEmasZone);
-const list=q?zItems.filter(m=>m.name.toLowerCase().includes(q)||(m.code||'').toLowerCase().includes(q)):zItems;
-const alerts=zItems.filter(m=>m.minStock&&parseFloat(m.qty)<parseFloat(m.minStock)).length;
-document.getElementById('emas-inv-title').textContent='Zona '+selEmasZone+' — '+list.length+' material'+(list.length!==1?'is':'');
-if(closeBtn)closeBtn.style.display='flex';
-if(emasSearch)emasSearch.style.display='block';
-document.getElementById('emas-sum-content').innerHTML=
-'<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Zona</span><span style="font-size:11px;font-weight:600">'+selEmasZone+'</span></div>'+
-'<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+zItems.length+'</span></div>'+
-'<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Alertas</span><span style="font-size:11px;font-weight:600;color:var(--red)">'+alerts+'</span></div>'+
-'<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px" onclick="openTransferModal()">⇄ Transferir</button>'+
-'<button class="btn btn-danger btn-sm" style="width:100%;margin-top:8px" onclick="selEmasZone=null;renderEmas()">🔒 Fechar zona</button>';
-const el=document.getElementById('emas-list');
-el.innerHTML=renderSimpleMatList(list,'emas',selEmasZone)+renderSimpleAddForm('emas',selEmasZone);
+});
 }
 
-function renderHistory(){
-const q=(document.getElementById('hist-search')?.value||'').toLowerCase();
-const type=document.getElementById('hist-type')?.value||'';
-const wh=document.getElementById('hist-wh')?.value||'';
-const list=historyData.filter(h=>(!q||h.material.toLowerCase().includes(q)||h.user.toLowerCase().includes(q))&&(!type||h.type===type)&&(!wh||h.warehouse===wh));
-const tbody=document.getElementById('history-tbody');
-if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Sem registos</td></tr>';return;}
-tbody.innerHTML=list.map(h=>{
-const dt=new Date(h.ts);
-const date=dt.toLocaleDateString('pt-PT')+' '+dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
-const cls=h.type==='ENTRADA'?'in':h.type==='SAÍDA'?'out':'edit';
-return`<tr><td style="font-size:12px;color:var(--text3)">${date}</td><td><span class="badge badge-${cls}">${h.type}</span></td><td style="font-weight:500">${h.material}</td><td style="font-size:12px">${h.location}</td><td style="font-size:12px;color:var(--text2)">${h.warehouse}</td><td style="font-weight:600;color:var(--amber)">${h.qty}</td><td style="font-size:12px">${h.user}</td></tr>`;
-}).join('');
-}
-
-function renderAlerts(){
-const alerts=getAlerts();
-const el=document.getElementById('alerts-list');
-if(!alerts.length){
-  el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Sem alertas activos. Todos os stocks estão dentro dos limites.</div></div>';
+function renderPieChart(logM,viniM,emasM,patioM){
+var canvas=document.getElementById('chart-pie');
+if(!canvas)return;
+if(canvas._chartInstance){canvas._chartInstance.destroy();}
+var total=logM+viniM+emasM+patioM;
+if(!total){
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   return;
 }
-const critical=alerts.filter(a=>getAlertLevel(a)==='critical');
-const warning=alerts.filter(a=>getAlertLevel(a)==='warning');
-var html='';
-html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">';
-html+='<div style="background:#fff0f0;border:2px solid #fca5a5;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px">';
-html+='<span style="font-size:28px">🔴</span>';
-html+='<div><div style="font-size:22px;font-weight:700;color:var(--red)">'+critical.length+'</div><div style="font-size:11px;color:var(--red);font-weight:600">STOCK CRÍTICO</div><div style="font-size:10px;color:#888;margin-top:2px">Abaixo do stock de segurança</div></div>';
-html+='</div>';
-html+='<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px">';
-html+='<span style="font-size:28px">🟡</span>';
-html+='<div><div style="font-size:22px;font-weight:700;color:var(--amber)">'+warning.length+'</div><div style="font-size:11px;color:var(--amber);font-weight:600">PONTO DE ENCOMENDA</div><div style="font-size:10px;color:#888;margin-top:2px">Deve encomendar em breve</div></div>';
-html+='</div>';
-html+='</div>';
-if(critical.length){
-  html+='<div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span>🔴</span> STOCK CRÍTICO — ACÇÃO IMEDIATA NECESSÁRIA</div>';
-  html+=critical.map(a=>{
-    var pct=Math.round(parseFloat(a.qty)/parseFloat(a.minStock)*100);
-    return '<div class="alert-card" style="border-color:#fca5a5;background:#fff8f8">'+
-      '<div style="font-size:24px">🔴</div>'+
-      '<div class="alert-body" style="flex:1">'+
-        '<div class="alert-title" style="color:var(--red)">'+a.name+'</div>'+
-        '<div class="alert-desc">'+a.locFull+' · '+a.warehouse+'</div>'+
-        '<div style="margin-top:6px;background:#fca5a5;border-radius:4px;height:6px;width:100%;overflow:hidden">'+
-          '<div style="height:100%;background:var(--red);border-radius:4px;width:'+Math.min(pct,100)+'%"></div>'+
-        '</div>'+
-      '</div>'+
-      '<div class="alert-qty-wrap">'+
-        '<div style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:1px">ACTUAL / SEGURANÇA</div>'+
-        '<div class="alert-qty" style="color:var(--red)">'+a.qty+' / '+a.minStock+' '+a.unit+'</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
-  html+='<div style="margin-bottom:20px"></div>';
+canvas._chartInstance=new Chart(canvas,{
+  type:'doughnut',
+  data:{
+    labels:['Logística','Vini Galpão','Emas','Pátio'],
+    datasets:[{
+      data:[logM,viniM,emasM,patioM],
+      backgroundColor:['rgba(45,158,74,0.8)','rgba(37,99,235,0.8)','rgba(217,119,6,0.8)','rgba(139,92,246,0.8)'],
+      borderColor:['#2d9e4a','#2563eb','#d97706','#8b5cf6'],
+      borderWidth:2
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{size:10},padding:8}},
+      tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.parsed+' materiais ('+Math.round(ctx.parsed/total*100)+'%)';}}}
+    }
+  }
+});
 }
-if(warning.length){
-  html+='<div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span>🟡</span> PONTO DE ENCOMENDA — PLANEAR REPOSIÇÃO</div>';
-  html+=warning.map(a=>{
-    var pct=Math.round(parseFloat(a.qty)/parseFloat(a.reorderPoint)*100);
-    return '<div class="alert-card" style="border-color:#fde68a;background:#fffdf0">'+
-      '<div style="font-size:24px">🟡</div>'+
-      '<div class="alert-body" style="flex:1">'+
-        '<div class="alert-title" style="color:var(--amber)">'+a.name+'</div>'+
-        '<div class="alert-desc">'+a.locFull+' · '+a.warehouse+'</div>'+
-        '<div style="margin-top:6px;background:#fde68a;border-radius:4px;height:6px;width:100%;overflow:hidden">'+
-          '<div style="height:100%;background:var(--amber);border-radius:4px;width:'+Math.min(pct,100)+'%"></div>'+
-        '</div>'+
-      '</div>'+
-      '<div class="alert-qty-wrap">'+
-        '<div style="font-size:9px;font-weight:700;color:var(--amber);letter-spacing:1px">ACTUAL / ENCOMENDA</div>'+
-        '<div class="alert-qty" style="color:var(--amber)">'+a.qty+' / '+a.reorderPoint+' '+a.unit+'</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
+
+function renderForecast(){
+var el=document.getElementById('dash-forecast');
+if(!el)return;
+if(!historyData.length){
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sem histórico suficiente para previsão.<br>Continue a usar o sistema para gerar previsões automáticas.</div>';
+  return;
 }
+// Calculate average monthly consumption per material (last 3 months)
+var now=new Date();
+var months3=[];
+for(var i=2;i>=0;i--){var d=new Date();d.setMonth(d.getMonth()-i);months3.push(d.toISOString().slice(0,7));}
+// Get all exits in last 3 months grouped by material
+var consumption={};
+historyData.forEach(function(h){
+  if(h.type!=='SAÍDA')return;
+  if(!months3.some(function(m){return h.ts&&h.ts.startsWith(m);}))return;
+  var key=h.material;
+  if(!consumption[key])consumption[key]={name:h.material,total:0,months:new Set(),unit:'un'};
+  var qty=parseFloat(h.qty)||0;
+  consumption[key].total+=qty;
+  if(h.ts)consumption[key].months.add(h.ts.slice(0,7));
+  if(h.unit)consumption[key].unit=h.unit;
+});
+var forecasts=Object.values(consumption).map(function(c){
+  var avgMonth=c.total/Math.max(c.months.size,1);
+  var avg30=Math.round(avgMonth*10)/10;
+  // Find current stock
+  var matInStock=getAllMaterials().find(function(m){return m.name===c.name;});
+  var currentStock=matInStock?parseFloat(matInStock.qty)||0:0;
+  var daysLeft=avg30>0?Math.round(currentStock/avg30*30):999;
+  return{name:c.name,avg30:avg30,unit:c.unit,currentStock:currentStock,daysLeft:daysLeft};
+}).filter(function(f){return f.avg30>0;}).sort(function(a,b){return a.daysLeft-b.daysLeft;}).slice(0,10);
+if(!forecasts.length){
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sem saídas registadas nos últimos 3 meses.</div>';
+  return;
+}
+var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">';
+html+='<thead><tr>';
+html+='<th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;background:var(--bg);border-bottom:1px solid var(--border)">MATERIAL</th>';
+html+='<th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;background:var(--bg);border-bottom:1px solid var(--border)">STOCK ACTUAL</th>';
+html+='<th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;background:var(--bg);border-bottom:1px solid var(--border)">CONSUMO/MÊS</th>';
+html+='<th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;background:var(--bg);border-bottom:1px solid var(--border)">DIAS RESTANTES</th>';
+html+='<th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;background:var(--bg);border-bottom:1px solid var(--border)">RECOMENDAÇÃO</th>';
+html+='</tr></thead><tbody>';
+forecasts.forEach(function(f){
+  var urgency=f.daysLeft<=7?'var(--red)':f.daysLeft<=30?'var(--amber)':'var(--green)';
+  var urgencyBg=f.daysLeft<=7?'var(--red-bg)':f.daysLeft<=30?'var(--amber-bg)':'var(--green3)';
+  var rec=f.daysLeft<=7?'🔴 Encomendar URGENTE':f.daysLeft<=30?'🟡 Planear encomenda':'✅ Stock suficiente';
+  if(f.daysLeft>=999)rec='✅ Sem consumo recente';
+  html+='<tr style="border-bottom:1px solid var(--border)">';
+  html+='<td style="padding:10px 12px;font-size:13px;font-weight:500">'+f.name+'</td>';
+  html+='<td style="padding:10px 12px;text-align:center;font-weight:600;color:var(--amber)">'+f.currentStock+' '+f.unit+'</td>';
+  html+='<td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text2)">'+f.avg30+' '+f.unit+'</td>';
+  html+='<td style="padding:10px 12px;text-align:center"><span style="background:'+urgencyBg+';color:'+urgency+';border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">'+(f.daysLeft>=999?'—':f.daysLeft+' dias')+'</span></td>';
+  html+='<td style="padding:10px 12px;font-size:12px">'+rec+'</td>';
+  html+='</tr>';
+});
+html+='</tbody></table></div>';
+html+='<div style="margin-top:12px;font-size:11px;color:var(--text3);padding:0 4px">💡 Previsão baseada nas saídas dos últimos 3 meses. Quanto mais histórico existir, mais precisa será a previsão.</div>';
 el.innerHTML=html;
 }
 
-let sfsData=[];
+
+
 function startSFSListener(){
 try{
 const q=query(collection(db,'wms','sfs','records'),orderBy('ts','desc'),limit(100));

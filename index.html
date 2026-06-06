@@ -836,7 +836,13 @@ tbody tr:hover td{background:var(--bg)}
         <div class="stat-card"><div class="stat-card-icon red">⚠️</div><div class="stat-value red" id="inv-diff">0</div><div class="stat-label">Com diferenças</div></div>
         <div class="stat-card"><div class="stat-card-icon green">✅</div><div class="stat-value green" id="inv-ok">0</div><div class="stat-label">Concluídas OK</div></div>
       </div>
-      <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">📅 Contagens Agendadas</span></div><div id="inv-scheduled"></div></div>
+      <div class="card" style="margin-bottom:16px" id="my-counts-card" style="display:none">
+        <div class="card-header" style="background:var(--blue-bg);border-radius:var(--radius2) var(--radius2) 0 0;margin:-20px -20px 16px">
+          <span class="card-title" style="color:var(--blue)">🎯 As minhas contagens atribuídas</span>
+        </div>
+        <div id="inv-my-counts"></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">📅 Todas as Contagens Agendadas</span></div><div id="inv-scheduled"></div></div>
       <div class="card"><div class="card-header"><span class="card-title">📋 Histórico de Contagens</span><button class="btn btn-secondary btn-sm" onclick="exportInventoryReport()">⬇ Excel</button></div><div id="inv-history-list"></div></div>
     </div>
     
@@ -868,9 +874,9 @@ const app = initializeApp(cfg);
 const db = getFirestore(app);
 
 let USERS = {
-'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin' },
-'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator' },
-'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator' }
+'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin', telegramId:'' },
+'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator', telegramId:'' },
+'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator', telegramId:'' }
 };
 let usersLoaded = false;
 
@@ -1044,6 +1050,19 @@ if(USERS[u]&&USERS[u].pass===p){
   })();
   navTo('dashboard',document.querySelector('.nav-item'));
   setTimeout(checkURLParams, 1000);
+  // Check for pending counts assigned to this user
+  setTimeout(function(){
+    var myEmail=currentUser.id||'';
+    var myPending=(invData||[]).filter(function(c){
+      return ((c.assignedTo===myEmail||(c.assignedToAll&&c.assignedToAll.indexOf(myEmail)>=0)||c.responsible===currentUser.name)) &&
+             (c.status==='scheduled'||c.status==='in_progress');
+    });
+    if(myPending.length>0){
+      showToast('📋 Tens '+myPending.length+' contagem(ns) de inventário pendente(s)!');
+      var b=document.getElementById('badge-inv');
+      if(b){b.textContent=myPending.length;b.style.display='inline';}
+    }
+  }, 2500);
 } else {
   const el=document.getElementById('login-error');
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
@@ -1767,7 +1786,8 @@ const pass=document.getElementById('u-pass').value;
 const role=document.getElementById('u-role').value;
 if(!name||!id||!pass){showToast('Preenche todos os campos',true);return;}
 if(USERS[id]){showToast('Username já existe',true);return;}
-USERS[id]={name,pass,role};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
+var tgId=document.getElementById('nu-telegram')?.value.trim()||'';
+USERS[id]={name,pass,role,telegramId:tgId};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
 };
 
 window.openEditUserModal=function(uid){
@@ -2554,55 +2574,158 @@ showToast('✓ Contagem '+num+' criada!');
 };
 
 window.openScheduleModal=function(){
-const locs=getLocationsForCount();
-const locOpts=locs.map(l=>`<option value="${l.key}">${l.label}</option>`).join('');
-openModal(`
-<div class="modal-header"><span class="modal-title">📅 Agendar Contagem</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-<div style="margin-bottom:12px">
-<label class="modal-label">LOCALIZAÇÃO</label>
-<select class="form-select" id="sch-loc" style="width:100%">${locOpts}</select>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
-<div><label class="modal-label">RESPONSÁVEL</label><input class="form-input" id="sch-resp" value="${currentUser.name}" style="width:100%"></div>
-<div><label class="modal-label">DATA AGENDADA</label><input class="form-input" id="sch-date" type="date" value="${new Date(Date.now()+7*86400000).toISOString().slice(0,10)}" style="width:100%"></div>
-</div>
-<div class="modal-actions">
-<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-<button class="btn btn-primary" onclick="confirmSchedule()">📅 Agendar</button>
-</div>`);
+var locs=getLocationsForCount();
+var locOpts=locs.map(function(l){return'<option value="'+l.key+'">'+l.label+'</option>';}).join('');
+// Build checkboxes for each user
+var userChecks='';
+Object.entries(USERS).forEach(function(entry){
+  var email=entry[0]; var u=entry[1];
+  userChecks+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px">'+
+    '<input type="checkbox" class="sch-user-chk" value="'+email+'" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">'+
+    '<div style="flex:1">'+
+      '<div style="font-size:13px;font-weight:500">'+u.name+'</div>'+
+      '<div style="font-size:11px;color:var(--text3)">'+(ROLES[u.role]||'Operador')+(u.telegramId?' · 📱 Telegram':'')+'</div>'+
+    '</div>'+
+  '</label>';
+});
+openModal(
+  '<div class="modal-header"><span class="modal-title">📅 Agendar Contagem</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+  '<div style="margin-bottom:12px"><label class="modal-label">LOCALIZAÇÃO</label>'+
+  '<select class="form-select" id="sch-loc" style="width:100%">'+locOpts+'</select></div>'+
+  '<div style="margin-bottom:12px"><label class="modal-label">📅 DATA AGENDADA</label>'+
+  '<input class="form-input" id="sch-date" type="date" value="'+new Date(Date.now()+7*86400000).toISOString().slice(0,10)+'" style="width:100%"></div>'+
+  '<div style="margin-bottom:12px">'+
+  '<label class="modal-label" style="margin-bottom:8px;display:block">🎯 ATRIBUIR A (selecciona um ou mais)</label>'+
+  userChecks+
+  '</div>'+
+  '<div style="margin-bottom:12px"><label class="modal-label">📝 INSTRUÇÕES (opcional)</label>'+
+  '<textarea class="form-input" id="sch-obs" rows="2" style="width:100%;resize:none" placeholder="Ex: Contar todos os pneus, incluir os no chão..."></textarea></div>'+
+  '<div style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--blue)">'+
+  '📱 Os operadores com Telegram configurado receberão notificação automática.</div>'+
+  '<div class="modal-actions">'+
+  '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+  '<button class="btn btn-primary" id="sch-confirm-btn">📅 Agendar e Notificar</button>'+
+  '</div>'
+);
+document.getElementById('sch-confirm-btn').onclick = confirmSchedule;
 };
 
 window.confirmSchedule=async function(){
-const locKey=document.getElementById('sch-loc')?.value;
-const resp=document.getElementById('sch-resp')?.value.trim()||currentUser.name;
-const scheduledFor=document.getElementById('sch-date')?.value;
-if(!locKey||!scheduledFor)return;
-const locs=getLocationsForCount();
-const loc=locs.find(l=>l.key===locKey);
-const num=getINVNumber();
-const count={
-number:num, location:loc.label, locationKey:locKey,
-responsible:resp, scheduledFor, date:scheduledFor,
-status:'scheduled', items:[], differences:[], hasDifferences:false,
-createdBy:currentUser.name
+var locKey=document.getElementById('sch-loc')?.value;
+var scheduledFor=document.getElementById('sch-date')?.value;
+var obs=document.getElementById('sch-obs')?.value.trim()||'';
+// Get all selected users
+var selectedEmails=[];
+document.querySelectorAll('.sch-user-chk:checked').forEach(function(chk){
+  selectedEmails.push(chk.value);
+});
+if(!locKey||!scheduledFor){showToast('Preenche a localização e a data',true);return;}
+if(!selectedEmails.length){showToast('Selecciona pelo menos um responsável',true);return;}
+var locs=getLocationsForCount();
+var loc=locs.find(function(l){return l.key===locKey;});
+var responsibleNames=selectedEmails.map(function(e){return USERS[e]?USERS[e].name:e;}).join(', ');
+var num=getINVNumber();
+var count={
+  number:num,
+  location:loc.label,
+  locationKey:locKey,
+  responsible:responsibleNames,
+  assignedTo:selectedEmails[0], // primary assignee
+  assignedToAll:selectedEmails, // all assignees
+  scheduledFor:scheduledFor,
+  date:scheduledFor,
+  obs:obs,
+  status:'scheduled',
+  items:[],
+  differences:[],
+  hasDifferences:false,
+  createdBy:currentUser.name,
+  createdAt:new Date().toISOString()
 };
 closeModal();
 await saveInventoryCount(count);
-showToast('📅 Contagem agendada para '+new Date(scheduledFor).toLocaleDateString('pt-PT'));
+showToast('📅 Contagem agendada — '+selectedEmails.length+' pessoa(s) notificada(s)');
+// Send Telegram notification to ALL assigned users
+var notified=0;
+for(var i=0;i<selectedEmails.length;i++){
+  var email=selectedEmails[i];
+  var u=USERS[email];
+  if(u&&u.telegramId){
+    await sendTelegramNotification(u.telegramId, count);
+    notified++;
+  }
+}
+if(notified>0) showToast('📱 '+notified+' notificação(ões) Telegram enviada(s)!');
+updateInvBadge();
 };
 
-window.startCount=function(countId){
-let count=invData.find(c=>c.id===countId);
-if(!count)return;
-if(count.status==='scheduled'){
+async function sendTelegramNotification(chatId, count){
+var token='8671592203:AAEfPk-RpUr9mjxqiV3XKerNWietiAWLme8';
+var date=new Date(count.scheduledFor).toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+var msg='📋 *LUELE WMS — Nova Contagem Agendada*\n\n'+
+  '👤 Atribuída a: *'+count.responsible+'*\n'+
+  '📍 Localização: *'+count.location+'*\n'+
+  '📅 Data: *'+date+'*\n'+
+  '🔢 Número: `'+count.number+'`\n'+
+  (count.obs?'\n📝 Instruções: '+count.obs+'\n':'')+
+  '\n➡️ Abre o sistema para iniciar a contagem:\n'+
+  'https://braulioinv2019-wq.github.io/armazens\n\n'+
+  '_Agendado por: '+count.createdBy+'_';
+try{
+  await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:chatId,text:msg,parse_mode:'Markdown'})
+  });
+  showToast('📱 Notificação enviada via Telegram!');
+}catch(e){
+  console.error('Telegram notification failed:',e);
+}
+}
 
-const locs=getLocationsForCount();
-const loc=locs.find(l=>l.key===count.locationKey);
-if(loc)count.items=loc.items.map(m=>({id:m.id,code:m.code||'',name:m.name,systemQty:parseFloat(m.qty)||0,unit:m.unit,countedQty:null}));
-count.status='in_progress';
-saveInventoryCount(count);
+
+
+window.startCount=function(countId){
+var count=invData.find(function(c){return c.id===countId;});
+if(!count)return;
+// If already in_progress by someone else, ask if wants to join
+if(count.status==='in_progress' && count.startedBy && count.startedBy!==currentUser.name){
+  openModal(
+    '<div class="modal-header"><span class="modal-title">📋 Contagem em progresso</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
+    '⚠️ <strong>'+count.startedBy+'</strong> já iniciou esta contagem.<br><br>'+
+    'Podes juntar-te e lançar os valores em conjunto, mas <strong>só existe uma contagem</strong> no sistema.</div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn btn-primary" id="join-count-btn">👥 Juntar à contagem</button>'+
+    '</div>'
+  );
+  document.getElementById('join-count-btn').onclick=function(){closeModal();joinCount(countId);};
+  return;
+}
+if(count.status==='scheduled'){
+  var locs=getLocationsForCount();
+  var loc=locs.find(function(l){return l.key===count.locationKey;});
+  if(loc)count.items=loc.items.map(function(m){return{id:m.id,code:m.code||'',name:m.name,systemQty:parseFloat(m.qty)||0,unit:m.unit,countedQty:null};});
+  count.status='in_progress';
+  count.startedBy=currentUser.name;
+  count.startedAt=new Date().toISOString();
+  saveInventoryCount(count);
 }
 openCountingModal(count);
+};
+
+window.joinCount=function(countId){
+var count=invData.find(function(c){return c.id===countId;});
+if(!count)return;
+// Add current user to participants
+if(!count.participants)count.participants=[];
+if(count.participants.indexOf(currentUser.name)<0){
+  count.participants.push(currentUser.name);
+  saveInventoryCount(count);
+}
+openCountingModal(count);
+showToast('👥 Juntaste-te à contagem de '+count.startedBy);
 };
 
 window.openCountingModal=function(count){

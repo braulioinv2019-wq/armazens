@@ -1064,7 +1064,8 @@ if(USERS[u]&&USERS[u].pass===p){
       if(b){b.textContent=myPending.length;b.style.display='inline';}
     }
   }, 2500);
-  setTimeout(checkURLParams, 1500);
+  // Open container from QR URL param
+  if(typeof checkURLParams==='function') setTimeout(checkURLParams, 1500);
 } else {
   const el=document.getElementById('login-error');
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
@@ -1788,17 +1789,20 @@ var doorsEl=document.getElementById('emas-doors');
 if(!doorsEl)return;
 var zones=['A','B','C','D'];
 var positions=[{left:'1%',width:'24%'},{left:'26%',width:'24%'},{left:'51%',width:'24%'},{left:'76%',width:'23%'}];
-doorsEl.innerHTML=zones.map(function(z,i){
+var html='';
+zones.forEach(function(z,i){
   var zItems=emasArr.filter(function(m){return m.zone===z;});
   var isOpen=selEmasZone===z;
   var hasAlert=zItems.some(function(m){return getAlertLevel(m)==='critical';});
-    '<div class="wh-door-panels"><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div></div>'+
-    '<div class="wh-door-glow"></div>'+
-    '<div class="wh-zone-label" style="top:5px;left:0;right:0;text-align:center">ZONA '+z+'</div>'+
-    '<div class="wh-door-stag '+(isOpen?'open-s':'closed-s')+'">'+(hasAlert?'🔴':isOpen?'🔓 Aberto':'🔒')+' '+zItems.length+' mat.</div>'+
-    '<div class="wh-door-tag">ZONA '+z+'</div>'+
-  '</div>';
-}).join('');
+  var cls='wh-door'+(isOpen?' wh-open':'');
+  html+='<div class="'+cls+'" data-act="emaszone" data-t="'+z+'" style="left:'+positions[i].left+';width:'+positions[i].width+';height:130px;cursor:pointer">';
+  html+='<div class="wh-door-panels"><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div></div>';
+  html+='<div class="wh-door-glow"></div>';
+  html+='<div style="position:absolute;top:8px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:1px">ZONA '+z+'</div>';
+  html+='<div style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.6)">'+(hasAlert?'🔴':isOpen?'🔓':'🔒')+' '+zItems.length+' mat.</div>';
+  html+='</div>';
+});
+doorsEl.innerHTML=html;
 }
 
 window.toggleEmasZone=function(zone){

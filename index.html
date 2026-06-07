@@ -1065,7 +1065,7 @@ if(USERS[u]&&USERS[u].pass===p){
     }
   }, 2500);
   // Open container from QR URL param
-  if(typeof checkURLParams==='function') setTimeout(checkURLParams, 1500);
+  setTimeout(function(){try{var p=new URLSearchParams(window.location.search);var cL=p.get('c');if(cL&&appData&&typeof renderLogistica==='function'){var ci=appData.logistica.findIndex(function(c){return c.label===cL;});if(ci>=0){navTo('logistica',document.querySelector('.nav-item'));setTimeout(function(){selContainer=ci;openContainerId=ci;renderLogistica();renderContainerPanel(appData.logistica[ci],ci);showToast('📱 Contentor '+cL+' aberto via QR Code');},800);}}}catch(e){}},1500);
 } else {
   const el=document.getElementById('login-error');
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
@@ -3889,24 +3889,7 @@ var w=window.open('','_blank','width=400,height=600');
 if(w){w.document.write(html);w.document.close();}
 };
 
-function checkURLParams(){
-try{
-  var params=new URLSearchParams(window.location.search);
-  var cLabel=params.get('c');
-  if(cLabel&&appData){
-    var cidx=appData.logistica.findIndex(function(c){return c.label===cLabel;});
-    if(cidx>=0){
-      navTo('logistica',document.querySelector('.nav-item'));
-      setTimeout(function(){
-        selContainer=cidx;openContainerId=cidx;
-        renderLogistica();
-        renderContainerPanel(appData.logistica[cidx],cidx);
-        showToast('📱 Contentor '+cLabel+' aberto via QR Code');
-      },800);
-    }
-  }
-}catch(e){console.warn('URL params:',e);}
-}
+
 
 window.deleteContainer=function(idx){
 openModal(

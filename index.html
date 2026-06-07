@@ -1333,6 +1333,7 @@ document.addEventListener('click',function(e){
   else if(action==='edit')editMat(type,idx,id);
   else if(action==='remove')removeMat(type,idx,id);
   else if(action==='impzone'){var lbl=btn.getAttribute('data-x');var tp=type;closeModal();setTimeout(function(){openImportModal(tp,lbl);},150);}
+  else if(action==='emaszone'){toggleEmasZone(type);}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
@@ -1512,6 +1513,253 @@ grouped.forEach(g=>{
 });
 el.innerHTML=html;
 };
+
+function renderLogistica(){
+if(!appData)return;
+const row=document.getElementById('logistica-grid');
+if(!row)return;
+row.innerHTML=appData.logistica.map(function(c,idx){
+  const status=containerStatus(c);
+  const isOpen=openContainerId===idx||selContainer===idx;
+  const color=CTN_COLORS[idx%CTN_COLORS.length];
+  const pct=Math.min(Math.round((c.materials.length/20)*100),100);
+  return renderContainer(c,idx,color,isOpen,status);
+}).join('');
+if(selContainer!==null&&appData.logistica[selContainer]){
+  renderContainerPanel(appData.logistica[selContainer],selContainer);
+}
+}
+
+
+
+const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red'];
+
+function renderContainer(c,idx,color,isOpen,status){
+var alertDot=status==='alert'?'<div class="cu-warn"></div>':'';
+return '<div class="cu '+color+(isOpen?' open sel':'')+(status==='alert'?' alert-pulse':'')+'" data-idx="'+idx+'" onclick="selectContainer('+idx+')" style="width:100px">'+
+  '<div class="cu-top" style="background:'+(color==='c-blue'?'#243f66':color==='c-rust'?'#562515':color==='c-olive'?'#304520':color==='c-grey'?'#303d4a':color==='c-tan'?'#453818':'#561515')+'"></div>'+
+  '<div class="cu-body">'+alertDot+
+  '<div class="cu-corrugation"></div>'+
+  '<div class="cu-shade-l"></div><div class="cu-shade-r"></div>'+
+  '<div class="cu-bar" style="left:33%"></div><div class="cu-bar" style="left:66%"></div>'+
+  '<div class="cu-logo-txt">LUELE</div>'+
+  '<div class="cu-num">'+c.label+'</div>'+
+  '<div class="cu-doors">'+
+    '<div class="cu-door-l"></div>'+
+    '<div class="cu-door-r"></div>'+
+  '</div>'+
+  '<div class="cu-interior">'+
+    '<div class="int-light"></div>'+
+    '<div class="int-boxes">'+
+      (c.materials.slice(0,6).map(function(){return'<div class="int-box" style="width:'+(12+Math.random()*16)+'px;height:'+(10+Math.random()*14)+'px;background:hsl('+(Math.random()*60+20)+',40%,35%)"></div>';}).join(''))+
+    '</div>'+
+    '<div class="int-pallet"></div>'+
+  '</div>'+
+  '</div>'+
+  '<div class="cu-bottom"><div class="cu-foot"></div><div class="cu-foot"></div></div>'+
+  '<div class="cu-label">'+
+    '<div class="cu-id">'+c.label+'</div>'+
+    '<div class="cu-badge '+(isOpen?'open':c.materials.length?'partial':'closed')+'">'+
+      (isOpen?'🔓 Aberto':c.materials.length?'📦 '+c.materials.length:'🔒 Vazio')+
+    '</div>'+
+  '</div>'+
+'</div>';
+}
+
+window.selectContainer=function(idx){
+if(selContainer===idx){
+  selContainer=null;openContainerId=null;
+  document.querySelectorAll('.cu').forEach(function(el){el.classList.remove('open','sel');});
+  document.getElementById('log-inv-title').textContent='Inventário — seleccione um contentor';
+  document.getElementById('log-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhum contentor seleccionado</div>';
+  document.getElementById('logistica-panel').innerHTML='';
+  document.getElementById('log-close-btn').style.display='none';
+  updateSteps(0);
+  return;
+}
+selContainer=idx;openContainerId=idx;
+document.querySelectorAll('.cu').forEach(function(el,i){
+  el.classList.toggle('open',i===idx);
+  el.classList.toggle('sel',i===idx);
+});
+updateSteps(2);
+renderContainerPanel(appData.logistica[idx],idx);
+};
+
+function updateSteps(step){
+for(var i=1;i<=4;i++){
+  var circle=document.getElementById('cus'+i);
+  var line=document.getElementById('cul'+(i-1<1?1:i-1));
+  if(!circle)continue;
+  if(i<=step){circle.className='cus-circle done';}
+  else if(i===step+1){circle.className='cus-circle active';}
+  else{circle.className='cus-circle pend';}
+}
+for(var j=1;j<=3;j++){
+  var l=document.getElementById('cul'+j);
+  if(l)l.className='cus-line'+(j<step?' done':'');
+}
+}
+
+function renderContainerPanel(c,idx){
+var el=document.getElementById('logistica-panel');
+var titleEl=document.getElementById('log-inv-title');
+var closeBtn=document.getElementById('log-close-btn');
+if(!el)return;
+if(titleEl)titleEl.textContent='Inventário — '+c.label+(c.name?' — '+c.name:'');
+if(closeBtn)closeBtn.style.display='inline-flex';
+var pct=c.materials.length?Math.min(Math.round(c.materials.length/20*100),100):0;
+var sumEl=document.getElementById('log-sum-content');
+if(sumEl)sumEl.innerHTML=
+  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Código</span><span style="font-size:11px;font-weight:600">'+c.label+'</span></div>'+
+  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Nome</span><span style="font-size:11px;font-weight:600">'+(c.name||'—')+'</span></div>'+
+  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>'+
+  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+c.materials.length+'</span></div>'+
+  '<div style="margin-top:10px">'+
+  '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px"><span>Utilização</span><span style="color:var(--green2)">'+pct+'%</span></div>'+
+  '<div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--green2);border-radius:3px"></div></div>'+
+  '</div>'+
+  '<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">'+
+  '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="showContainerQR('+idx+')">📱 QR Code</button>'+
+  '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="renameContainer('+idx+')">✏ Renomear</button>'+
+  '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar</button>'+
+  '<button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteContainer('+idx+')">🗑 Eliminar</button>'+
+  '</div>';
+updateSteps(3);
+el.innerHTML=renderMatItems(c.materials,'log',String(idx))+renderSimpleAddForm('log',String(idx));
+}
+
+function renderMatItems(mats,type,idx){
+if(!mats.length)return'<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais neste contentor</div></div>';
+var html='<div class="mat-list">';
+for(var i=0;i<mats.length;i++){
+  var m=mats[i];
+  var alvl=getAlertLevel(m);
+  html+='<div class="mat-item">';
+  html+='<div style="flex:1">';
+  if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
+  html+='<div class="mat-name">'+m.name+'</div>';
+  if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico ('+m.qty+'/'+m.minStock+' '+m.unit+')</div>';
+  else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+m.qty+'/'+m.reorderPoint+' '+m.unit+')</div>';
+  html+='</div>';
+  html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
+  html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
+  html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
+  html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
+  html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
+  html+='</div>';
+}
+html+='</div>';
+return html;
+}
+
+// ── VINI GALPÃO ──────────────────────────────────────────────────────────
+var viniDoorOpen=false;
+function renderVini(){
+if(!appData)return;
+var viniArr=Array.isArray(appData.vini)?appData.vini:[];
+var el=document.getElementById('vini-panel');
+var titleEl=document.getElementById('vini-inv-title');
+var closeBtn=document.getElementById('vini-close-btn');
+var sumEl=document.getElementById('vini-sum-content');
+var door=document.getElementById('vini-main-door');
+var stag=document.getElementById('vini-door-stag');
+if(viniDoorOpen){
+  if(door)door.classList.add('wh-open');
+  if(stag){stag.textContent='🔓 Aberto';stag.className='wh-door-stag open-s';}
+  if(titleEl)titleEl.textContent='Vini Galpão — '+viniArr.length+' materiais';
+  if(closeBtn)closeBtn.style.display='inline-flex';
+  if(sumEl)sumEl.innerHTML='<div class="sr"><span class="sk">Zona</span><span style="font-weight:600">Vini Galpão</span></div>'+
+    '<div class="sr"><span class="sk">Materiais</span><span style="font-weight:600;color:var(--amber)">'+viniArr.length+'</span></div>'+
+    '<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="viniDoorOpen=false;renderVini()">🔒 Fechar galpão</button>';
+  if(el)el.innerHTML=renderSimpleMatList(viniArr,'vini','0')+renderSimpleAddForm('vini','0');
+} else {
+  if(door)door.classList.remove('wh-open');
+  if(stag){stag.textContent='🔒 Fechado';stag.className='wh-door-stag closed-s';}
+  if(titleEl)titleEl.textContent='Clique na porta para entrar no galpão';
+  if(closeBtn)closeBtn.style.display='none';
+  if(sumEl)sumEl.innerHTML='<div style="font-size:12px;color:var(--text3)">Porta fechada</div>';
+  if(el)el.innerHTML='';
+}
+}
+
+window.toggleViniDoor=function(){viniDoorOpen=!viniDoorOpen;renderVini();};
+
+// ── EMAS ─────────────────────────────────────────────────────────────────
+var selEmasZone=null;
+function getEmasArr(){
+if(!appData)return[];
+if(Array.isArray(appData.emas)){
+  return appData.emas.map(function(m){return Object.assign({},m,{zone:m.zone||'A'});});
+}
+var flat=[];
+['A','B','C','D'].forEach(function(z){(appData.emas[z]||[]).forEach(function(m){flat.push(Object.assign({},m,{zone:z}));});});
+return flat;
+}
+
+function renderEmas(){
+if(!appData)return;
+if(!Array.isArray(appData.emas)){
+  appData.emas=getEmasArr();
+} else {
+  var changed=false;
+  appData.emas.forEach(function(m){if(!m.zone){m.zone='A';changed=true;}});
+  if(changed)saveStock(JSON.parse(JSON.stringify(appData)));
+}
+renderEmasZoneDoors();
+var listEl=document.getElementById('emas-list');
+var titleEl=document.getElementById('emas-inv-title');
+var closeBtn=document.getElementById('emas-close-btn');
+var searchEl=document.getElementById('emas-search');
+var sumEl=document.getElementById('emas-sum-content');
+var doorsEl=document.getElementById('emas-doors');
+if(selEmasZone){
+  var q=(searchEl?searchEl.value||'':'').toLowerCase();
+  var zItems=getEmasArr().filter(function(m){return m.zone===selEmasZone&&(!q||m.name.toLowerCase().includes(q)||(m.code||'').toLowerCase().includes(q));});
+  if(titleEl)titleEl.textContent='Zona '+selEmasZone+' — '+zItems.length+' materiais';
+  if(closeBtn)closeBtn.style.display='inline-flex';
+  if(searchEl)searchEl.style.display='block';
+  if(sumEl)sumEl.innerHTML='<div class="sr"><span class="sk">Zona</span><span style="font-weight:700">'+selEmasZone+'</span></div>'+
+    '<div class="sr"><span class="sk">Materiais</span><span style="font-weight:600;color:var(--amber)">'+zItems.length+'</span></div>'+
+    '<div class="sr"><span class="sk">Alertas</span><span style="font-weight:600;color:var(--red)">'+zItems.filter(function(m){return getAlertLevel(m)==='critical';}).length+'</span></div>'+
+    '<div style="margin-top:12px">'+
+    '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:6px" onclick="openTransferModal()">⇄ Transferir</button>'+
+    '<button class="btn btn-danger btn-sm" style="width:100%" onclick="selEmasZone=null;renderEmas()">🔒 Fechar zona</button>'+
+    '</div>';
+  if(listEl)listEl.innerHTML=renderSimpleMatList(zItems,'emas',selEmasZone)+renderSimpleAddForm('emas',selEmasZone);
+} else {
+  if(titleEl)titleEl.textContent='Materiais — seleccione uma zona';
+  if(closeBtn)closeBtn.style.display='none';
+  if(searchEl)searchEl.style.display='none';
+  if(sumEl)sumEl.innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhuma zona seleccionada</div>';
+  if(listEl)listEl.innerHTML='';
+}
+}
+
+function renderEmasZoneDoors(){
+var emasArr=getEmasArr();
+var doorsEl=document.getElementById('emas-doors');
+if(!doorsEl)return;
+var zones=['A','B','C','D'];
+var positions=[{left:'1%',width:'24%'},{left:'26%',width:'24%'},{left:'51%',width:'24%'},{left:'76%',width:'23%'}];
+doorsEl.innerHTML=zones.map(function(z,i){
+  var zItems=emasArr.filter(function(m){return m.zone===z;});
+  var isOpen=selEmasZone===z;
+  var hasAlert=zItems.some(function(m){return getAlertLevel(m)==='critical';});
+    '<div class="wh-door-panels"><div class="wh-door-panel"></div><div class="wh-door-panel"></div><div class="wh-door-panel"></div></div>'+
+    '<div class="wh-door-glow"></div>'+
+    '<div class="wh-zone-label" style="top:5px;left:0;right:0;text-align:center">ZONA '+z+'</div>'+
+    '<div class="wh-door-stag '+(isOpen?'open-s':'closed-s')+'">'+(hasAlert?'🔴':isOpen?'🔓 Aberto':'🔒')+' '+zItems.length+' mat.</div>'+
+    '<div class="wh-door-tag">ZONA '+z+'</div>'+
+  '</div>';
+}).join('');
+}
+
+window.toggleEmasZone=function(zone){
+selEmasZone=selEmasZone===zone?null:zone;
+renderEmas();
+};
+
 
 function renderDashboard(){
 if(!appData)return;
@@ -3476,4 +3724,189 @@ waitFirebase().then(function(){
 
 </script>
 </body>
-</html>
+</html
+// ── ADD MATERIAL (Logística) ──────────────────────────────────────────────
+window.addMatLog=async function(idx){
+var nd=JSON.parse(JSON.stringify(appData));
+var c=nd.logistica[parseInt(idx)];
+if(!c)return;
+var code=document.getElementById('add-code-'+idx)?.value.trim()||'';
+var name=document.getElementById('add-name-'+idx)?.value.trim()||'';
+var qty=document.getElementById('add-qty-'+idx)?.value.trim()||'0';
+var unit=document.getElementById('add-unit-'+idx)?.value||'un';
+if(!name){showToast('Indica o nome do material',true);return;}
+c.materials.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,minStock:'',reorderPoint:''});
+appData=nd;
+await saveStock(nd);
+await logHistory('ENTRADA',name,'Contentor '+c.label,'Logística',qty,unit);
+showToast('✓ '+name+' adicionado ao contentor '+c.label);
+renderContainerPanel(c,parseInt(idx));
+};
+
+// ── ADD MATERIAL (Simples — Vini/Emas/Patio) ─────────────────────────────
+window.addMatSimple=async function(type,idx){
+var nd=JSON.parse(JSON.stringify(appData));
+var code=document.getElementById('add-code-'+type+idx)?.value.trim()||'';
+var name=document.getElementById('add-name-'+type+idx)?.value.trim()||'';
+var qty=document.getElementById('add-qty-'+type+idx)?.value.trim()||'0';
+var unit=document.getElementById('add-unit-'+type+idx)?.value||'un';
+if(!name){showToast('Indica o nome do material',true);return;}
+var wh='';
+if(type==='vini'){
+  if(!Array.isArray(nd.vini))nd.vini=[];
+  nd.vini.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,minStock:'',reorderPoint:''});
+  wh='Vini Galpão';
+}else if(type==='emas'){
+  if(!Array.isArray(nd.emas))nd.emas=[];
+  nd.emas.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,zone:idx,minStock:'',reorderPoint:''});
+  wh='Emas';
+}else if(type==='patio'){
+  if(!Array.isArray(nd.patio))nd.patio=[];
+  nd.patio.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,arrivedAt:new Date().toISOString(),status:'transit'});
+  wh='Pátio';
+}
+appData=nd;
+await saveStock(nd);
+await logHistory('ENTRADA',name,wh,wh,qty,unit);
+showToast('✓ '+name+' adicionado em '+wh);
+if(type==='vini')renderVini();
+else if(type==='emas')renderEmas();
+else if(type==='patio')renderPatio();
+};
+
+// ── DELETE CONTAINER ──────────────────────────────────────────────────────
+
+// ── QR CODE SYSTEM ────────────────────────────────────────────────────────
+window.showContainerQR=function(idx){
+var c=appData.logistica[idx];
+if(!c)return;
+var baseUrl=window.location.href.split('?')[0];
+var url=baseUrl+'?c='+encodeURIComponent(c.label);
+openModal(
+  '<div class="modal-header">'+
+  '<div><span class="modal-title">📱 QR Code — '+c.label+'</span>'+
+  '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+(c.materials?c.materials.length:0)+' materiais</div></div>'+
+  '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
+  '<div style="text-align:center;padding:16px 0">'+
+  '<div id="qr-canvas" style="display:inline-block;padding:16px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'+
+  '<div style="margin-top:12px;font-size:10px;color:var(--text3);word-break:break-all;padding:0 10px">'+url+'</div>'+
+  '</div>'+
+  '<div style="background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;text-align:center">'+
+  '📌 Cola este QR code na porta do contentor <strong>'+c.label+'</strong></div>'+
+  '<div class="modal-actions">'+
+  '<button class="btn btn-secondary" onclick="closeModal()">Fechar</button>'+
+  '<button class="btn btn-primary" id="print-qr-btn">🖨 Imprimir etiqueta</button>'+
+  '</div>'
+);
+document.getElementById('print-qr-btn').onclick=function(){printContainerQR(idx);};
+setTimeout(function(){
+  var el=document.getElementById('qr-canvas');
+  if(!el)return;
+  if(typeof QRCode!=='undefined'){
+    new QRCode(el,{text:url,width:200,height:200,colorDark:'#0f4a20',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+  } else {
+    el.innerHTML='<div style="padding:16px;font-size:10px;color:#333;word-break:break-all;max-width:200px">'+url+'</div>';
+  }
+},300);
+};
+
+window.printContainerQR=function(idx){
+var c=appData.logistica[idx];
+if(!c)return;
+var baseUrl=window.location.href.split('?')[0];
+var url=baseUrl+'?c='+encodeURIComponent(c.label);
+var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'</title>'+
+'<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'+
+'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;padding:16px}'+
+'.label{border:2px solid #0f4a20;border-radius:12px;padding:16px;max-width:300px;margin:0 auto}'+
+'.header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0f4a20}'+
+'.logo{width:34px;height:34px;background:#1a6b2f;border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900}'+
+'.ctn-id{font-size:26px;font-weight:900;color:#0f4a20;text-align:center;margin:8px 0 4px}'+
+'.ctn-name{font-size:11px;color:#666;text-align:center;margin-bottom:12px}'+
+'.qr-wrap{text-align:center;margin:10px 0}'+
+'.footer{font-size:9px;color:#aaa;text-align:center;margin-top:10px}</style></head><body>'+
+'<div class="label">'+
+'<div class="header"><div class="logo">L</div><div><div style="font-size:15px;font-weight:900;color:#1a6b2f;letter-spacing:2px">LUELE WMS</div><div style="font-size:9px;color:#888">Armazém Logística</div></div></div>'+
+'<div class="ctn-id">'+c.label+'</div>'+
+'<div class="ctn-name">'+(c.name||'Contentor '+c.label)+'</div>'+
+'<div class="qr-wrap"><div id="qrp"></div></div>'+
+'<div style="font-size:8px;color:#aaa;text-align:center;word-break:break-all;margin-bottom:8px">'+url+'</div>'+
+'<div class="footer">'+new Date().toLocaleDateString('pt-PT')+' · LUELE WMS</div>'+
+'</div>'+
+'<script>window.onload=function(){new QRCode(document.getElementById("qrp"),{text:"'+url+'",width:150,height:150,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
+'</body></html>';
+var w=window.open('','_blank','width=400,height=600');
+if(w){w.document.write(html);w.document.close();}
+};
+
+function checkURLParams(){
+try{
+  var params=new URLSearchParams(window.location.search);
+  var cLabel=params.get('c');
+  if(cLabel&&appData){
+    var cidx=appData.logistica.findIndex(function(c){return c.label===cLabel;});
+    if(cidx>=0){
+      navTo('logistica',document.querySelector('.nav-item'));
+      setTimeout(function(){
+        selContainer=cidx;openContainerId=cidx;
+        renderLogistica();
+        renderContainerPanel(appData.logistica[cidx],cidx);
+        showToast('📱 Contentor '+cLabel+' aberto via QR Code');
+      },800);
+    }
+  }
+}catch(e){console.warn('URL params:',e);}
+}
+
+window.deleteContainer=function(idx){
+openModal(
+  '<div class="modal-header"><span class="modal-title">🗑 Eliminar Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+  '<div style="background:var(--red-bg);border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
+  '⚠️ Tens a certeza que queres eliminar o contentor <strong>'+appData.logistica[idx].label+'</strong>?<br>'+
+  '<span style="font-size:11px;color:var(--text3)">Todos os materiais dentro serão removidos.</span></div>'+
+  '<div class="modal-actions">'+
+  '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+  '<button class="btn btn-danger" id="del-ctn-btn">🗑 Eliminar</button>'+
+  '</div>'
+);
+document.getElementById('del-ctn-btn').onclick=async function(){
+  var nd=JSON.parse(JSON.stringify(appData));
+  nd.logistica.splice(idx,1);
+  selContainer=null;openContainerId=null;
+  closeModal();
+  await saveStock(nd);
+  showToast('Contentor eliminado');
+  renderLogistica();
+};
+};
+
+// ── RENAME CONTAINER ──────────────────────────────────────────────────────
+window.renameContainer=function(idx){
+var c=appData.logistica[idx];
+openModal(
+  '<div class="modal-header"><span class="modal-title">✏ Renomear Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+  '<div style="margin-bottom:12px"><label class="modal-label">CÓDIGO / ETIQUETA</label>'+
+  '<input class="form-input" id="ren-label" value="'+c.label+'" style="width:100%;margin-top:6px"></div>'+
+  '<div style="margin-bottom:12px"><label class="modal-label">NOME / DESCRIÇÃO (opcional)</label>'+
+  '<input class="form-input" id="ren-name" value="'+(c.name||'')+'" placeholder="Ex: Peças mecânicas" style="width:100%;margin-top:6px"></div>'+
+  '<div class="modal-actions">'+
+  '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+  '<button class="btn btn-primary" id="ren-ctn-btn">✓ Guardar</button>'+
+  '</div>'
+);
+document.getElementById('ren-ctn-btn').onclick=async function(){
+  var label=document.getElementById('ren-label').value.trim();
+  var name=document.getElementById('ren-name').value.trim();
+  if(!label){showToast('O código não pode estar vazio',true);return;}
+  var nd=JSON.parse(JSON.stringify(appData));
+  nd.logistica[idx].label=label;
+  nd.logistica[idx].name=name;
+  closeModal();
+  await saveStock(nd);
+  showToast('✓ Contentor renomeado para '+label);
+  renderLogistica();
+  if(selContainer===idx)renderContainerPanel(nd.logistica[idx],idx);
+};
+};
+
+>

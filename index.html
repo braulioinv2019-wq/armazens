@@ -1328,16 +1328,17 @@ document.addEventListener('click',function(e){
   e.preventDefault();e.stopPropagation();
   var action=btn.getAttribute('data-act');
   var type=btn.getAttribute('data-t');
-  var idx=btn.getAttribute('data-x');
+  var xtra=btn.getAttribute('data-x');
   var id=parseInt(btn.getAttribute('data-id'));
-  if(isNaN(id))return;
-  if(action==='addstock')addStockToMat(type,idx,id);
-  else if(action==='transfer')openTransferForMat(type,idx,id);
-  else if(action==='edit')editMat(type,idx,id);
-  else if(action==='remove')removeMat(type,idx,id);
-  else if(action==='impzone'){var lbl=btn.getAttribute('data-x');var tp=type;closeModal();setTimeout(function(){openImportModal(tp,lbl);},150);}
-  else if(action==='emaszone'){toggleEmasZone(type);}
-  else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);}
+  var needsId=['addstock','transfer','edit','remove'];
+  if(needsId.indexOf(action)>=0&&isNaN(id))return;
+  if(action==='addstock')addStockToMat(type,xtra,id);
+  else if(action==='transfer')openTransferForMat(type,xtra,id);
+  else if(action==='edit')editMat(type,xtra,id);
+  else if(action==='remove')removeMat(type,xtra,id);
+  else if(action==='impzone'){closeModal();setTimeout(function(){openImportModal(type,xtra);},150);}
+  else if(action==='emaszone'){toggleEmasZone(type);return;}
+  else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);return;}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 

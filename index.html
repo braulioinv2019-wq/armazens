@@ -1347,7 +1347,7 @@ if(el)el.classList.add('active');
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 document.getElementById('page-'+page).classList.add('active');
 if(page==='dashboard')renderDashboard();
-if(page==='logistica')renderLogistica();
+if(page==='logistica'){console.log('navTo logistica, appData:', !!appData);renderLogistica();}
 if(page==='vini')renderVini();
 if(page==='emas')renderEmas();
 if(page==='history')renderHistory();
@@ -1560,9 +1560,12 @@ function renderSimpleAddForm(type, idx){
 const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red'];
 
 function renderLogistica(){
+console.log('renderLogistica called, appData:', !!appData, 'logistica length:', appData?.logistica?.length);
 if(!appData)return;
 const row=document.getElementById('logistica-grid');
+console.log('logistica-grid element:', !!row);
 if(!row)return;
+console.log('Rendering', appData.logistica.length, 'containers');
 row.innerHTML=appData.logistica.map(function(c,idx){
   const status=containerStatus(c);
   const isOpen=openContainerId===idx||selContainer===idx;

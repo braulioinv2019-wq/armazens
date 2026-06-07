@@ -926,6 +926,7 @@ async function loadUsersFromFirebase() {
 
 let currentUser = null;
 let selContainer = null;
+let openContainerId = null;
 let _saving = false;
 let selShelf = null;
 let appData = null;
@@ -1334,6 +1335,7 @@ document.addEventListener('click',function(e){
   else if(action==='remove')removeMat(type,idx,id);
   else if(action==='impzone'){var lbl=btn.getAttribute('data-x');var tp=type;closeModal();setTimeout(function(){openImportModal(tp,lbl);},150);}
   else if(action==='emaszone'){toggleEmasZone(type);}
+  else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
@@ -1514,6 +1516,49 @@ grouped.forEach(g=>{
 el.innerHTML=html;
 };
 
+
+// ── HELPER RENDER FUNCTIONS ───────────────────────────────────────────────
+function renderSimpleMatList(mats, type, idx){
+  if(!mats||!mats.length) return '<div class="empty-state" style="padding:20px"><div class="empty-text">Sem materiais</div></div>';
+  var html='<div class="mat-list">';
+  mats.forEach(function(m){
+    var alvl=getAlertLevel(m);
+    html+='<div class="mat-item">';
+    html+='<div style="flex:1">';
+    if(m.code) html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
+    html+='<div class="mat-name">'+m.name+'</div>';
+    if(alvl==='critical') html+='<div style="font-size:10px;color:var(--red)">🔴 Stock crítico</div>';
+    else if(alvl==='warning') html+='<div style="font-size:10px;color:var(--amber)">🟡 Ponto encomenda</div>';
+    html+='</div>';
+    html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
+    html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
+    html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
+    html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
+    html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function renderSimpleAddForm(type, idx){
+  var uid=type+idx;
+  return '<div class="add-mat-form" style="margin-top:12px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">'+
+    '<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">+ ADICIONAR MATERIAL</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">'+
+    '<input class="form-input" id="add-code-'+uid+'" placeholder="Código (opcional)" style="font-size:12px">'+
+    '<input class="form-input" id="add-name-'+uid+'" placeholder="Nome do material *" style="font-size:12px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">'+
+    '<input class="form-input" id="add-qty-'+uid+'" type="number" placeholder="Qtd" style="font-size:12px" value="0">'+
+    '<select class="form-select" id="add-unit-'+uid+'" style="font-size:12px">'+unitOpts('un')+'</select>'+
+    '<button class="btn btn-primary" style="font-size:12px;padding:6px" data-act="addmat" data-t="'+type+'" data-x="'+idx+'">✓ Adicionar</button>'+
+    '</div>'+
+  '</div>';
+}
+
+const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red'];
+
 function renderLogistica(){
 if(!appData)return;
 const row=document.getElementById('logistica-grid');
@@ -1532,7 +1577,6 @@ if(selContainer!==null&&appData.logistica[selContainer]){
 
 
 
-const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red'];
 
 function renderContainer(c,idx,color,isOpen,status){
 var alertDot=status==='alert'?'<div class="cu-warn"></div>':'';

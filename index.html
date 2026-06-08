@@ -1262,13 +1262,20 @@ window.confirmImport = async function(){
   if(dest==='emas-A'||dest==='emas-B'||dest==='emas-C'||dest==='emas-D'){
     const zone = dest.split('-')[1];
     if(!Array.isArray(appData.emas))appData.emas=[];
-    const existingCodes = {};
-    appData.emas.forEach(function(m){ if(m.zone===zone) existingCodes[m.code]=m; });
+    const existingMats = {};
+    appData.emas.forEach(function(m){ 
+      if(m.zone===zone){
+        if(m.code) existingMats['code_'+m.code] = m;
+        existingMats['name_'+m.name.toLowerCase().trim()] = m;
+      }
+    });
     materials.forEach(function(m){
       m.zone = zone;
-      if(existingCodes[m.code]){
-        existingCodes[m.code].qty = m.qty;
-        if(m.code) existingCodes[m.code].name = m.name;
+      var key = m.code ? 'code_'+m.code : 'name_'+m.name.toLowerCase().trim();
+      var existing = existingMats[key] || existingMats['name_'+m.name.toLowerCase().trim()];
+      if(existing){
+        existing.qty = m.qty;
+        if(m.code) existing.code = m.code;
         updated++;
       } else {
         appData.emas.push(m);
@@ -1277,11 +1284,15 @@ window.confirmImport = async function(){
     });
   } else if(dest==='vini'){
     if(!Array.isArray(appData.vini))appData.vini=[];
-    const existingCodes = {};
-    appData.vini.forEach(function(m){ existingCodes[m.code]=m; });
+    const existingVini = {};
+    appData.vini.forEach(function(m){
+      if(m.code) existingVini['code_'+m.code] = m;
+      existingVini['name_'+m.name.toLowerCase().trim()] = m;
+    });
     materials.forEach(function(m){
-      if(existingCodes[m.code]){
-        existingCodes[m.code].qty = m.qty;
+      var existing = (m.code ? existingVini['code_'+m.code] : null) || existingVini['name_'+m.name.toLowerCase().trim()];
+      if(existing){
+        existing.qty = m.qty;
         updated++;
       } else {
         appData.vini.push(m);
@@ -1299,11 +1310,15 @@ window.confirmImport = async function(){
   } else if(dest && dest.startsWith('log-')){
     const idx = parseInt(dest.split('-')[1]);
     if(!appData.logistica[idx].materials)appData.logistica[idx].materials=[];
-    const existingCodes = {};
-    appData.logistica[idx].materials.forEach(function(m){ existingCodes[m.code]=m; });
+    const existingLog = {};
+    appData.logistica[idx].materials.forEach(function(m){
+      if(m.code) existingLog['code_'+m.code] = m;
+      existingLog['name_'+m.name.toLowerCase().trim()] = m;
+    });
     materials.forEach(function(m){
-      if(existingCodes[m.code]){
-        existingCodes[m.code].qty = m.qty;
+      var existing = (m.code ? existingLog['code_'+m.code] : null) || existingLog['name_'+m.name.toLowerCase().trim()];
+      if(existing){
+        existing.qty = m.qty;
         updated++;
       } else {
         appData.logistica[idx].materials.push(m);
@@ -3833,14 +3848,15 @@ var c=appData.logistica[idx];
 if(!c)return;
 var baseUrl=window.location.href.split('?')[0];
 var url=baseUrl+'?c='+encodeURIComponent(c.label);
+var matCount=c.materials?c.materials.length:0;
 openModal(
   '<div class="modal-header">'+
   '<div><span class="modal-title">📱 QR Code — '+c.label+'</span>'+
-  '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+(c.materials?c.materials.length:0)+' materiais</div></div>'+
+  '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+matCount+' materiais</div></div>'+
   '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
-  '<div style="text-align:center;padding:16px 0">'+
+  '<div style="text-align:center;padding:20px 0">'+
   '<div id="qr-canvas" style="display:inline-block;padding:16px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'+
-  '<div style="margin-top:12px;font-size:10px;color:var(--text3);word-break:break-all;padding:0 10px">'+url+'</div>'+
+  '<div style="margin-top:10px;font-size:10px;color:var(--text3);word-break:break-all;padding:0 10px">'+url+'</div>'+
   '</div>'+
   '<div style="background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;text-align:center">'+
   '📌 Cola este QR code na porta do contentor <strong>'+c.label+'</strong></div>'+
@@ -3856,7 +3872,7 @@ setTimeout(function(){
   if(typeof QRCode!=='undefined'){
     new QRCode(el,{text:url,width:200,height:200,colorDark:'#0f4a20',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
   } else {
-    el.innerHTML='<div style="padding:16px;font-size:10px;color:#333;word-break:break-all;max-width:200px">'+url+'</div>';
+    el.innerHTML='<div style="padding:16px;font-size:11px;color:#333">'+url+'</div>';
   }
 },300);
 };

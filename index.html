@@ -1023,7 +1023,7 @@ try{
 }
 }
 
-window.doLogin=async function(){
+async function doLogin(){
 const u=document.getElementById('login-user').value.trim().toLowerCase();
 const p=document.getElementById('login-pass').value;
 if(!usersLoaded) await loadUsersFromFirebase();
@@ -1072,10 +1072,10 @@ if(USERS[u]&&USERS[u].pass===p){
 }
 };
 
-window.doLogout=function(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
 
 
-window.openEmasImportModal = function(){
+function openEmasImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="margin-bottom:16px"><label class="modal-label">SELECCIONAR ZONA DE DESTINO</label>'+
@@ -1092,7 +1092,7 @@ window.openEmasImportModal = function(){
   document.getElementById('ez-D').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-D','Emas — Zona D');},200);};
 };
 
-window.openUndoImportModal = function(){
+function openUndoImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">↩ Cancelar Importação</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="background:#fff0f0;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
@@ -1141,7 +1141,7 @@ window.openUndoImportModal = function(){
   };
 };
 
-window.openImportModal = function(destType, destLabel){
+function openImportModal(destType, destLabel){
   openModal(
     '<div class="modal-header">'+
     '<div><span class="modal-title">⬆ Importar Excel</span>'+
@@ -1226,7 +1226,7 @@ window.openImportModal = function(destType, destLabel){
   });
 };
 
-window.openImportLogModal = function(){
+function openImportLogModal(){
   var opts = '<option value="">— Seleccione o contentor —</option>';
   appData.logistica.forEach(function(c,i){
     opts += '<option value="log-'+i+'">'+c.label+(c.name?' — '+c.name:'')+'</option>';
@@ -1251,7 +1251,7 @@ window.openImportLogModal = function(){
   };
 };
 
-window.confirmImport = async function(){
+async function confirmImport(){
   const materials = window._importData;
   const dest = window._importDest;
   if(!materials||!materials.length){showToast('Nenhum material para importar',true);return;}
@@ -1357,7 +1357,7 @@ document.addEventListener('click',function(e){
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-window.navTo=function(page,el){
+function navTo(page,el){
 if(page==='sfs')setTimeout(renderSFS,100);
 if(page==='history')setTimeout(renderHistory,100);
 if(page==='alerts')setTimeout(renderAlerts,100);
@@ -1459,7 +1459,7 @@ if(act==='page-patio')renderPatio();
 updateBadges();
 }
 
-window.topbarSearch=function(q){
+function topbarSearch(q){
 const res=document.getElementById('topbar-results');
 if(!q.trim()){res.classList.remove('show');return;}
 const ql=q.toLowerCase();
@@ -1485,7 +1485,7 @@ res.classList.add('show');
 };
 document.addEventListener('click',e=>{if(!e.target.closest('.topbar-search'))document.getElementById('topbar-results').classList.remove('show');});
 
-window.doSearch=function(q){
+function doSearch(q){
 const el=document.getElementById('search-results');
 if(!q.trim()){el.innerHTML='';return;}
 const ql=q.toLowerCase();
@@ -1630,7 +1630,7 @@ return '<div class="cu '+color+(isOpen?' open sel':'')+(status==='alert'?' alert
 '</div>';
 }
 
-window.selectContainer=function(idx){
+function selectContainer(idx){
 if(selContainer===idx){
   selContainer=null;openContainerId=null;
   document.querySelectorAll('.cu').forEach(function(el){el.classList.remove('open','sel');});
@@ -1754,7 +1754,7 @@ if(viniDoorOpen){
 }
 }
 
-window.toggleViniDoor=function(){viniDoorOpen=!viniDoorOpen;renderVini();};
+function toggleViniDoor(){viniDoorOpen=!viniDoorOpen;renderVini();};
 
 // ── EMAS ─────────────────────────────────────────────────────────────────
 var selEmasZone=null;
@@ -1829,7 +1829,7 @@ zones.forEach(function(z,i){
 doorsEl.innerHTML=html;
 }
 
-window.toggleEmasZone=function(zone){
+function toggleEmasZone(zone){
 selEmasZone=selEmasZone===zone?null:zone;
 renderEmas();
 };
@@ -2099,7 +2099,7 @@ return`<tr>
 </table></div>`;
 }
 
-window.reimprimirSFS=function(s){
+function reimprimirSFS(s){
   generateSFSPDF({
     sfsNum: s.number,
     matName: s.material,
@@ -2132,7 +2132,7 @@ ${uid!=='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${ui
 </div>`).join('');
 }
 
-window.openAddUserModal=function(){
+function openAddUserModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="u-name" style="width:100%" placeholder="Ex: Ana Gomes"></div>
 <div style="margin-bottom:12px"><label class="modal-label">Username (para login)</label><input class="form-input" id="u-id" style="width:100%" placeholder="Ex: ana" autocomplete="off"></div>
@@ -2141,7 +2141,7 @@ openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddUser()">Criar utilizador</button></div>`);
 };
 
-window.confirmAddUser=async function(){
+async function confirmAddUser(){
 // Note: password management now via Firebase Auth Console
 // Users added here get profile (name/role) saved to Firestore
 // For password, admin must add user in Firebase Auth Console
@@ -2156,7 +2156,7 @@ var tgId=document.getElementById('nu-telegram')?.value.trim()||'';
 USERS[id]={name,pass,role,telegramId:tgId};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
 };
 
-window.openEditUserModal=function(uid){
+function openEditUserModal(uid){
 const u=USERS[uid];
 openModal(`<div class="modal-header"><span class="modal-title">Editar — ${u.name}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="eu-name" value="${u.name}" style="width:100%"></div>
@@ -2165,7 +2165,7 @@ openModal(`<div class="modal-header"><span class="modal-title">Editar — ${u.na
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmEditUser('${uid}')">Guardar</button></div>`);
 };
 
-window.confirmEditUser=async function(uid){
+async function confirmEditUser(uid){
 const name=document.getElementById('eu-name').value.trim();
 const pass=document.getElementById('eu-pass').value;
 const role=document.getElementById('eu-role').value;
@@ -2175,21 +2175,21 @@ if(pass)USERS[uid].pass=pass;
 await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador actualizado e sincronizado!');
 };
 
-window.deleteUser=async function(uid){
+async function deleteUser(uid){
 if(!confirm('Eliminar utilizador "'+USERS[uid].name+'"?'))return;
 delete USERS[uid];await saveUsers();renderUsers();showToast('✓ Utilizador eliminado');
 };
 
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
-window.closeModal=function(){document.getElementById('modal-overlay').classList.remove('open');};
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');};
 
-window.openAddContainerModal=function(){
+function openAddContainerModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Novo contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">ETIQUETA (código)</label><input class="form-input" id="nc-label" placeholder="Ex: C40" style="width:100%"></div>
 <div><label class="modal-label">NOME / DESCRIÇÃO</label><input class="form-input" id="nc-name" placeholder="Ex: Materiais eléctricos, Ferramentas..." style="width:100%"></div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddContainer()">Adicionar</button></div>`);
 };
-window.confirmAddContainer=async function(){
+async function confirmAddContainer(){
 const l=document.getElementById('nc-label').value.trim();
 const n=document.getElementById('nc-name').value.trim();
 if(!l)return;
@@ -2198,13 +2198,13 @@ nd.logistica.push({id:Date.now(),label:l,name:n,materials:[]});
 await saveStock(nd);closeModal();
 };
 
-window.openAddShelfModal=function(){
+function openAddShelfModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Nova prateleira</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Etiqueta</label><input class="form-input" id="ns-label" placeholder="Ex: P9" style="width:100%"></div>
 <div><label class="modal-label">Número de níveis</label><select class="form-select" id="ns-levels" style="width:100%"><option value="2">2 (A, B)</option><option value="3" selected>3 (A, B, C)</option><option value="4">4 (A, B, C, D)</option><option value="5">5 (A, B, C, D, E)</option></select></div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddShelf()">Adicionar</button></div>`);
 };
-window.confirmAddShelf=async function(){
+async function confirmAddShelf(){
 const l=document.getElementById('ns-label').value.trim();const n=parseInt(document.getElementById('ns-levels').value);
 if(!l)return;
 const lvs='ABCDE'.slice(0,n).split('');
@@ -2213,12 +2213,12 @@ await saveStock(nd);closeModal();
 };
 
 function xlsxDl(wb,name){XLSX.writeFile(wb,name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');}
-window.exportFullStock=function(){const wb=XLSX.utils.book_new();const ld=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.forEach(m=>ld.push([c.label,m.name,m.qty,m.unit,m.minStock||''])));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ld),'Logística');const vd=[['Prateleira','Nível','Material','Quantidade','Unidade','Stock Mín.']];appData.vini.forEach(sh=>sh.levels.forEach(lv=>lv.materials.forEach(m=>vd.push([sh.label,lv.label,m.name,m.qty,m.unit,m.minStock||'']))));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(vd),'Vini Galpão');const ed=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>ed.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ed),'Emas');xlsxDl(wb,'LUELE_StockCompleto');};
-window.exportHistory=function(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
-window.exportAlerts=function(){const wb=XLSX.utils.book_new();const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];getAlerts().forEach(a=>d.push([a.name,a.locFull,a.warehouse,a.qty,a.minStock,a.unit]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alertas');xlsxDl(wb,'LUELE_Alertas');};
-window.exportLogistica=function(){const wb=XLSX.utils.book_new();const d=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.length?c.materials.forEach(m=>d.push([c.label,m.name,m.qty,m.unit,m.minStock||''])):d.push([c.label,'—','','','']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Logística');xlsxDl(wb,'LUELE_Logistica');};
-window.exportVini=function(){const wb=XLSX.utils.book_new();const d=[['Prateleira','Nível','Material','Quantidade','Unidade']];appData.vini.forEach(sh=>sh.levels.forEach(lv=>lv.materials.length?lv.materials.forEach(m=>d.push([sh.label,lv.label,m.name,m.qty,m.unit])):d.push([sh.label,lv.label,'—','',''])));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
-window.exportEmasReport=function(){const wb=XLSX.utils.book_new();const d=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>d.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
+function exportFullStock(){const wb=XLSX.utils.book_new();const ld=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.forEach(m=>ld.push([c.label,m.name,m.qty,m.unit,m.minStock||''])));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ld),'Logística');const vd=[['Prateleira','Nível','Material','Quantidade','Unidade','Stock Mín.']];appData.vini.forEach(sh=>sh.levels.forEach(lv=>lv.materials.forEach(m=>vd.push([sh.label,lv.label,m.name,m.qty,m.unit,m.minStock||'']))));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(vd),'Vini Galpão');const ed=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>ed.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ed),'Emas');xlsxDl(wb,'LUELE_StockCompleto');};
+function exportHistory(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
+function exportAlerts(){const wb=XLSX.utils.book_new();const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];getAlerts().forEach(a=>d.push([a.name,a.locFull,a.warehouse,a.qty,a.minStock,a.unit]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alertas');xlsxDl(wb,'LUELE_Alertas');};
+function exportLogistica(){const wb=XLSX.utils.book_new();const d=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.length?c.materials.forEach(m=>d.push([c.label,m.name,m.qty,m.unit,m.minStock||''])):d.push([c.label,'—','','','']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Logística');xlsxDl(wb,'LUELE_Logistica');};
+function exportVini(){const wb=XLSX.utils.book_new();const d=[['Prateleira','Nível','Material','Quantidade','Unidade']];appData.vini.forEach(sh=>sh.levels.forEach(lv=>lv.materials.length?lv.materials.forEach(m=>d.push([sh.label,lv.label,m.name,m.qty,m.unit])):d.push([sh.label,lv.label,'—','',''])));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
+function exportEmasReport(){const wb=XLSX.utils.book_new();const d=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>d.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
 
 function getGENumber(){
 const y=new Date().getFullYear();
@@ -2228,7 +2228,7 @@ localStorage.setItem(k,n);
 return'GE-'+y+'-'+String(n).padStart(3,'0');
 }
 
-window.openEntryModal=function(){
+function openEntryModal(){
 const geNum=getGENumber();
 const now=new Date();
 
@@ -2275,7 +2275,7 @@ opts+='</optgroup>';
 return opts;
 }
 
-window.confirmEntry=async function(geNum){
+async function confirmEntry(geNum){
 const code=document.getElementById('ge-code')?.value.trim()||'';
 const name=document.getElementById('ge-name')?.value.trim()||'';
 const qty=document.getElementById('ge-qty')?.value||'0';
@@ -2361,12 +2361,12 @@ ${d.obs?`<div class="section"><div class="section-title">Observações</div><div
 </div>
 </div>
 <div class="footer"><div>LUELE WMS · Documento gerado automaticamente</div><div>${d.geNum} · ${now.toLocaleDateString('pt-PT')}</div></div>
-<script>window.onload=function(){window.print();}<\/script></body></html>`;
+<script>function onload(){window.print();}<\/script>`;
 const w=window.open('','_blank','width=900,height=700');
 w.document.write(html);w.document.close();
 }
 
-window.addStockToMat=function(type,idx,matId){
+function addStockToMat(type,idx,matId){
 let mat;
 if(type==='log') mat=appData.logistica[parseInt(idx)].materials.find(m=>m.id===matId);
 else if(type==='vini'){const arr=Array.isArray(appData.vini)?appData.vini:[];mat=arr.find(m=>m.id===matId);}
@@ -2390,7 +2390,7 @@ openModal(`
 </div>`);
 };
 
-window.confirmAddStock=async function(type,idx,matId){
+async function confirmAddStock(type,idx,matId){
 const addQty=parseFloat(document.getElementById('as-qty')?.value||'0');
 const unit=document.getElementById('as-unit')?.value||'un';
 const ref=document.getElementById('as-ref')?.value.trim()||'';
@@ -2415,7 +2415,7 @@ spawnParticles();
 refreshAll();
 };
 
-window.openTransferModal=function(preType,preIdx,preMatId){
+function openTransferModal(preType,preIdx,preMatId){
 const allMats=getAllMaterials();
 if(!allMats.length){showToast('Sem materiais para transferir',true);return;}
 const destOpts=buildDestOptions();
@@ -2475,11 +2475,11 @@ setTimeout(()=>updateTransferQty(),50);
 }
 };
 
-window.openTransferForMat=function(type,idx,matId){
+function openTransferForMat(type,idx,matId){
 openTransferModal(type,idx,matId);
 };
 
-window.setMaxQty=function(){
+function setMaxQty(){
 const sel=document.getElementById('tr-mat')?.value;
 if(!sel)return;
 const[,,id]=sel.split('|');
@@ -2487,7 +2487,7 @@ const mat=getAllMaterials().find(m=>m.id===parseInt(id));
 if(mat)document.getElementById('tr-qty').value=mat.qty;
 };
 
-window.updateTransferQty=function(){
+function updateTransferQty(){
 const sel=document.getElementById('tr-mat')?.value;
 const info=document.getElementById('tr-stock-info');
 const locBadge=document.getElementById('tr-origin-loc');
@@ -2502,7 +2502,7 @@ if(maxInfo)maxInfo.textContent='máx: '+mat.qty+' '+mat.unit;
 }
 };
 
-window.confirmTransfer=async function(){
+async function confirmTransfer(){
 const sel=document.getElementById('tr-mat')?.value;
 const qty=parseFloat(document.getElementById('tr-qty')?.value||'0');
 const dest=document.getElementById('tr-dest')?.value||'patio';
@@ -2615,7 +2615,7 @@ return`<tr style="border-bottom:1px solid var(--border)">
 </table>`;
 }
 
-window.editMat=function(type,idx,matId){
+function editMat(type,idx,matId){
   var mat=null;
   if(type==='log'){var ci=parseInt(idx);if(appData.logistica[ci])mat=appData.logistica[ci].materials.find(function(m){return m.id===matId;});}
   else if(type==='vini'){var va=Array.isArray(appData.vini)?appData.vini:[];mat=va.find(function(m){return m.id===matId;});}
@@ -2642,7 +2642,7 @@ window.editMat=function(type,idx,matId){
   document.getElementById('em-confirm-btn').onclick=function(){confirmEditMat(type,idx,matId);};
 };
 
-window.confirmEditMat=async function(type,idx,matId){
+async function confirmEditMat(type,idx,matId){
   var code=document.getElementById('em-code')?.value.trim()||'';
   var name=document.getElementById('em-name')?.value.trim()||'';
   var qty=document.getElementById('em-qty')?.value||'0';
@@ -2665,7 +2665,7 @@ window.confirmEditMat=async function(type,idx,matId){
   refreshAll();
 };
 
-window.editPatioMat=function(matId){
+function editPatioMat(matId){
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
   openModal(`
@@ -2685,7 +2685,7 @@ window.editPatioMat=function(matId){
     </div>`);
 };
 
-window.confirmEditPatio=async function(matId){
+async function confirmEditPatio(matId){
   const code=document.getElementById('ep-code')?.value.trim()||'';
   const name=document.getElementById('ep-name')?.value.trim()||'';
   const qty=document.getElementById('ep-qty')?.value||'0';
@@ -2702,7 +2702,7 @@ window.confirmEditPatio=async function(matId){
   renderPatio();
 };
 
-window.quickTransferFromPatio=function(matId){
+function quickTransferFromPatio(matId){
 const mat=appData.patio?.find(m=>m.id===matId);
 if(!mat)return;
 const destOpts=buildDestOptions().replace('<option value="patio">📦 Pátio (trânsito)</option>','');
@@ -2726,7 +2726,7 @@ openModal(`
 </div>`);
 };
 
-window.confirmQuickTransfer=async function(matId){
+async function confirmQuickTransfer(matId){
 document.getElementById('tr-mat') && (document.getElementById('tr-mat').value='Pátio|GERAL|'+matId);
 const qty=parseFloat(document.getElementById('qtr-qty')?.value||'0');
 const dest=document.getElementById('qtr-dest')?.value||'';
@@ -2890,7 +2890,7 @@ ${c.status==='pending'||c.status==='in_progress'
 </table>`;
 }
 
-window.openNewCountModal=function(){
+function openNewCountModal(){
 const locs=getLocationsForCount();
 const locOpts=locs.map(l=>`<option value="${l.key}">${l.label} (${l.items.length} materiais)</option>`).join('');
 openModal(`
@@ -2911,7 +2911,7 @@ openModal(`
 </div>`);
 };
 
-window.confirmNewCount=async function(printOnly){
+async function confirmNewCount(printOnly){
 const locKey=document.getElementById('nc-loc')?.value;
 const resp=document.getElementById('nc-resp')?.value.trim()||currentUser.name;
 const date=document.getElementById('nc-date')?.value;
@@ -2941,7 +2941,7 @@ openCountingModal(count);
 showToast('✓ Contagem '+num+' criada!');
 };
 
-window.openScheduleModal=function(){
+function openScheduleModal(){
 var locs=getLocationsForCount();
 var locOpts=locs.map(function(l){return'<option value="'+l.key+'">'+l.label+'</option>';}).join('');
 // Build checkboxes for each user
@@ -2978,7 +2978,7 @@ openModal(
 document.getElementById('sch-confirm-btn').onclick = confirmSchedule;
 };
 
-window.confirmSchedule=async function(){
+async function confirmSchedule(){
 var locKey=document.getElementById('sch-loc')?.value;
 var scheduledFor=document.getElementById('sch-date')?.value;
 var obs=document.getElementById('sch-obs')?.value.trim()||'';
@@ -3053,7 +3053,7 @@ try{
 
 
 
-window.startCount=function(countId){
+function startCount(countId){
 var count=invData.find(function(c){return c.id===countId;});
 if(!count)return;
 // If already in_progress by someone else, ask if wants to join
@@ -3083,7 +3083,7 @@ if(count.status==='scheduled'){
 openCountingModal(count);
 };
 
-window.joinCount=function(countId){
+function joinCount(countId){
 var count=invData.find(function(c){return c.id===countId;});
 if(!count)return;
 // Add current user to participants
@@ -3096,7 +3096,7 @@ openCountingModal(count);
 showToast('👥 Juntaste-te à contagem de '+count.startedBy);
 };
 
-window.openCountingModal=function(count){
+function openCountingModal(count){
 const items=count.items||[];
 openModal(`
 <div class="modal-header">
@@ -3126,7 +3126,6 @@ value="${m.countedQty!==null?m.countedQty:''}"
 placeholder="${m.systemQty}"
 style="width:90px;background:white;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;text-align:right;outline:none;font-family:'Inter',sans-serif"
 oninput="this.style.borderColor=this.value===''?'var(--border)':parseFloat(this.value)===${m.systemQty}?'var(--green2)':'var(--red)'"
->
 <div style="font-size:10px;color:var(--text3);margin-top:2px">${m.unit}</div>
 </div>
 </div>`).join('')}
@@ -3141,7 +3140,7 @@ oninput="this.style.borderColor=this.value===''?'var(--border)':parseFloat(this.
 </div>`);
 }
 
-window.confirmCounting=async function(countId,itemCount){
+async function confirmCounting(countId,itemCount){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 const obs=document.getElementById('count-obs')?.value.trim()||'';
@@ -3207,7 +3206,7 @@ Foram encontradas <strong>${diffs.length} diferença${diffs.length>1?'s':''}</st
 </div>`);
 }
 
-window.applyAdjustments=async function(countId){
+async function applyAdjustments(countId){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 const nd=JSON.parse(JSON.stringify(appData));
@@ -3242,13 +3241,13 @@ generateCountPDF(count);
 refreshAll();
 };
 
-window.deleteCount=async function(countId){
+async function deleteCount(countId){
 if(!confirm('Eliminar esta contagem?'))return;
 await deleteDoc(doc(db,'wms','inventory','counts',countId));
 showToast('Contagem eliminada');
 };
 
-window.viewCountResult=function(countId){
+function viewCountResult(countId){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 if(count.hasDifferences)openDiffModal(count);
@@ -3266,7 +3265,7 @@ else openModal(`
 </div>`);
 };
 
-window.printCountSheet=function(countId,countObj){
+function printCountSheet(countId,countObj){
 const count=countObj||invData.find(c=>c.id===countId);
 if(!count&&!countId)return;
 
@@ -3355,7 +3354,7 @@ body+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11
 body+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px"> </div><div style="font-size:9px;color:#888;text-transform:uppercase">Aprovado por</div></div>';
 body+='</div>';
 body+='<div class="footer"><div>LUELE WMS · '+count.number+' · '+(completed?'Relatório Final':'Folha de Campo')+'</div><div>'+now.toLocaleDateString('pt-PT')+'</div></div>';
-body+='<script>window.onload=function(){window.print();}<\/script></body></html>';
+body+='<script>function onload(){window.print();}<\/script>';
 var w=window.open('','_blank','width=900,height=700');
 w.document.write(html+body);w.document.close();
 }
@@ -3364,7 +3363,7 @@ function generateCountPDF(count){
 generateCountSheet(count,count.items||[],count.status==='completed');
 }
 
-window.removeMat=function(type,idx,matId){
+function removeMat(type,idx,matId){
   var mat=null,loc='',locFull='',wh='';
   if(type==='log'){var ci=parseInt(idx);mat=appData.logistica[ci]?.materials.find(function(m){return m.id===matId;});loc=appData.logistica[ci]?.label||'';locFull='Contentor '+loc;wh='Logística';}
   else if(type==='vini'){var va=Array.isArray(appData.vini)?appData.vini:[];mat=va.find(function(m){return m.id===matId;});loc='Vini Galpão';locFull='Vini Galpão';wh='Vini Galpão';}
@@ -3409,7 +3408,7 @@ function getSFSNumber(){
   return'SFS-'+y+'-'+String(n).padStart(3,'0');
 }
 
-window.openGroupExitModal = function(){
+function openGroupExitModal(){
   var allMats = getAllMaterials();
   if(!allMats.length){showToast('Sem materiais para dar saída',true);return;}
 
@@ -3460,7 +3459,7 @@ window.openGroupExitModal = function(){
   document.getElementById('grp-confirm-btn').onclick = function(){ confirmGroupExit(_sfsNum); };
 };
 
-window.addGroupItem = function(){
+function addGroupItem(){
   var sel = document.getElementById('grp-mat-select');
   var val = sel.value;
   if(!val) return;
@@ -3486,7 +3485,7 @@ window.addGroupItem = function(){
   sel.value = '';
 };
 
-window.removeGroupItem = function(id){
+function removeGroupItem(id){
   window._groupItems = window._groupItems.filter(function(i){return i.id!==id;});
   renderGroupItems();
 };
@@ -3528,7 +3527,7 @@ function renderGroupItems(){
   if(btn) btn.style.display='inline-flex';
 }
 
-window.updateGroupQty = function(id, val){
+function updateGroupQty(id, val){
   var item = window._groupItems.find(function(i){return i.id===id;});
   if(!item) return;
   var q = parseFloat(val)||0;
@@ -3540,7 +3539,7 @@ window.updateGroupQty = function(id, val){
   item.qty = q;
 };
 
-window.confirmGroupExit = async function(sfsNum){
+async function confirmGroupExit(sfsNum){
   var items = window._groupItems;
   if(!items.length){showToast('Adiciona pelo menos um material',true);return;}
   var dest = document.getElementById('grp-dest')?.value.trim()||'';
@@ -3646,7 +3645,7 @@ html+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11
 html+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px"> </div><div style="font-size:9px;color:#888;text-transform:uppercase">Recebido por</div></div>';
 html+='</div>';
 html+='<div class="footer"><div>LUELE WMS · '+d.sfsNum+'</div><div>'+now.toLocaleDateString('pt-PT')+'</div></div>';
-html+='<script>window.onload=function(){window.print();}<\/script></body></html>';
+html+='<script>function onload(){window.print();}<\/script>';
 var w=window.open('','_blank','width=900,height=700');
 if(w){w.document.write(html);w.document.close();}
 }
@@ -3693,13 +3692,13 @@ function generateGroupSFSPDF(sfsNum, items, dest, obs){
   html += '<div class="sig"><div class="sig-box"><div class="sig-line"></div><div style="font-size:11px;font-weight:600">'+currentUser.name+'</div><div style="font-size:9px;color:#888;text-transform:uppercase">Emitido por</div></div>';
   html += '<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px"> </div><div style="font-size:9px;color:#888;text-transform:uppercase">Recebido por</div></div></div>';
   html += '<div class="footer"><div>LUELE WMS · '+sfsNum+' · Saída em Grupo</div><div>'+now.toLocaleDateString('pt-PT')+'</div></div>';
-  html += '<script>window.onload=function(){window.print();}<\/script></body></html>';
+  html += '<script>function onload(){window.print();}<\/script>';
   var w=window.open('','_blank','width=900,height=700');
   w.document.write(html);w.document.close();
 }
 
 window._patioRestored = false;
-window.restorePatioItems = async function(){
+async function restorePatioItems(){
   if(!appData){showToast('Sistema não carregado',true);return;}
   if(!Array.isArray(appData.patio))appData.patio=[];
   const items = [
@@ -3720,7 +3719,7 @@ window.restorePatioItems = async function(){
   if(btn) btn.style.display='none';
 };
 
-window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
+async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   var qty=parseFloat(document.getElementById('sfs-qty')?.value||'0');
   var dest=document.getElementById('sfs-dest')?.value.trim()||'';
   var obs=document.getElementById('sfs-obs')?.value.trim()||'';
@@ -3748,7 +3747,7 @@ window.confirmSFSAction=async function(type,idx,matId,sfsNum,loc,locFull,wh){
   refreshAll();
 };
 
-window.exportInventoryReport=function(){
+function exportInventoryReport(){
 if(!invData.length){showToast('Sem dados para exportar',true);return;}
 const wb=XLSX.utils.book_new();
 
@@ -3842,10 +3841,8 @@ waitFirebase().then(function(){
 
 
 
-</script>
-</body>
-</html
-window.openAddEmasModal=function(){
+
+function openAddEmasModal(){
   if(selEmasZone){
     var listEl=document.getElementById('emas-list');
     if(listEl){
@@ -3890,7 +3887,7 @@ window.openAddEmasModal=function(){
 };
 
 // ── ADD MATERIAL (Logística) ──────────────────────────────────────────────
-window.addMatLog=async function(idx){
+async function addMatLog(idx){
 var nd=JSON.parse(JSON.stringify(appData));
 var c=nd.logistica[parseInt(idx)];
 if(!c)return;
@@ -3909,7 +3906,7 @@ renderContainerPanel(c,parseInt(idx));
 };
 
 // ── ADD MATERIAL (Simples — Vini/Emas/Patio) ─────────────────────────────
-window.addMatSimple=async function(type,idx){
+async function addMatSimple(type,idx){
 var nd=JSON.parse(JSON.stringify(appData));
 var uid=type+idx;
 var code=document.getElementById('add-code-'+uid)?.value.trim()||'';
@@ -3943,7 +3940,7 @@ else if(type==='patio')renderPatio();
 // ── DELETE CONTAINER ──────────────────────────────────────────────────────
 
 // ── QR CODE SYSTEM ────────────────────────────────────────────────────────
-window.showContainerQR=function(idx){
+function showContainerQR(idx){
 var c=appData.logistica[idx];
 if(!c)return;
 var baseUrl=window.location.href.split('?')[0];
@@ -3977,7 +3974,7 @@ setTimeout(function(){
 },300);
 };
 
-window.printContainerQR=function(idx){
+function printContainerQR(idx){
 var c=appData.logistica[idx];
 if(!c)return;
 var baseUrl=window.location.href.split('?')[0];
@@ -4000,15 +3997,15 @@ var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'
 '<div style="font-size:8px;color:#aaa;text-align:center;word-break:break-all;margin-bottom:8px">'+url+'</div>'+
 '<div class="footer">'+new Date().toLocaleDateString('pt-PT')+' · LUELE WMS</div>'+
 '</div>'+
-'<script>window.onload=function(){new QRCode(document.getElementById("qrp"),{text:"'+url+'",width:150,height:150,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
-'</body></html>';
+'<script>function onload(){new QRCode(document.getElementById("qrp"),{text:"'+url+'",width:150,height:150,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
+'';
 var w=window.open('','_blank','width=400,height=600');
 if(w){w.document.write(html);w.document.close();}
 };
 
 
 
-window.deleteContainer=function(idx){
+function deleteContainer(idx){
 openModal(
   '<div class="modal-header"><span class="modal-title">🗑 Eliminar Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
   '<div style="background:var(--red-bg);border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
@@ -4031,7 +4028,7 @@ document.getElementById('del-ctn-btn').onclick=async function(){
 };
 
 // ── RENAME CONTAINER ──────────────────────────────────────────────────────
-window.renameContainer=function(idx){
+function renameContainer(idx){
 var c=appData.logistica[idx];
 openModal(
   '<div class="modal-header"><span class="modal-title">✏ Renomear Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -4059,4 +4056,6 @@ document.getElementById('ren-ctn-btn').onclick=async function(){
 };
 };
 
->
+</script>
+</body>
+</html>

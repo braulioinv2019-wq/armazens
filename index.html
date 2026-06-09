@@ -1684,13 +1684,20 @@ if(sumEl)sumEl.innerHTML=
   '<div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--green2);border-radius:3px"></div></div>'+
   '</div>'+
   '<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">'+
-  '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="showContainerQR('+idx+')">📱 QR Code</button>'+
-  '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="renameContainer('+idx+')">✏ Renomear</button>'+
+  '<button class="btn btn-secondary btn-sm" style="width:100%" id="qr-btn-'+idx+'">📱 QR Code</button>'+
+  '<button class="btn btn-secondary btn-sm" style="width:100%" id="ren-btn-'+idx+'">✏ Renomear</button>'+
   '<button class="btn btn-secondary btn-sm" style="width:100%" onclick="selContainer=null;openContainerId=null;renderLogistica()">🔒 Fechar</button>'+
-  '<button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteContainer('+idx+')">🗑 Eliminar</button>'+
+  '<button class="btn btn-danger btn-sm" style="width:100%" id="del-btn-'+idx+'">🗑 Eliminar</button>'+
   '</div>';
 updateSteps(3);
 el.innerHTML=renderMatItems(c.materials,'log',String(idx))+renderSimpleAddForm('log',String(idx));
+// Attach button handlers safely
+var qrBtn=document.getElementById('qr-btn-'+idx);
+var renBtn=document.getElementById('ren-btn-'+idx);
+var delBtn=document.getElementById('del-btn-'+idx);
+if(qrBtn)qrBtn.onclick=function(){showContainerQR(idx);};
+if(renBtn)renBtn.onclick=function(){renameContainer(idx);};
+if(delBtn)delBtn.onclick=function(){deleteContainer(idx);};
 }
 
 function renderMatItems(mats,type,idx){
@@ -3838,15 +3845,60 @@ waitFirebase().then(function(){
 </script>
 </body>
 </html
+window.openAddEmasModal=function(){
+  if(selEmasZone){
+    var listEl=document.getElementById('emas-list');
+    if(listEl){
+      var zItems=getEmasArr().filter(function(m){return m.zone===selEmasZone;});
+      listEl.innerHTML=renderSimpleMatList(zItems,'emas',selEmasZone)+renderSimpleAddForm('emas',selEmasZone);
+      setTimeout(function(){
+        var addForm=listEl.querySelector('.add-mat-form');
+        if(addForm)addForm.scrollIntoView({behavior:'smooth'});
+      },100);
+    }
+    return;
+  }
+  openModal(
+    '<div class="modal-header"><span class="modal-title">+ Adicionar — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="margin-bottom:4px"><label class="modal-label">SELECCIONAR ZONA</label></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-secondary" style="padding:14px;font-size:13px;font-weight:700" id="addemas-A">Zona A</button>'+
+    '<button class="btn btn-secondary" style="padding:14px;font-size:13px;font-weight:700" id="addemas-B">Zona B</button>'+
+    '<button class="btn btn-secondary" style="padding:14px;font-size:13px;font-weight:700" id="addemas-C">Zona C</button>'+
+    '<button class="btn btn-secondary" style="padding:14px;font-size:13px;font-weight:700" id="addemas-D">Zona D</button>'+
+    '</div>'
+  );
+  ['A','B','C','D'].forEach(function(z){
+    var btn=document.getElementById('addemas-'+z);
+    if(btn)btn.onclick=function(){
+      closeModal();
+      selEmasZone=z;
+      setTimeout(function(){
+        renderEmas();
+        setTimeout(function(){
+          var listEl=document.getElementById('emas-list');
+          if(listEl){
+            var zItems=getEmasArr().filter(function(m){return m.zone===z;});
+            listEl.innerHTML=renderSimpleMatList(zItems,'emas',z)+renderSimpleAddForm('emas',z);
+            var addForm=listEl.querySelector('.add-mat-form');
+            if(addForm)addForm.scrollIntoView({behavior:'smooth'});
+          }
+        },150);
+      },150);
+    };
+  });
+};
+
 // ── ADD MATERIAL (Logística) ──────────────────────────────────────────────
 window.addMatLog=async function(idx){
 var nd=JSON.parse(JSON.stringify(appData));
 var c=nd.logistica[parseInt(idx)];
 if(!c)return;
-var code=document.getElementById('add-code-'+idx)?.value.trim()||'';
-var name=document.getElementById('add-name-'+idx)?.value.trim()||'';
-var qty=document.getElementById('add-qty-'+idx)?.value.trim()||'0';
-var unit=document.getElementById('add-unit-'+idx)?.value||'un';
+var uid='log'+idx;
+var code=document.getElementById('add-code-'+uid)?.value.trim()||'';
+var name=document.getElementById('add-name-'+uid)?.value.trim()||'';
+var qty=document.getElementById('add-qty-'+uid)?.value.trim()||'0';
+var unit=document.getElementById('add-unit-'+uid)?.value||'un';
 if(!name){showToast('Indica o nome do material',true);return;}
 c.materials.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,minStock:'',reorderPoint:''});
 appData=nd;
@@ -3859,10 +3911,11 @@ renderContainerPanel(c,parseInt(idx));
 // ── ADD MATERIAL (Simples — Vini/Emas/Patio) ─────────────────────────────
 window.addMatSimple=async function(type,idx){
 var nd=JSON.parse(JSON.stringify(appData));
-var code=document.getElementById('add-code-'+type+idx)?.value.trim()||'';
-var name=document.getElementById('add-name-'+type+idx)?.value.trim()||'';
-var qty=document.getElementById('add-qty-'+type+idx)?.value.trim()||'0';
-var unit=document.getElementById('add-unit-'+type+idx)?.value||'un';
+var uid=type+idx;
+var code=document.getElementById('add-code-'+uid)?.value.trim()||'';
+var name=document.getElementById('add-name-'+uid)?.value.trim()||'';
+var qty=document.getElementById('add-qty-'+uid)?.value.trim()||'0';
+var unit=document.getElementById('add-unit-'+uid)?.value||'un';
 if(!name){showToast('Indica o nome do material',true);return;}
 var wh='';
 if(type==='vini'){

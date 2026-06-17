@@ -927,6 +927,7 @@ async function loadUsersFromFirebase() {
 let currentUser = null;
 let selContainer = null;
 let openContainerId = null;
+let sortMode = {log:'none', vini:'none', emas:'none', patio:'none'};
 let _saving = false;
 let selShelf = null;
 let appData = null;
@@ -1337,6 +1338,22 @@ async function confirmImport(){
   refreshAll();
 };
 
+document.addEventListener('change',function(e){
+  var sel=e.target.closest('[data-sort-group]');
+  if(!sel)return;
+  var group=sel.getAttribute('data-sort-group');
+  var idx=sel.getAttribute('data-sort-idx');
+  sortMode[group]=sel.value;
+  if(group==='log'){
+    renderContainerPanel(appData.logistica[parseInt(idx)], parseInt(idx));
+  } else if(group==='vini'){
+    renderVini();
+  } else if(group==='emas'){
+    renderEmas();
+  } else if(group==='patio'){
+    renderPatio();
+  }
+});
 document.addEventListener('click',function(e){
   var btn=e.target.closest('[data-act]');
   if(!btn)return;
@@ -1690,7 +1707,8 @@ if(sumEl)sumEl.innerHTML=
   '<button class="btn btn-danger btn-sm" style="width:100%" id="del-btn-'+idx+'">🗑 Eliminar</button>'+
   '</div>';
 updateSteps(3);
-el.innerHTML=renderMatItems(c.materials,'log',String(idx))+renderSimpleAddForm('log',String(idx));
+var sortedMats=sortMats(c.materials, sortMode.log);
+el.innerHTML=renderSortBar('log',idx)+renderMatItems(sortedMats,'log',String(idx))+renderSimpleAddForm('log',String(idx));
 // Attach button handlers safely
 var qrBtn=document.getElementById('qr-btn-'+idx);
 var renBtn=document.getElementById('ren-btn-'+idx);
@@ -1698,6 +1716,36 @@ var delBtn=document.getElementById('del-btn-'+idx);
 if(qrBtn)qrBtn.onclick=function(){showContainerQR(idx);};
 if(renBtn)renBtn.onclick=function(){renameContainer(idx);};
 if(delBtn)delBtn.onclick=function(){deleteContainer(idx);};
+}
+
+function sortMats(mats, mode){
+  if(mode==='none'||!mats)return mats;
+  var sorted=mats.slice();
+  if(mode==='name-asc') sorted.sort(function(a,b){return (a.name||'').localeCompare(b.name||'','pt');});
+  else if(mode==='name-desc') sorted.sort(function(a,b){return (b.name||'').localeCompare(a.name||'','pt');});
+  else if(mode==='code-asc') sorted.sort(function(a,b){return (a.code||'').localeCompare(b.code||'','pt',{numeric:true});});
+  else if(mode==='code-desc') sorted.sort(function(a,b){return (b.code||'').localeCompare(a.code||'','pt',{numeric:true});});
+  else if(mode==='qty-asc') sorted.sort(function(a,b){return (parseFloat(a.qty)||0)-(parseFloat(b.qty)||0);});
+  else if(mode==='qty-desc') sorted.sort(function(a,b){return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0);});
+  return sorted;
+}
+
+function renderSortBar(group, idx){
+  var current = sortMode[group]||'none';
+  var options = [
+    {v:'none', l:'↕ Padrão'},
+    {v:'name-asc', l:'A→Z Nome'},
+    {v:'name-desc', l:'Z→A Nome'},
+    {v:'code-asc', l:'↑ Código'},
+    {v:'code-desc', l:'↓ Código'},
+    {v:'qty-asc', l:'↑ Quantidade'},
+    {v:'qty-desc', l:'↓ Quantidade'}
+  ];
+  var opts = options.map(function(o){return '<option value="'+o.v+'"'+(o.v===current?' selected':'')+'>'+o.l+'</option>';}).join('');
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px">'+
+    '<span style="font-size:11px;color:var(--text3);font-weight:600">📊 ORDENAR:</span>'+
+    '<select class="form-select" style="font-size:12px;padding:4px 8px;flex:1" data-sort-group="'+group+'" data-sort-idx="'+(idx!==undefined?idx:'')+'">'+opts+'</select>'+
+  '</div>';
 }
 
 function renderMatItems(mats,type,idx){
@@ -1743,7 +1791,8 @@ if(viniDoorOpen){
   if(sumEl)sumEl.innerHTML='<div class="sr"><span class="sk">Zona</span><span style="font-weight:600">Vini Galpão</span></div>'+
     '<div class="sr"><span class="sk">Materiais</span><span style="font-weight:600;color:var(--amber)">'+viniArr.length+'</span></div>'+
     '<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="viniDoorOpen=false;renderVini()">🔒 Fechar galpão</button>';
-  if(el)el.innerHTML=renderSimpleMatList(viniArr,'vini','0')+renderSimpleAddForm('vini','0');
+  var sortedVini=sortMats(viniArr, sortMode.vini);
+if(el)el.innerHTML=renderSortBar('vini')+renderSimpleMatList(sortedVini,'vini','0')+renderSimpleAddForm('vini','0');
 } else {
   if(door)door.classList.remove('wh-open');
   if(stag){stag.textContent='🔒 Fechado';stag.className='wh-door-stag closed-s';}
@@ -1797,7 +1846,8 @@ if(selEmasZone){
     '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:6px" onclick="openTransferModal()">⇄ Transferir</button>'+
     '<button class="btn btn-danger btn-sm" style="width:100%" onclick="selEmasZone=null;renderEmas()">🔒 Fechar zona</button>'+
     '</div>';
-  if(listEl)listEl.innerHTML=renderSimpleMatList(zItems,'emas',selEmasZone)+renderSimpleAddForm('emas',selEmasZone);
+  var sortedZItems=sortMats(zItems, sortMode.emas);
+if(listEl)listEl.innerHTML=renderSortBar('emas',selEmasZone)+renderSimpleMatList(sortedZItems,'emas',selEmasZone)+renderSimpleAddForm('emas',selEmasZone);
 } else {
   if(titleEl)titleEl.textContent='Materiais — seleccione uma zona';
   if(closeBtn)closeBtn.style.display='none';
@@ -2585,7 +2635,8 @@ if(!items.length){
 listEl.innerHTML='<div class="empty-state" style="padding:32px"><div class="empty-icon">🏗️</div><div class="empty-text">Pátio vazio — nenhum material em trânsito</div></div>';
 return;
 }
-listEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
+var sortedItems=sortMats(items, sortMode.patio);
+listEl.innerHTML=renderSortBar('patio')+`<table style="width:100%;border-collapse:collapse">
 <thead><tr>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Código</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Material</th>
@@ -2594,7 +2645,7 @@ listEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Estado</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Acções</th>
 </tr></thead>
-<tbody>${items.map(m=>{
+<tbody>${sortedItems.map(m=>{
 const arr=m.arrivedAt?new Date(m.arrivedAt).toLocaleDateString('pt-PT'):'—';
 return`<tr style="border-bottom:1px solid var(--border)">
 <td style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--green)">${m.code||'—'}</td>

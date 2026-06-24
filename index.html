@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,6 +31,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
 /* LOADING */
 #loading-screen{position:fixed;inset:0;background:var(--sidebar);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
 .loading-logo-wrap{display:flex;align-items:center;gap:16px;margin-bottom:32px}
@@ -40,6 +41,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .loading-bar{width:200px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
 .loading-bar-fill{height:100%;width:40%;background:var(--green2);border-radius:2px;animation:lb 1.4s ease-in-out infinite}
 @keyframes lb{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
 /* LOGIN */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
 .login-wrap{display:flex;width:900px;max-width:95vw;background:white;border-radius:20px;overflow:hidden;box-shadow:var(--shadow3)}
@@ -64,6 +66,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .login-btn{width:100%;background:var(--green);border:none;border-radius:var(--radius);color:white;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:11px;cursor:pointer;margin-top:8px;transition:all 0.15s}
 .login-btn:hover{background:var(--green2);box-shadow:0 4px 12px rgba(26,107,47,0.3)}
 .login-error{font-size:12px;color:var(--red);margin-top:8px;display:none;background:var(--red-bg);padding:8px 12px;border-radius:6px;border:1px solid #fcc}
+
 /* LAYOUT */
 #app{display:none;min-height:100vh}
 .sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:var(--sidebar);border-right:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;z-index:100;box-shadow:2px 0 8px rgba(0,0,0,0.15)}
@@ -93,6 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .user-role{font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.5px}
 .logout-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.3);padding:4px;transition:color 0.15s;font-size:14px}
 .logout-btn:hover{color:white}
+
 /* TOPBAR */
 .topbar{position:fixed;top:0;left:220px;right:0;height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:50;box-shadow:var(--shadow)}
 .topbar-search{flex:1;max-width:360px;position:relative}
@@ -111,6 +115,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .ts-loc{font-size:11px;color:var(--text3)}
 .ts-qty{font-size:12px;font-weight:600;color:var(--amber)}
 .ts-empty{padding:20px;text-align:center;color:var(--text3);font-size:13px}
+
 /* MAIN */
 .main{margin-left:220px;margin-top:56px;padding:24px;min-height:calc(100vh - 56px)}
 .page{display:none;opacity:0;transform:translateY(8px)}
@@ -119,6 +124,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .page-header{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start}
 .page-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:var(--text)}
 .page-sub{font-size:12px;color:var(--text3);margin-top:3px}
+
 /* CARDS */
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
 .stat-card{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:20px;box-shadow:var(--shadow);transition:transform 0.2s,box-shadow 0.2s}
@@ -131,6 +137,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .card{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:20px;box-shadow:var(--shadow);margin-bottom:20px}
 .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .card-title{font-size:14px;font-weight:600;color:var(--text)}
+
 /* SEARCH */
 .search-hero{background:linear-gradient(135deg,var(--sidebar) 0%,var(--green2) 100%);border-radius:var(--radius2);padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
 .search-hero-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:white;margin-bottom:6px}
@@ -142,6 +149,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .result-name{font-size:14px;font-weight:500;flex:1}
 .result-wh{font-size:11px;color:var(--text3);margin-top:2px}
 .result-qty{font-size:13px;font-weight:600;color:var(--amber);white-space:nowrap}
+
 /* 3D CONTAINER SCENE */
 .ctn-scene{height:240px;position:relative;overflow:hidden;flex-shrink:0;border-radius:var(--radius2);margin-bottom:12px;background:url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1400&q=80') center center/cover no-repeat}
 .ctn-scene::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.0) 40%,rgba(0,0,0,0.55) 80%,rgba(0,0,0,0.92) 100%);pointer-events:none;z-index:0}
@@ -210,6 +218,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .log-bot{display:flex;gap:14px}
 .log-inv{flex:1;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);overflow-y:auto}
 .log-sum{width:200px;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);position:sticky;top:56px;align-self:flex-start;max-height:calc(100vh - 80px);overflow-y:auto}
+
 /* WAREHOUSE NAVE */
 .nave-scene-wrap{height:180px;position:relative;overflow:hidden;border-radius:var(--radius2);margin-bottom:12px;background:linear-gradient(180deg,#06101c 0%,#081828 50%,#040c18 100%)}
 .wh-building{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:94%;height:225px}
@@ -243,6 +252,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .nave-bot{display:flex;gap:14px}
 .nave-inv{flex:1;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);overflow-y:auto}
 .nave-sum{width:200px;background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:14px;box-shadow:var(--shadow);position:sticky;top:56px;align-self:flex-start;max-height:calc(100vh - 80px);overflow-y:auto}
+
 /* PÁTIO */
 .patio-scene{height:160px;position:relative;overflow:hidden;border-radius:var(--radius2);margin-bottom:16px;background:linear-gradient(180deg,#0a1828,#0d2040,#060e18)}
 .patio-ground{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(180deg,#1a2a1a,#0e1a0e)}
@@ -270,6 +280,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .patio-stat-icon{font-size:28px;margin-bottom:8px}
 .patio-stat-val{font-family:'DM Sans',sans-serif;font-size:28px;font-weight:700;line-height:1}
 .patio-stat-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px}
+
 /* DETAIL PANEL */
 .detail-panel{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:20px;margin-top:20px;box-shadow:var(--shadow);animation:panelIn 0.3s cubic-bezier(.34,1.56,.64,1)}
 @keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -306,6 +317,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .btn-sm{padding:6px 12px;font-size:12px}
 .btn-export{background:var(--green3);border:1.5px solid var(--green4);color:var(--green);font-weight:600}
 .btn-export:hover{background:var(--green);color:white}
+
 /* TABLES */
 .table-wrap{background:white;border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;box-shadow:var(--shadow)}
 table{width:100%;border-collapse:collapse}
@@ -315,9 +327,11 @@ tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--bg)}
 .badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600}
 .badge-in{background:var(--green3);color:var(--green)} .badge-out{background:var(--red-bg);color:var(--red)} .badge-edit{background:var(--blue-bg);color:var(--blue)} .badge-ok{background:var(--green3);color:var(--green)} .badge-alert{background:var(--red-bg);color:var(--red)}
+
 /* ALERTS */
 .alert-card{background:white;border:1.5px solid #fca5a5;border-radius:var(--radius2);padding:16px;display:flex;align-items:center;gap:16px;margin-bottom:10px;box-shadow:var(--shadow)}
 .alert-qty{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:var(--red)}
+
 /* REPORTS */
 .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .report-card{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:24px;cursor:pointer;transition:all 0.2s;text-align:center;box-shadow:var(--shadow)}
@@ -325,6 +339,7 @@ tbody tr:hover td{background:var(--bg)}
 .report-icon{width:52px;height:52px;background:var(--green3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px}
 .report-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
 .report-desc{font-size:12px;color:var(--text3)}
+
 /* USERS */
 .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .user-card{background:white;border:1px solid var(--border);border-radius:var(--radius2);padding:20px;box-shadow:var(--shadow)}
@@ -338,6 +353,7 @@ tbody tr:hover td{background:var(--bg)}
 .user-card-actions{display:flex;gap:8px}
 .role-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
 .role-admin{background:#fef3c7;color:#92400e} .role-supervisor{background:var(--blue-bg);color:var(--blue)} .role-operator{background:var(--green3);color:var(--green)}
+
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(3px)}
 .modal-overlay.open{display:flex}
@@ -349,6 +365,7 @@ tbody tr:hover td{background:var(--bg)}
 .modal-close:hover{color:var(--text)}
 .modal-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px;display:block}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
 /* MISC */
 .empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
 .empty-icon{font-size:48px;margin-bottom:16px}
@@ -379,6 +396,7 @@ tbody tr:hover td{background:var(--bg)}
 .sr{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}
 .sr:last-of-type{border-bottom:none}
 .sk{color:var(--text3)}
+
 /* MOBILE */
 @media(max-width:768px){
   .sidebar{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;height:60px;flex-direction:row;border-right:none;border-top:1px solid rgba(255,255,255,0.08);z-index:200;overflow:hidden}
@@ -428,6 +446,7 @@ tbody tr:hover td{background:var(--bg)}
 </style>
 </head>
 <body style="background:#f4f6f8;margin:0">
+
 <div id="loading-screen" style="position:fixed;inset:0;background:#0f4a20;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999">
   <div class="loading-logo-wrap">
     <div class="loading-logo-icon">L</div>
@@ -439,6 +458,7 @@ tbody tr:hover td{background:var(--bg)}
   <div class="loading-sub">A LIGAR AO SERVIDOR...</div>
   <div class="loading-bar"><div class="loading-bar-fill"></div></div>
 </div>
+
 <div id="login-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh">
   <div class="login-wrap">
     <div class="card-left">
@@ -473,6 +493,7 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 </div>
+
 <div id="app" style="display:none">
   <div class="sidebar">
     <div class="sidebar-header">
@@ -537,6 +558,7 @@ tbody tr:hover td{background:var(--bg)}
       </div>
     </div>
   </div>
+
   
   <div class="topbar">
     <div class="topbar-search">
@@ -549,6 +571,7 @@ tbody tr:hover td{background:var(--bg)}
       <div class="sync-badge" id="sync-status"><span class="sync-dot"></span>Sincronizado</div>
     </div>
   </div>
+
   <main class="main">
     
     <div class="page active" id="page-dashboard">
@@ -829,11 +852,14 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </main>
 </div>
+
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modal-content"></div>
 </div>
 <div class="toast" id="toast"></div>
+
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const cfg = {
@@ -846,19 +872,22 @@ appId:"1:28060645948:web:6644b36e81fcdedb266139"
 };
 const app = initializeApp(cfg);
 const db = getFirestore(app);
+
 let USERS = {
 'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin', telegramId:'' },
 'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator', telegramId:'' },
 'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator', telegramId:'' }
 };
 let usersLoaded = false;
+
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
+
 async function saveUsers() {
-  // FIX: persistir password e telegramId para que novos utilizadores não percam o acesso
+  // Save only name and role — passwords managed by Firebase Auth
   const usersToSave = {};
   Object.entries(USERS).forEach(function([email, u]){
-    usersToSave[email] = {name: u.name, role: u.role, pass: u.pass || '', telegramId: u.telegramId || ''};
+    usersToSave[email] = {name: u.name, role: u.role};
   });
   try {
     await setDoc(doc(db,'wms','users'), usersToSave);
@@ -867,22 +896,25 @@ async function saveUsers() {
     showToast('Erro ao guardar utilizador', true);
   }
 }
+
 async function loadUsersFromFirebase() {
   try {
     const snap = await getDoc(doc(db,'wms','users'));
     if(snap.exists()) {
+      // Merge Firebase data but KEEP local passwords
       const fbData = snap.data();
       Object.keys(fbData).forEach(function(email){
         if(USERS[email]) {
+          // Keep password from local, update name/role from Firebase
           USERS[email].name = fbData[email].name || USERS[email].name;
           USERS[email].role = fbData[email].role || USERS[email].role;
-          if(fbData[email].pass) USERS[email].pass = fbData[email].pass;
-          if(fbData[email].telegramId) USERS[email].telegramId = fbData[email].telegramId;
         } else {
+          // New user from Firebase — no password means they can't login
           USERS[email] = fbData[email];
         }
       });
     } else {
+      // First time — save defaults to Firebase (without passwords)
       await saveUsers();
     }
     usersLoaded = true;
@@ -891,6 +923,7 @@ async function loadUsersFromFirebase() {
     usersLoaded = true;
   }
 }
+
 let currentUser = null;
 let selContainer = null;
 let openContainerId = null;
@@ -902,7 +935,8 @@ let historyData = [];
 let sfsData = [];
 let unsubStock = null;
 let unsubHistory = null;
-let unsubSFS = null;
+
+
 function defaultData() {
 return {
 logistica: Array.from({length:39},(_,i)=>({id:i+1,label:'C'+String(i+1).padStart(2,'0'),materials:[]})),
@@ -911,6 +945,7 @@ emas: [],
 patio: []
 };
 }
+
 async function saveStock(data) {
 appData = data;
 refreshAll();
@@ -929,6 +964,7 @@ try {
   showToast('❌ ERRO: '+e.message+' (código: '+e.code+')', true);
 }
 }
+
 async function logHistory(type,mat,loc,wh,qty,unit) {
 try {
   await addDoc(collection(db,'wms','history','entries'),{
@@ -947,6 +983,7 @@ try {
   console.error('❌ logHistory FAILED:', e.code, e.message);
 }
 }
+
 function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
   snap=>{
@@ -986,6 +1023,7 @@ try{
   );
 }
 }
+
 async function doLogin(){
 const u=document.getElementById('login-user').value.trim().toLowerCase();
 const p=document.getElementById('login-pass').value;
@@ -1034,7 +1072,10 @@ if(USERS[u]&&USERS[u].pass===p){
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
 }
 };
-function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(invUnsubscribe)invUnsubscribe();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+
+function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+
+
 function openEmasImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -1051,6 +1092,7 @@ function openEmasImportModal(){
   document.getElementById('ez-C').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-C','Emas — Zona C');},200);};
   document.getElementById('ez-D').onclick=function(){closeModal();setTimeout(function(){openImportModal('emas-D','Emas — Zona D');},200);};
 };
+
 function openUndoImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">↩ Cancelar Importação</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -1099,6 +1141,7 @@ function openUndoImportModal(){
     refreshAll();
   };
 };
+
 function openImportModal(destType, destLabel){
   openModal(
     '<div class="modal-header">'+
@@ -1168,9 +1211,9 @@ function openImportModal(destType, destLabel){
           '<tbody>'+
           materials.slice(0,5).map(function(m){
             return '<tr style="border-top:1px solid var(--border)">'+
-              '<td style="padding:5px 8px;font-family:monospace;color:var(--green)">'+escapeHtml(m.code)+'</td>'+
-              '<td style="padding:5px 8px">'+escapeHtml(m.name.substring(0,40))+(m.name.length>40?'...':'')+'</td>'+
-              '<td style="padding:5px 8px;text-align:right;font-weight:600">'+escapeHtml(m.qty)+'</td>'+
+              '<td style="padding:5px 8px;font-family:monospace;color:var(--green)">'+m.code+'</td>'+
+              '<td style="padding:5px 8px">'+m.name.substring(0,40)+(m.name.length>40?'...':'')+'</td>'+
+              '<td style="padding:5px 8px;text-align:right;font-weight:600">'+m.qty+'</td>'+
             '</tr>';
           }).join('')+
           (materials.length>5?'<tr><td colspan="3" style="padding:5px 8px;color:var(--text3);text-align:center">... e mais '+(materials.length-5)+' materiais</td></tr>':'')+
@@ -1183,6 +1226,7 @@ function openImportModal(destType, destLabel){
     reader.readAsArrayBuffer(file);
   });
 };
+
 function openImportLogModal(){
   var opts = '<option value="">— Seleccione o contentor —</option>';
   appData.logistica.forEach(function(c,i){
@@ -1207,6 +1251,7 @@ function openImportLogModal(){
     openImportModal(d, label);
   };
 };
+
 async function findExistingMat(mats, m, byZone){
   if(!mats)return null;
   var nameKey = (m.name||'').toLowerCase().trim();
@@ -1218,11 +1263,14 @@ async function findExistingMat(mats, m, byZone){
   }
   return null;
 }
+
 function confirmImport(){
   const materials = window._importData;
   const dest = window._importDest;
   if(!materials||!materials.length){showToast('Nenhum material para importar',true);return;}
   if(!appData){showToast('Sistema não carregado',true);return;}
+
+  // Build list of target materials array based on destination
   var targetMats=null, zone=null, logIdx=null;
   if(dest==='emas-A'||dest==='emas-B'||dest==='emas-C'||dest==='emas-D'){
     zone = dest.split('-')[1];
@@ -1238,6 +1286,8 @@ function confirmImport(){
     if(!appData.logistica[logIdx].materials)appData.logistica[logIdx].materials=[];
     targetMats = appData.logistica[logIdx].materials;
   }
+
+  // Detect conflicts: existing material with DIFFERENT quantity
   var conflicts=[];
   var newOnes=[];
   var sameQty=[];
@@ -1256,19 +1306,21 @@ function confirmImport(){
       newOnes.push(m);
     }
   });
+
   if(conflicts.length>0){
     showImportConflictModal(conflicts, newOnes, sameQty, dest, zone, logIdx, targetMats);
   } else {
     applyImport(newOnes, sameQty, [], dest, zone, logIdx, targetMats);
   }
 }
+
 function showImportConflictModal(conflicts, newOnes, sameQty, dest, zone, logIdx, targetMats){
   var html = '<div class="modal-header"><span class="modal-title">⚠️ Diferenças de Quantidade Encontradas</span><button class="modal-close" onclick="closeModal()">✕</button></div>';
   html += '<div style="font-size:12px;color:var(--text3);margin-bottom:14px">'+conflicts.length+' material(is) já existem com quantidade diferente. Escolhe o que fazer:</div>';
   html += '<div style="max-height:320px;overflow-y:auto;margin-bottom:14px">';
   conflicts.forEach(function(c, i){
     html += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">';
-    html += '<div style="font-size:13px;font-weight:600;margin-bottom:6px">'+escapeHtml(c.incoming.name)+(c.incoming.code?' <span style="color:var(--text3);font-weight:400">['+escapeHtml(c.incoming.code)+']</span>':'')+'</div>';
+    html += '<div style="font-size:13px;font-weight:600;margin-bottom:6px">'+c.incoming.name+(c.incoming.code?' <span style="color:var(--text3);font-weight:400">['+c.incoming.code+']</span>':'')+'</div>';
     html += '<div style="display:flex;align-items:center;gap:10px;font-size:12px">';
     html += '<span style="color:var(--text3)">Actual: <strong>'+c.oldQty+' '+(c.existing.unit||'un')+'</strong></span>';
     html += '<span>→</span>';
@@ -1284,7 +1336,9 @@ function showImportConflictModal(conflicts, newOnes, sameQty, dest, zone, logIdx
   if(newOnes.length) html += '<div style="font-size:12px;color:var(--green);margin-bottom:10px">✓ '+newOnes.length+' material(is) novo(s) serão adicionados</div>';
   if(sameQty.length) html += '<div style="font-size:12px;color:var(--text3);margin-bottom:10px">= '+sameQty.length+' material(is) sem alteração</div>';
   html += '<div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar Importação</button><button class="btn btn-primary" id="confirm-conflicts-btn">✓ Aplicar</button></div>';
+
   openModal(html);
+
   document.getElementById('confirm-conflicts-btn').onclick = function(){
     var resolved = conflicts.map(function(c, i){
       var radios = document.getElementsByName('conflict-'+i);
@@ -1296,8 +1350,11 @@ function showImportConflictModal(conflicts, newOnes, sameQty, dest, zone, logIdx
     applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats);
   };
 }
+
 function applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats){
   var added=0, updated=0, kept=0;
+
+  // Apply resolved conflicts
   resolved.forEach(function(r){
     if(r.choice==='update'){
       r.conflict.existing.qty = r.conflict.incoming.qty;
@@ -1307,7 +1364,11 @@ function applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats)
       kept++;
     }
   });
+
+  // sameQty - no change needed but count as updated for consistency
   sameQty.forEach(function(s){ updated++; });
+
+  // Add new materials
   if(dest==='patio'){
     if(!Array.isArray(appData.patio))appData.patio=[];
     newOnes.forEach(function(m){
@@ -1322,6 +1383,7 @@ function applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats)
       added++;
     });
   }
+
   closeModal();
   var nd = JSON.parse(JSON.stringify(appData));
   saveStock(nd).then(function(){
@@ -1334,6 +1396,7 @@ function applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats)
     refreshAll();
   });
 };
+
 document.addEventListener('change',function(e){
   var sel=e.target.closest('[data-sort-group]');
   if(!sel)return;
@@ -1361,6 +1424,7 @@ document.addEventListener('click',function(e){
   var needsId=['addstock','transfer','edit','remove'];
   if(needsId.indexOf(action)>=0&&isNaN(id))return;
   if(action==='addstock')addStockToMat(type,xtra,id);
+  else if(action==='sfs')openSFSForMat(type,xtra,id);
   else if(action==='transfer')openTransferForMat(type,xtra,id);
   else if(action==='edit')editMat(type,xtra,id);
   else if(action==='remove')removeMat(type,xtra,id);
@@ -1369,6 +1433,7 @@ document.addEventListener('click',function(e){
   else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);return;}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
 function navTo(page,el){
 if(page==='sfs')setTimeout(renderSFS,100);
 if(page==='history')setTimeout(renderHistory,100);
@@ -1385,8 +1450,9 @@ if(page==='history')renderHistory();
 if(page==='alerts')renderAlerts();
 if(page==='patio')renderPatio();
 if(page==='inventory')renderInventory();
-if(page==='users')renderUsers();
+
 };
+
 function showToast(msg,err=false){
 const t=document.getElementById('toast');
 const icon=err?'⚠️':'✅';
@@ -1399,16 +1465,15 @@ t.classList.remove('show');t.classList.add('hide');
 setTimeout(()=>{t.style.display='none';t.classList.remove('hide');},300);
 },2800);
 }
-function escapeHtml(s){
-if(s===null||s===undefined)return '';
-return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
+
 function getAllMaterials(){
 if(!appData)return[];
 const r=[];
 (appData.logistica||[]).forEach(c=>(c.materials||[]).forEach(m=>r.push({...m,location:c.label,warehouse:'Logística',locFull:'Contentor '+c.label})));
+
 const viniArr=Array.isArray(appData.vini)?appData.vini:[];
 viniArr.forEach(m=>r.push({...m,location:'VINI'+(m.zone?'-'+m.zone:''),warehouse:'Vini Galpão',locFull:'Vini Galpão'+(m.zone?' — Zona '+m.zone:'')}));
+
 const emasArr=Array.isArray(appData.emas)?appData.emas:
 [...(appData.emas?.A||[]).map(m=>({...m,zone:'A'})),
 ...(appData.emas?.B||[]).map(m=>({...m,zone:'B'})),
@@ -1418,6 +1483,7 @@ emasArr.forEach(m=>r.push({...m,location:'EMAS'+(m.zone?'-'+m.zone:''),warehouse
 (appData.patio||[]).forEach(m=>r.push({...m,location:'PÁTIO',warehouse:'Pátio',locFull:'Pátio (Trânsito)'}));
 return r;
 }
+
 function getAlertLevel(m){
   var qty=parseFloat(m.qty)||0;
   var min=parseFloat(m.minStock)||0;
@@ -1435,19 +1501,23 @@ function getCriticalAlerts(){
 function getWarningAlerts(){
   return getAllMaterials().filter(function(m){return getAlertLevel(m)==='warning';});
 }
+
 function containerStatus(c){
 if(c.materials.some(m=>m.minStock&&parseFloat(m.qty)<=parseFloat(m.minStock)))return'alert';
 if(c.materials.some(m=>m.reorderPoint&&parseFloat(m.qty)<=parseFloat(m.reorderPoint)))return'warning';
 if(!c.materials.length)return'empty';
 return c.materials.length<=5?'partial':'full';
 }
+
 function unitOpts(sel='un'){return['un','kg','L','m','m²','cx','pç','rolo','t'].map(u=>`<option${u===sel?' selected':''}>${u}</option>`).join('');}
+
 function updateBadges(){
 const a=getAlerts();
 const b=document.getElementById('badge-alerts');
 if(a.length){b.textContent=a.length;b.style.display='inline';}else b.style.display='none';
 if(appData)document.getElementById('badge-log').textContent=appData.logistica.filter(c=>c.materials.length>0).length;
 }
+
 function refreshAll(){
 renderDashboard();
 const act=document.querySelector('.page.active')?.id;
@@ -1455,6 +1525,7 @@ if(act==='page-logistica'){
 renderLogistica();
 if(selContainer!==null&&appData.logistica[selContainer]){
   renderContainerPanel(appData.logistica[selContainer],selContainer);
+  // Keep container open after refresh
   const cuEl=document.querySelector('.cu[data-idx="'+selContainer+'"]');
   if(cuEl&&!cuEl.classList.contains('open'))cuEl.classList.add('open','sel');
 }
@@ -1464,6 +1535,7 @@ if(act==='page-alerts')renderAlerts();if(act==='page-emas')renderEmas();
 if(act==='page-patio')renderPatio();
 updateBadges();
 }
+
 function topbarSearch(q){
 const res=document.getElementById('topbar-results');
 if(!q.trim()){res.classList.remove('show');return;}
@@ -1481,20 +1553,21 @@ const grouped=Object.values(groups).slice(0,8);
 res.innerHTML=grouped.map(g=>{
   const multi=g.locations.length>1;
   return`<div class="ts-item">
-    <span class="ts-badge" style="${multi?'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)':''}">${multi?g.locations.length+' locais':escapeHtml(g.locations[0])}</span>
-    <div><div class="ts-name">${escapeHtml(g.name)}</div><div class="ts-loc">${escapeHtml(g.locations.join(' · '))}</div></div>
-    <span class="ts-qty" style="${multi?'color:var(--blue);font-weight:700':''}">${g.totalQty} ${escapeHtml(g.unit)}${multi?' (total)':''}</span>
+    <span class="ts-badge" style="${multi?'background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)':''}">${multi?g.locations.length+' locais':g.locations[0]}</span>
+    <div><div class="ts-name">${g.name}</div><div class="ts-loc">${g.locations.join(' · ')}</div></div>
+    <span class="ts-qty" style="${multi?'color:var(--blue);font-weight:700':''}">${g.totalQty} ${g.unit}${multi?' (total)':''}</span>
   </div>`;
 }).join('');
 res.classList.add('show');
 };
 document.addEventListener('click',e=>{if(!e.target.closest('.topbar-search'))document.getElementById('topbar-results').classList.remove('show');});
+
 function doSearch(q){
 const el=document.getElementById('search-results');
 if(!q.trim()){el.innerHTML='';return;}
 const ql=q.toLowerCase();
 const found=getAllMaterials().filter(m=>m.name.toLowerCase().includes(ql)||(m.code||'').toLowerCase().includes(ql));
-if(!found.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum material encontrado para "'+escapeHtml(q)+'"</div></div>';return;}
+if(!found.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum material encontrado para "'+q+'"</div></div>';return;}
 const groups={};
 found.forEach(m=>{
   const key=m.name.toLowerCase()+'__'+m.unit;
@@ -1511,24 +1584,24 @@ grouped.forEach(g=>{
   const alertLvl=g.items.some(i=>getAlertLevel(i)==='critical')?'critical':g.items.some(i=>getAlertLevel(i)==='warning')?'warning':null;
   html+='<div class="search-result-item" style="flex-direction:column;align-items:stretch;gap:8px;'+(alertLvl==='critical'?'border-color:#fca5a5;background:#fff8f8':alertLvl==='warning'?'border-color:#fde68a;background:#fffdf0':'')+'">';
   html+='<div style="display:flex;align-items:center;gap:12px">';
-  if(g.code)html+='<div style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green3);padding:2px 8px;border-radius:4px">'+escapeHtml(g.code)+'</div>';
-  html+='<div class="result-name" style="flex:1">'+escapeHtml(g.name)+'</div>';
+  if(g.code)html+='<div style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green3);padding:2px 8px;border-radius:4px">'+g.code+'</div>';
+  html+='<div class="result-name" style="flex:1">'+g.name+'</div>';
   if(alertLvl==='critical')html+='<span style="font-size:11px;font-weight:700;color:var(--red)">🔴 CRÍTICO</span>';
   else if(alertLvl==='warning')html+='<span style="font-size:11px;font-weight:700;color:var(--amber)">🟡 ENCOMENDA</span>';
   html+='</div>';
   if(multi){
     html+='<div style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
     html+='<span style="font-size:11px;font-weight:600;color:var(--blue)">📦 TOTAL CONSOLIDADO ('+g.items.length+' locais)</span>';
-    html+='<span style="font-size:16px;font-weight:700;color:var(--blue)">'+g.totalQty+' '+escapeHtml(g.unit)+'</span>';
+    html+='<span style="font-size:16px;font-weight:700;color:var(--blue)">'+g.totalQty+' '+g.unit+'</span>';
     html+='</div>';
   }
   html+='<div style="display:flex;flex-direction:column;gap:4px">';
   g.items.forEach(m=>{
     var alvl=getAlertLevel(m);
     html+='<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:var(--bg);border-radius:6px">';
-    html+='<span class="result-loc-badge" style="font-size:10px">'+escapeHtml(m.location)+'</span>';
-    html+='<span style="font-size:11px;color:var(--text3);flex:1">'+escapeHtml(m.locFull)+'</span>';
-    html+='<span style="font-size:13px;font-weight:600;color:'+(alvl==='critical'?'var(--red)':alvl==='warning'?'var(--amber)':'var(--amber)')+'">'+m.qty+' '+escapeHtml(m.unit)+'</span>';
+    html+='<span class="result-loc-badge" style="font-size:10px">'+m.location+'</span>';
+    html+='<span style="font-size:11px;color:var(--text3);flex:1">'+m.locFull+'</span>';
+    html+='<span style="font-size:13px;font-weight:600;color:'+(alvl==='critical'?'var(--red)':alvl==='warning'?'var(--amber)':'var(--amber)')+'">'+m.qty+' '+m.unit+'</span>';
     if(alvl==='critical')html+='<span style="font-size:10px;color:var(--red)">🔴</span>';
     else if(alvl==='warning')html+='<span style="font-size:10px;color:var(--amber)">🟡</span>';
     html+='</div>';
@@ -1538,6 +1611,8 @@ grouped.forEach(g=>{
 });
 el.innerHTML=html;
 };
+
+
 // ── HELPER RENDER FUNCTIONS ───────────────────────────────────────────────
 function renderSimpleMatList(mats, type, idx){
   if(!mats||!mats.length) return '<div class="empty-state" style="padding:20px"><div class="empty-text">Sem materiais</div></div>';
@@ -1546,13 +1621,14 @@ function renderSimpleMatList(mats, type, idx){
     var alvl=getAlertLevel(m);
     html+='<div class="mat-item">';
     html+='<div style="flex:1">';
-    if(m.code) html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>';
-    html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
+    if(m.code) html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
+    html+='<div class="mat-name">'+m.name+'</div>';
     if(alvl==='critical') html+='<div style="font-size:10px;color:var(--red)">🔴 Stock crítico</div>';
     else if(alvl==='warning') html+='<div style="font-size:10px;color:var(--amber)">🟡 Ponto encomenda</div>';
     html+='</div>';
-    html+='<div class="mat-qty">'+m.qty+' '+escapeHtml(m.unit)+'</div>';
+    html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
     html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
+    html+='<button class="mat-btn" style="border-color:var(--red);color:var(--red)" data-act="sfs" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">↗</button>';
     html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
     html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
     html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
@@ -1561,6 +1637,7 @@ function renderSimpleMatList(mats, type, idx){
   html+='</div>';
   return html;
 }
+
 function renderSimpleAddForm(type, idx){
   var uid=type+idx;
   return '<div class="add-mat-form" style="margin-top:12px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">'+
@@ -1576,7 +1653,9 @@ function renderSimpleAddForm(type, idx){
     '</div>'+
   '</div>';
 }
+
 const CTN_COLORS=['c-blue','c-rust','c-olive','c-grey','c-tan','c-red'];
+
 function renderLogistica(){
 if(!appData)return;
 const row=document.getElementById('logistica-grid');
@@ -1592,6 +1671,10 @@ if(selContainer!==null&&appData.logistica[selContainer]){
   renderContainerPanel(appData.logistica[selContainer],selContainer);
 }
 }
+
+
+
+
 function renderContainer(c,idx,color,isOpen,status){
 var alertDot=status==='alert'?'<div class="cu-warn"></div>':'';
 return '<div class="cu '+color+(isOpen?' open sel':'')+(status==='alert'?' alert-pulse':'')+'" data-idx="'+idx+'" onclick="selectContainer('+idx+')" style="width:100px">'+
@@ -1617,13 +1700,14 @@ return '<div class="cu '+color+(isOpen?' open sel':'')+(status==='alert'?' alert
   '<div class="cu-bottom"><div class="cu-foot"></div><div class="cu-foot"></div></div>'+
   '<div class="cu-label">'+
     '<div class="cu-id">'+c.label+'</div>'+
-    (c.name?'<div style="font-size:9px;color:rgba(255,255,255,0.7);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px">'+escapeHtml(c.name)+'</div>':'')+
+    (c.name?'<div style="font-size:9px;color:rgba(255,255,255,0.7);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px">'+c.name+'</div>':'')+
     '<div class="cu-badge '+(isOpen?'open':c.materials.length?'partial':'closed')+'">'+
       (isOpen?'🔓 Aberto':c.materials.length?'📦 '+c.materials.length:'🔒 Vazio')+
     '</div>'+
   '</div>'+
 '</div>';
 }
+
 function selectContainer(idx){
 if(selContainer===idx){
   selContainer=null;openContainerId=null;
@@ -1643,6 +1727,7 @@ document.querySelectorAll('.cu').forEach(function(el,i){
 updateSteps(2);
 renderContainerPanel(appData.logistica[idx],idx);
 };
+
 function updateSteps(step){
 for(var i=1;i<=4;i++){
   var circle=document.getElementById('cus'+i);
@@ -1657,6 +1742,7 @@ for(var j=1;j<=3;j++){
   if(l)l.className='cus-line'+(j<step?' done':'');
 }
 }
+
 function renderContainerPanel(c,idx){
 var el=document.getElementById('logistica-panel');
 var titleEl=document.getElementById('log-inv-title');
@@ -1668,7 +1754,7 @@ var pct=c.materials.length?Math.min(Math.round(c.materials.length/20*100),100):0
 var sumEl=document.getElementById('log-sum-content');
 if(sumEl)sumEl.innerHTML=
   '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Código</span><span style="font-size:11px;font-weight:600">'+c.label+'</span></div>'+
-  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Nome</span><span style="font-size:11px;font-weight:600">'+(c.name?escapeHtml(c.name):'—')+'</span></div>'+
+  '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Nome</span><span style="font-size:11px;font-weight:600">'+(c.name||'—')+'</span></div>'+
   '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Estado</span><span style="font-size:11px;font-weight:600;color:var(--green)">Aberto</span></div>'+
   '<div class="sr"><span class="sk" style="font-size:11px;color:var(--text3)">Materiais</span><span style="font-size:11px;font-weight:600;color:var(--amber)">'+c.materials.length+'</span></div>'+
   '<div style="margin-top:10px">'+
@@ -1684,6 +1770,7 @@ if(sumEl)sumEl.innerHTML=
 updateSteps(3);
 var sortedMats=sortMats(c.materials, sortMode.log);
 el.innerHTML=renderSortBar('log',idx)+renderMatItems(sortedMats,'log',String(idx))+renderSimpleAddForm('log',String(idx));
+// Attach button handlers safely
 var qrBtn=document.getElementById('qr-btn-'+idx);
 var renBtn=document.getElementById('ren-btn-'+idx);
 var delBtn=document.getElementById('del-btn-'+idx);
@@ -1691,6 +1778,7 @@ if(qrBtn)qrBtn.onclick=function(){showContainerQR(idx);};
 if(renBtn)renBtn.onclick=function(){renameContainer(idx);};
 if(delBtn)delBtn.onclick=function(){deleteContainer(idx);};
 }
+
 function sortMats(mats, mode){
   if(mode==='none'||!mats)return mats;
   var sorted=mats.slice();
@@ -1702,6 +1790,7 @@ function sortMats(mats, mode){
   else if(mode==='qty-desc') sorted.sort(function(a,b){return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0);});
   return sorted;
 }
+
 function renderSortBar(group, idx){
   var current = sortMode[group]||'none';
   var options = [
@@ -1719,6 +1808,7 @@ function renderSortBar(group, idx){
     '<select class="form-select" style="font-size:12px;padding:4px 8px;flex:1" data-sort-group="'+group+'" data-sort-idx="'+(idx!==undefined?idx:'')+'">'+opts+'</select>'+
   '</div>';
 }
+
 function renderMatItems(mats,type,idx){
 if(!mats.length)return'<div class="empty-state" style="padding:12px"><div class="empty-text">Sem materiais neste contentor</div></div>';
 var html='<div class="mat-list">';
@@ -1727,13 +1817,14 @@ for(var i=0;i<mats.length;i++){
   var alvl=getAlertLevel(m);
   html+='<div class="mat-item">';
   html+='<div style="flex:1">';
-  if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>';
-  html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
-  if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico ('+m.qty+'/'+m.minStock+' '+escapeHtml(m.unit)+')</div>';
-  else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+m.qty+'/'+m.reorderPoint+' '+escapeHtml(m.unit)+')</div>';
+  if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+m.code+'</div>';
+  html+='<div class="mat-name">'+m.name+'</div>';
+  if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico ('+m.qty+'/'+m.minStock+' '+m.unit+')</div>';
+  else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+m.qty+'/'+m.reorderPoint+' '+m.unit+')</div>';
   html+='</div>';
-  html+='<div class="mat-qty">'+m.qty+' '+escapeHtml(m.unit)+'</div>';
+  html+='<div class="mat-qty">'+m.qty+' '+m.unit+'</div>';
   html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
+  html+='<button class="mat-btn" style="border-color:var(--red);color:var(--red)" data-act="sfs" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">↗</button>';
   html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
   html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
   html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
@@ -1742,6 +1833,7 @@ for(var i=0;i<mats.length;i++){
 html+='</div>';
 return html;
 }
+
 // ── VINI GALPÃO ──────────────────────────────────────────────────────────
 var viniDoorOpen=false;
 function renderVini(){
@@ -1772,7 +1864,9 @@ if(el)el.innerHTML=renderSortBar('vini')+renderSimpleMatList(sortedVini,'vini','
   if(el)el.innerHTML='';
 }
 }
+
 function toggleViniDoor(){viniDoorOpen=!viniDoorOpen;renderVini();};
+
 // ── EMAS ─────────────────────────────────────────────────────────────────
 var selEmasZone=null;
 function getEmasArr(){
@@ -1784,6 +1878,7 @@ var flat=[];
 ['A','B','C','D'].forEach(function(z){(appData.emas[z]||[]).forEach(function(m){flat.push(Object.assign({},m,{zone:z}));});});
 return flat;
 }
+
 function renderEmas(){
 if(!appData)return;
 if(!Array.isArray(appData.emas)){
@@ -1823,6 +1918,7 @@ if(listEl)listEl.innerHTML=renderSortBar('emas',selEmasZone)+renderSimpleMatList
   if(listEl)listEl.innerHTML='';
 }
 }
+
 function renderEmasZoneDoors(){
 var emasArr=getEmasArr();
 var doorsEl=document.getElementById('emas-doors');
@@ -1844,10 +1940,13 @@ zones.forEach(function(z,i){
 });
 doorsEl.innerHTML=html;
 }
+
 function toggleEmasZone(zone){
 selEmasZone=selEmasZone===zone?null:zone;
 renderEmas();
 };
+
+
 function renderAlerts(){
   var el=document.getElementById('alerts-list');
   if(!el)return;
@@ -1865,11 +1964,11 @@ function renderAlerts(){
     critical.forEach(function(m){
       html+='<div class="mat-item">';
       html+='<div style="flex:1">';
-      html+='<div class="mat-name" style="color:var(--red)">'+escapeHtml(m.name)+'</div>';
-      html+='<div style="font-size:11px;color:var(--text3)">'+escapeHtml(m.locFull)+'</div>';
-      html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Stock: '+m.qty+' '+escapeHtml(m.unit)+' | Mínimo: '+m.minStock+' '+escapeHtml(m.unit)+'</div>';
+      html+='<div class="mat-name" style="color:var(--red)">'+m.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--text3)">'+m.locFull+'</div>';
+      html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Stock: '+m.qty+' '+m.unit+' | Mínimo: '+m.minStock+' '+m.unit+'</div>';
       html+='</div>';
-      html+='<div class="mat-qty" style="color:var(--red)">'+m.qty+' '+escapeHtml(m.unit)+'</div>';
+      html+='<div class="mat-qty" style="color:var(--red)">'+m.qty+' '+m.unit+'</div>';
       html+='</div>';
     });
     html+='</div>';
@@ -1880,17 +1979,18 @@ function renderAlerts(){
     warning.forEach(function(m){
       html+='<div class="mat-item">';
       html+='<div style="flex:1">';
-      html+='<div class="mat-name" style="color:var(--amber)">'+escapeHtml(m.name)+'</div>';
-      html+='<div style="font-size:11px;color:var(--text3)">'+escapeHtml(m.locFull)+'</div>';
-      html+='<div style="font-size:11px;color:var(--amber);margin-top:2px">Stock: '+m.qty+' '+escapeHtml(m.unit)+' | Encomenda: '+m.reorderPoint+' '+escapeHtml(m.unit)+'</div>';
+      html+='<div class="mat-name" style="color:var(--amber)">'+m.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--text3)">'+m.locFull+'</div>';
+      html+='<div style="font-size:11px;color:var(--amber);margin-top:2px">Stock: '+m.qty+' '+m.unit+' | Encomenda: '+m.reorderPoint+' '+m.unit+'</div>';
       html+='</div>';
-      html+='<div class="mat-qty" style="color:var(--amber)">'+m.qty+' '+escapeHtml(m.unit)+'</div>';
+      html+='<div class="mat-qty" style="color:var(--amber)">'+m.qty+' '+m.unit+'</div>';
       html+='</div>';
     });
     html+='</div>';
   }
   el.innerHTML=html;
 }
+
 function renderDashboard(){
 if(!appData)return;
 const all=getAllMaterials();
@@ -1919,20 +2019,27 @@ if(whEl)whEl.innerHTML=[{n:'Logística',c:logM,col:'var(--green)'},{n:'Vini Galp
 var hEl=document.getElementById('dash-history');
 if(hEl)hEl.innerHTML=historyData.slice(0,8).map(function(h){return(
 '<div class="dash-hist-item">'+
-'<span class="badge badge-'+(h.type==='ENTRADA'?'in':h.type==='SAÍDA'?'out':'edit')+'">'+escapeHtml(h.type)+'</span>'+
-'<div class="dash-hist-name">'+escapeHtml(h.material)+'<div class="dash-hist-loc">'+escapeHtml(h.wh)+' · '+escapeHtml(h.location||'')+'</div></div>'+
+'<span class="badge badge-'+(h.type==='ENTRADA'?'in':h.type==='SAÍDA'?'out':'edit')+'">'+h.type+'</span>'+
+'<div class="dash-hist-name">'+h.material+'<div class="dash-hist-loc">'+h.wh+' · '+(h.location||'')+'</div></div>'+
 '<span style="font-size:11px;color:var(--text3)">'+(h.ts?new Date(h.ts).toLocaleDateString('pt-PT'):'')+'</span>'+
 '</div>');}).join('')||'<div class="empty-state" style="padding:20px"><div class="empty-text">Sem movimentos registados</div></div>';
+
+// ── CHARTS (only if Chart.js is loaded)
 if(typeof Chart !== 'undefined'){
   renderMonthlyChart();
   renderPieChart(logM,viniM,emasM,patioM);
 }
+
+// ── FORECAST
 renderForecast();
 }
+
 function renderMonthlyChart(){
 var canvas=document.getElementById('chart-monthly');
 if(!canvas)return;
+// Destroy previous chart if exists
 if(canvas._chartInstance){canvas._chartInstance.destroy();}
+// Build last 6 months data
 var months=[];
 var entriesData=[];
 var saidasData=[];
@@ -1966,6 +2073,7 @@ canvas._chartInstance=new Chart(canvas,{
   }
 });
 }
+
 function renderPieChart(logM,viniM,emasM,patioM){
 var canvas=document.getElementById('chart-pie');
 if(!canvas)return;
@@ -1996,6 +2104,7 @@ canvas._chartInstance=new Chart(canvas,{
   }
 });
 }
+
 function renderForecast(){
 var el=document.getElementById('dash-forecast');
 if(!el)return;
@@ -2003,9 +2112,11 @@ if(!historyData.length){
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sem histórico suficiente para previsão.<br>Continue a usar o sistema para gerar previsões automáticas.</div>';
   return;
 }
+// Calculate average monthly consumption per material (last 3 months)
 var now=new Date();
 var months3=[];
 for(var i=2;i>=0;i--){var d=new Date();d.setMonth(d.getMonth()-i);months3.push(d.toISOString().slice(0,7));}
+// Get all exits in last 3 months grouped by material
 var consumption={};
 historyData.forEach(function(h){
   if(h.type!=='SAÍDA')return;
@@ -2020,6 +2131,7 @@ historyData.forEach(function(h){
 var forecasts=Object.values(consumption).map(function(c){
   var avgMonth=c.total/Math.max(c.months.size,1);
   var avg30=Math.round(avgMonth*10)/10;
+  // Find current stock
   var matInStock=getAllMaterials().find(function(m){return m.name===c.name;});
   var currentStock=matInStock?parseFloat(matInStock.qty)||0:0;
   var daysLeft=avg30>0?Math.round(currentStock/avg30*30):999;
@@ -2043,9 +2155,9 @@ forecasts.forEach(function(f){
   var rec=f.daysLeft<=7?'🔴 Encomendar URGENTE':f.daysLeft<=30?'🟡 Planear encomenda':'✅ Stock suficiente';
   if(f.daysLeft>=999)rec='✅ Sem consumo recente';
   html+='<tr style="border-bottom:1px solid var(--border)">';
-  html+='<td style="padding:10px 12px;font-size:13px;font-weight:500">'+escapeHtml(f.name)+'</td>';
-  html+='<td style="padding:10px 12px;text-align:center;font-weight:600;color:var(--amber)">'+f.currentStock+' '+escapeHtml(f.unit)+'</td>';
-  html+='<td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text2)">'+f.avg30+' '+escapeHtml(f.unit)+'</td>';
+  html+='<td style="padding:10px 12px;font-size:13px;font-weight:500">'+f.name+'</td>';
+  html+='<td style="padding:10px 12px;text-align:center;font-weight:600;color:var(--amber)">'+f.currentStock+' '+f.unit+'</td>';
+  html+='<td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text2)">'+f.avg30+' '+f.unit+'</td>';
   html+='<td style="padding:10px 12px;text-align:center"><span style="background:'+urgencyBg+';color:'+urgency+';border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">'+(f.daysLeft>=999?'—':f.daysLeft+' dias')+'</span></td>';
   html+='<td style="padding:10px 12px;font-size:12px">'+rec+'</td>';
   html+='</tr>';
@@ -2054,53 +2166,27 @@ html+='</tbody></table></div>';
 html+='<div style="margin-top:12px;font-size:11px;color:var(--text3);padding:0 4px">💡 Previsão baseada nas saídas dos últimos 3 meses. Quanto mais histórico existir, mais precisa será a previsão.</div>';
 el.innerHTML=html;
 }
-function renderHistory(){
-var tb=document.getElementById('history-tbody');
-if(!tb)return;
-var q=(document.getElementById('hist-search')?.value||'').toLowerCase();
-var ft=document.getElementById('hist-type')?.value||'';
-var fw=document.getElementById('hist-wh')?.value||'';
-var list=historyData.filter(function(h){
-  if(ft&&h.type!==ft)return false;
-  if(fw&&(h.warehouse||h.wh||'').indexOf(fw)<0)return false;
-  if(q){
-    var hay=((h.material||'')+' '+(h.location||'')+' '+(h.user||'')).toLowerCase();
-    if(hay.indexOf(q)<0)return false;
-  }
-  return true;
-});
-if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Sem movimentos registados</td></tr>';return;}
-tb.innerHTML=list.map(function(h){
-  var dt=h.ts?new Date(h.ts):null;
-  var dstr=dt?dt.toLocaleDateString('pt-PT')+' '+dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'';
-  var cls=h.type==='ENTRADA'?'badge-in':h.type==='SA\u00cdDA'?'badge-out':'badge-edit';
-  return '<tr>'+
-    '<td style="font-size:12px;color:var(--text3)">'+dstr+'</td>'+
-    '<td><span class="badge '+cls+'">'+escapeHtml(h.type||'')+'</span></td>'+
-    '<td style="font-weight:500">'+escapeHtml(h.material||'')+'</td>'+
-    '<td style="font-size:12px">'+escapeHtml(h.location||'')+'</td>'+
-    '<td style="font-size:12px">'+escapeHtml(h.warehouse||h.wh||'')+'</td>'+
-    '<td style="font-weight:600;color:var(--amber)">'+escapeHtml(((h.qty||'')+' '+(h.unit||'')).trim())+'</td>'+
-    '<td style="font-size:12px">'+escapeHtml(h.user||'')+'</td>'+
-  '</tr>';
-}).join('');
-}
+
+
+
 function startSFSListener(){
 try{
 const q=query(collection(db,'wms','sfs','records'),orderBy('ts','desc'),limit(100));
-unsubSFS=onSnapshot(q,snap=>{
+onSnapshot(q,snap=>{
 sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
 if(document.getElementById('page-sfs')?.classList.contains('active'))renderSFS();
 },err=>{
-unsubSFS=onSnapshot(collection(db,'wms','sfs','records'),snap=>{
+onSnapshot(collection(db,'wms','sfs','records'),snap=>{
 sfsData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
 sfsData.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+// Always update SFS page and badges
 if(document.getElementById('page-sfs')?.classList.contains('active'))renderSFS();
 updateBadges();
 });
 });
 }catch(e){console.warn('SFS listener:',e);}
 }
+
 function renderSFS(){
 const q=(document.getElementById('sfs-search')?.value||'').toLowerCase();
 const list=sfsData.filter(s=>!q||(s.number&&s.number.toLowerCase().includes(q))||(s.material&&s.material.toLowerCase().includes(q))||(s.destino&&s.destino.toLowerCase().includes(q)));
@@ -2111,19 +2197,20 @@ el.innerHTML=`<div class="table-wrap"><table>
 <tbody>${list.map(s=>{
 const dt=new Date(s.ts);
 return`<tr>
-<td><span style="font-weight:700;color:var(--green)">${escapeHtml(s.number)}</span></td>
+<td><span style="font-weight:700;color:var(--green)">${s.number}</span></td>
 <td style="font-size:12px;color:var(--text3)">${dt.toLocaleDateString('pt-PT')} ${dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</td>
-<td style="font-weight:500">${escapeHtml(s.material)}</td>
-<td style="font-weight:600;color:var(--amber)">${escapeHtml(s.qty)} ${escapeHtml(s.unit)}</td>
-<td style="font-size:12px">${escapeHtml(s.origem)}</td>
-<td style="font-size:12px">${escapeHtml(s.destino)}</td>
-<td style="font-size:12px">${escapeHtml(s.emitidoPor||'—')}</td>
-<td style="font-size:12px;color:var(--text3)">${escapeHtml(s.obs||'-')}</td>
+<td style="font-weight:500">${s.material}</td>
+<td style="font-weight:600;color:var(--amber)">${s.qty} ${s.unit}</td>
+<td style="font-size:12px">${s.origem}</td>
+<td style="font-size:12px">${s.destino}</td>
+<td style="font-size:12px">${s.emitidoPor||'—'}</td>
+<td style="font-size:12px;color:var(--text3)">${s.obs||'-'}</td>
 <td><button class="mat-btn edit" onclick="reimprimirSFS(${JSON.stringify(s).split('"').join('&quot;')})">🖨 Reimprimir</button></td>
 </tr>`;
 }).join('')}</tbody>
 </table></div>`;
 }
+
 function reimprimirSFS(s){
   generateSFSPDF({
     sfsNum: s.number,
@@ -2137,16 +2224,17 @@ function reimprimirSFS(s){
     emitidoPor: s.emitidoPor||'—'
   });
 };
+
 function renderUsers(){
 const el=document.getElementById('users-grid');
 el.innerHTML=Object.entries(USERS).map(([uid,u])=>`
 <div class="user-card">
 <div class="user-card-header">
-<div class="user-card-avatar">${escapeHtml((u.name||'?')[0].toUpperCase())}</div>
-<div><div class="user-card-name">${escapeHtml(u.name)}</div><span class="role-badge ${ROLE_BADGE[u.role]||'role-operator'}">${ROLES[u.role]||escapeHtml(u.role)}</span></div>
+<div class="user-card-avatar">${u.name[0].toUpperCase()}</div>
+<div><div class="user-card-name">${u.name}</div><span class="role-badge ${ROLE_BADGE[u.role]||'role-operator'}">${ROLES[u.role]||u.role}</span></div>
 </div>
 <div class="user-card-meta">
-<div class="user-meta-row"><span class="user-meta-key">Username</span><span class="user-meta-val">${escapeHtml(uid)}</span></div>
+<div class="user-meta-row"><span class="user-meta-key">Username</span><span class="user-meta-val">${uid}</span></div>
 <div class="user-meta-row"><span class="user-meta-key">Password</span><span class="user-meta-val">••••••</span></div>
 </div>
 <div class="user-card-actions">
@@ -2155,16 +2243,21 @@ ${uid!=='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${ui
 </div>
 </div>`).join('');
 }
+
 function openAddUserModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="u-name" style="width:100%" placeholder="Ex: Ana Gomes"></div>
 <div style="margin-bottom:12px"><label class="modal-label">Username (para login)</label><input class="form-input" id="u-id" style="width:100%" placeholder="Ex: ana" autocomplete="off"></div>
 <div style="margin-bottom:12px"><label class="modal-label">Password</label><input class="form-input" id="u-pass" type="password" style="width:100%" placeholder="••••••••"></div>
-<div style="margin-bottom:12px"><label class="modal-label">Perfil</label><select class="form-select" id="u-role" style="width:100%"><option value="operator">Operador</option><option value="supervisor">Supervisor</option><option value="admin">Administrador</option></select></div>
-<div><label class="modal-label">Telegram Chat ID (opcional)</label><input class="form-input" id="nu-telegram" style="width:100%" placeholder="Ex: 123456789" autocomplete="off"></div>
+<div><label class="modal-label">Perfil</label><select class="form-select" id="u-role" style="width:100%"><option value="operator">Operador</option><option value="supervisor">Supervisor</option><option value="admin">Administrador</option></select></div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddUser()">Criar utilizador</button></div>`);
 };
+
 async function confirmAddUser(){
+// Note: password management now via Firebase Auth Console
+// Users added here get profile (name/role) saved to Firestore
+// For password, admin must add user in Firebase Auth Console
+
 const name=document.getElementById('u-name').value.trim();
 const id=document.getElementById('u-id').value.trim().toLowerCase();
 const pass=document.getElementById('u-pass').value;
@@ -2174,31 +2267,34 @@ if(USERS[id]){showToast('Username já existe',true);return;}
 var tgId=document.getElementById('nu-telegram')?.value.trim()||'';
 USERS[id]={name,pass,role,telegramId:tgId};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
 };
+
 function openEditUserModal(uid){
 const u=USERS[uid];
-openModal(`<div class="modal-header"><span class="modal-title">Editar — ${escapeHtml(u.name)}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
-<div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="eu-name" value="${escapeHtml(u.name)}" style="width:100%"></div>
+openModal(`<div class="modal-header"><span class="modal-title">Editar — ${u.name}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+<div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="eu-name" value="${u.name}" style="width:100%"></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nova password (deixa em branco para manter)</label><input class="form-input" id="eu-pass" type="password" style="width:100%" placeholder="••••••••"></div>
-<div style="margin-bottom:12px"><label class="modal-label">Telegram Chat ID (opcional)</label><input class="form-input" id="eu-telegram" value="${escapeHtml(u.telegramId||'')}" style="width:100%" placeholder="Ex: 123456789"></div>
 <div><label class="modal-label">Perfil</label><select class="form-select" id="eu-role" style="width:100%"><option value="operator"${u.role==='operator'?' selected':''}>Operador</option><option value="supervisor"${u.role==='supervisor'?' selected':''}>Supervisor</option><option value="admin"${u.role==='admin'?' selected':''}>Administrador</option></select></div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmEditUser('${uid}')">Guardar</button></div>`);
 };
+
 async function confirmEditUser(uid){
 const name=document.getElementById('eu-name').value.trim();
 const pass=document.getElementById('eu-pass').value;
 const role=document.getElementById('eu-role').value;
-const tgId=document.getElementById('eu-telegram')?.value.trim()||'';
 if(!name)return;
-USERS[uid].name=name;USERS[uid].role=role;USERS[uid].telegramId=tgId;
+USERS[uid].name=name;USERS[uid].role=role;
 if(pass)USERS[uid].pass=pass;
 await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador actualizado e sincronizado!');
 };
+
 async function deleteUser(uid){
 if(!confirm('Eliminar utilizador "'+USERS[uid].name+'"?'))return;
 delete USERS[uid];await saveUsers();renderUsers();showToast('✓ Utilizador eliminado');
 };
+
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');};
+
 function openAddContainerModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Novo contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">ETIQUETA (código)</label><input class="form-input" id="nc-label" placeholder="Ex: C40" style="width:100%"></div>
@@ -2213,6 +2309,7 @@ const nd=JSON.parse(JSON.stringify(appData));
 nd.logistica.push({id:Date.now(),label:l,name:n,materials:[]});
 await saveStock(nd);closeModal();
 };
+
 function openAddShelfModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Nova prateleira</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Etiqueta</label><input class="form-input" id="ns-label" placeholder="Ex: P9" style="width:100%"></div>
@@ -2226,10 +2323,13 @@ const lvs='ABCDE'.slice(0,n).split('');
 const nd=JSON.parse(JSON.stringify(appData));nd.vini.push({id:Date.now(),label:l,levels:lvs.map(lv=>({id:l+lv,label:'Nível '+lv,materials:[]}))});
 await saveStock(nd);closeModal();
 };
+
 function xlsxDl(wb,name){XLSX.writeFile(wb,name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');}
 function exportFullStock(){
 try{
   const wb=XLSX.utils.book_new();
+
+  // Logística — por contentor
   const ld=[['Contentor','Nome Contentor','Código','Material','Quantidade','Unidade','Stock Mín.','Ponto Encomenda']];
   (appData.logistica||[]).forEach(function(c){
     (c.materials||[]).forEach(function(m){
@@ -2237,21 +2337,29 @@ try{
     });
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ld),'Logística');
+
+  // Vini Galpão
   const vd=[['Código','Material','Quantidade','Unidade','Stock Mín.','Ponto Encomenda']];
   (appData.vini||[]).forEach(function(m){
     vd.push([m.code||'', m.name, m.qty, m.unit, m.minStock||'', m.reorderPoint||'']);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(vd),'Vini Galpão');
+
+  // Emas — por zona
   const ed=[['Zona','Código','Material','Quantidade','Unidade','Stock Mín.','Ponto Encomenda']];
   (appData.emas||[]).forEach(function(m){
     ed.push([m.zone||'A', m.code||'', m.name, m.qty, m.unit, m.minStock||'', m.reorderPoint||'']);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ed),'Emas');
+
+  // Pátio
   const pd=[['Código','Material','Quantidade','Unidade','Data Chegada']];
   (appData.patio||[]).forEach(function(m){
     pd.push([m.code||'', m.name, m.qty, m.unit, m.arrivedAt?new Date(m.arrivedAt).toLocaleDateString('pt-PT'):'']);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(pd),'Pátio');
+
+  // Resumo Geral — todos os artigos juntos
   const all=getAllMaterials();
   const rd=[['Armazém','Localização','Código','Material','Quantidade','Unidade','Alerta']];
   all.forEach(function(m){
@@ -2260,6 +2368,7 @@ try{
     rd.push([m.warehouse||'', m.location||'', m.code||'', m.name, m.qty, m.unit, alertTxt]);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rd),'Resumo Geral');
+
   xlsxDl(wb,'LUELE_StockCompleto');
 }catch(e){
   console.error('Erro exportFullStock:',e);
@@ -2269,8 +2378,9 @@ try{
 function exportHistory(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
 function exportAlerts(){const wb=XLSX.utils.book_new();const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];getAlerts().forEach(a=>d.push([a.name,a.locFull,a.warehouse,a.qty,a.minStock,a.unit]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alertas');xlsxDl(wb,'LUELE_Alertas');};
 function exportLogistica(){const wb=XLSX.utils.book_new();const d=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.length?c.materials.forEach(m=>d.push([c.label,m.name,m.qty,m.unit,m.minStock||''])):d.push([c.label,'—','','','']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Logística');xlsxDl(wb,'LUELE_Logistica');};
-function exportVini(){const wb=XLSX.utils.book_new();const d=[['Código','Material','Quantidade','Unidade','Stock Mín.','Ponto Encomenda']];(Array.isArray(appData.vini)?appData.vini:[]).forEach(m=>d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'',m.reorderPoint||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
-function exportEmasReport(){const wb=XLSX.utils.book_new();const d=[['Zona','Material','Quantidade','Unidade','Stock Mín.']];(Array.isArray(appData.emas)?appData.emas:[]).forEach(m=>d.push([m.zone||'A',m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
+function exportVini(){const wb=XLSX.utils.book_new();const d=[['Prateleira','Nível','Material','Quantidade','Unidade']];appData.vini.forEach(sh=>sh.levels.forEach(lv=>lv.materials.length?lv.materials.forEach(m=>d.push([sh.label,lv.label,m.name,m.qty,m.unit])):d.push([sh.label,lv.label,'—','',''])));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
+function exportEmasReport(){const wb=XLSX.utils.book_new();const d=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>d.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
+
 function getGENumber(){
 const y=new Date().getFullYear();
 const k='ge-counter-'+y;
@@ -2278,9 +2388,11 @@ let n=parseInt(localStorage.getItem(k)||'0')+1;
 localStorage.setItem(k,n);
 return'GE-'+y+'-'+String(n).padStart(3,'0');
 }
+
 function openEntryModal(){
 const geNum=getGENumber();
 const now=new Date();
+
 const destOpts=buildDestOptions();
 openModal(`
 <div class="modal-header">
@@ -2311,6 +2423,7 @@ openModal(`
 <button class="btn btn-primary" onclick="confirmEntry('${geNum}')">✓ Confirmar entrada &amp; gerar GE</button>
 </div>`);
 };
+
 function buildDestOptions(){
 let opts='<option value="patio">📦 Pátio (trânsito)</option>';
 opts+='<optgroup label="Logística — Contentores">';
@@ -2322,6 +2435,7 @@ opts+='<optgroup label="Emas — Zonas">';
 opts+='</optgroup>';
 return opts;
 }
+
 async function confirmEntry(geNum){
 const code=document.getElementById('ge-code')?.value.trim()||'';
 const name=document.getElementById('ge-name')?.value.trim()||'';
@@ -2333,34 +2447,37 @@ const supplier=document.getElementById('ge-supplier')?.value.trim()||'';
 const ref=document.getElementById('ge-ref')?.value.trim()||'';
 const obs=document.getElementById('ge-obs')?.value.trim()||'';
 if(!name){showToast('Escreve o nome do material',true);return;}
+
 const mat={id:Date.now(),code,name,qty,unit,minStock:min,geNum,supplier,ref};
 const nd=JSON.parse(JSON.stringify(appData));
 let loc='';
-let wh='Logística';
+
 if(dest==='patio'){
 if(!nd.patio)nd.patio=[];
 nd.patio.push({...mat,arrivedAt:new Date().toISOString(),status:'transit'});
-loc='Pátio (Trânsito)';wh='Pátio';
+loc='Pátio (Trânsito)';
 } else if(dest==='vini'){
 if(!Array.isArray(nd.vini))nd.vini=[];
-nd.vini.push(mat);loc='Vini Galpão';wh='Vini Galpão';
+nd.vini.push(mat);loc='Vini Galpão';
 } else if(dest.startsWith('emas:')){
 const zone=dest.split(':')[1];
 if(!Array.isArray(nd.emas))nd.emas=[];
-nd.emas.push({...mat,zone});loc='Emas — Zona '+zone;wh='Emas';
+nd.emas.push({...mat,zone});loc='Emas — Zona '+zone;
 } else if(dest.startsWith('log:')){
 const i=parseInt(dest.split(':')[1]);
 nd.logistica[i].materials.push(mat);
-loc='Contentor '+nd.logistica[i].label;wh='Logística';
+loc='Contentor '+nd.logistica[i].label;
 }
+
 appData=nd;
 closeModal();
 await saveStock(nd);
-await logHistory('ENTRADA',name,loc,wh,qty,unit);
+await logHistory('ENTRADA',name,loc,'Logística',qty,unit);
 generateGEPDF({geNum,name,code,qty,unit,dest:loc,supplier,ref,obs,processadoPor:currentUser.name});
 showToast('✓ Entrada registada — GE gerado!');
 updateBadges();
 };
+
 function generateGEPDF(d){
 const now=new Date();
 const html=`<!DOCTYPE html><!-- build:1780415638 --><html lang="pt"><head><meta charset="UTF-8"><title>${d.geNum}</title>
@@ -2409,6 +2526,7 @@ ${d.obs?`<div class="section"><div class="section-title">Observações</div><div
 const w=window.open('','_blank','width=900,height=700');
 w.document.write(html);w.document.close();
 }
+
 function addStockToMat(type,idx,matId){
 let mat;
 if(type==='log') mat=appData.logistica[parseInt(idx)].materials.find(m=>m.id===matId);
@@ -2417,10 +2535,10 @@ else if(type==='emas') mat=appData.emas.find(m=>m.id===matId);
 else if(type==='patio') mat=appData.patio.find(m=>m.id===matId);
 if(!mat)return;
 openModal(`
-<div class="modal-header"><span class="modal-title">+ Dar Entrada — ${escapeHtml(mat.name)}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+<div class="modal-header"><span class="modal-title">+ Dar Entrada — ${mat.name}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="background:var(--green3);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between">
-<span style="font-size:13px;font-weight:600">${escapeHtml(mat.name)}</span>
-<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">Stock actual: ${mat.qty} ${escapeHtml(mat.unit)}</span>
+<span style="font-size:13px;font-weight:600">${mat.name}</span>
+<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">Stock actual: ${mat.qty} ${mat.unit}</span>
 </div>
 <div class="form-row" style="margin-bottom:12px">
 <div style="flex:1"><label class="modal-label">QUANTIDADE A ADICIONAR</label><input class="form-input" id="as-qty" type="number" min="0" placeholder="0" style="width:100%"></div>
@@ -2432,6 +2550,7 @@ openModal(`
 <button class="btn btn-primary" onclick="confirmAddStock('${type}','${idx}',${matId})">+ Adicionar ao stock</button>
 </div>`);
 };
+
 async function confirmAddStock(type,idx,matId){
 const addQty=parseFloat(document.getElementById('as-qty')?.value||'0');
 const unit=document.getElementById('as-unit')?.value||'un';
@@ -2456,10 +2575,12 @@ showToast('✓ Stock actualizado!');
 spawnParticles();
 refreshAll();
 };
+
 function openTransferModal(preType,preIdx,preMatId){
 const allMats=getAllMaterials();
 if(!allMats.length){showToast('Sem materiais para transferir',true);return;}
 const destOpts=buildDestOptions();
+
 const byWh={};
 allMats.forEach(m=>{if(!byWh[m.warehouse])byWh[m.warehouse]=[];byWh[m.warehouse].push(m);});
 let matOpts='<option value="">— Seleccione o material —</option>';
@@ -2509,13 +2630,16 @@ ${matOpts}
 <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
 <button class="btn btn-primary" onclick="confirmTransfer()" style="min-width:180px">⇄ Confirmar transferência</button>
 </div>`);
+
 if(preMatId){
 setTimeout(()=>updateTransferQty(),50);
 }
 };
+
 function openTransferForMat(type,idx,matId){
 openTransferModal(type,idx,matId);
 };
+
 function setMaxQty(){
 const sel=document.getElementById('tr-mat')?.value;
 if(!sel)return;
@@ -2523,6 +2647,7 @@ const[,,id]=sel.split('|');
 const mat=getAllMaterials().find(m=>m.id===parseInt(id));
 if(mat)document.getElementById('tr-qty').value=mat.qty;
 };
+
 function updateTransferQty(){
 const sel=document.getElementById('tr-mat')?.value;
 const info=document.getElementById('tr-stock-info');
@@ -2537,6 +2662,7 @@ if(locBadge)locBadge.textContent=mat.locFull;
 if(maxInfo)maxInfo.textContent='máx: '+mat.qty+' '+mat.unit;
 }
 };
+
 async function confirmTransfer(){
 const sel=document.getElementById('tr-mat')?.value;
 const qty=parseFloat(document.getElementById('tr-qty')?.value||'0');
@@ -2549,8 +2675,11 @@ const allMats=getAllMaterials();
 const srcMat=allMats.find(m=>m.id===matId);
 if(!srcMat){showToast('Material não encontrado',true);return;}
 if(qty>parseFloat(srcMat.qty)){showToast('Quantidade superior ao stock disponível',true);return;}
+
 const nd=JSON.parse(JSON.stringify(appData));
+
 let srcLoc='',srcWh='';
+
 if(srcMat.warehouse==='Logística'){
 nd.logistica.forEach(c=>{const m=c.materials.find(m=>m.id===matId);if(m){srcLoc=c.label;srcWh='Logística';const rem=parseFloat(m.qty)-qty;if(rem<=0)c.materials=c.materials.filter(x=>x.id!==matId);else m.qty=String(rem);}});
 } else if(srcMat.warehouse==='Vini Galpão'){
@@ -2558,16 +2687,18 @@ const arr=Array.isArray(nd.vini)?nd.vini:[];
 const m=arr.find(m=>m.id===matId);if(m){srcLoc='Vini Galpão';srcWh='Vini Galpão';const rem=parseFloat(m.qty)-qty;if(rem<=0)nd.vini=arr.filter(x=>x.id!==matId);else m.qty=String(rem);}
 } else if(srcMat.warehouse==='Emas'){
 const arr=Array.isArray(nd.emas)?nd.emas:getEmasArr();
-const m=arr.find(m=>m.id===matId);if(m){srcLoc='Emas — Zona '+(m.zone||'A');srcWh='Emas';const rem=parseFloat(m.qty)-qty;if(rem<=0)nd.emas=arr.filter(x=>x.id!==matId);else m.qty=String(rem);nd.emas=arr;}
+const m=arr.find(m=>m.id===matId);if(m){srcLoc='Emas — Zona '+(m.zone||'A');srcWh='Emas';const rem=parseFloat(m.qty)-qty;if(rem<=0)nd.emas=arr.filter(x=>x.id!==matId);else m.qty=String(rem);}
 } else if(srcMat.warehouse==='Pátio'){
 const m=nd.patio?.find(m=>m.id===matId);if(m){srcLoc='Pátio';srcWh='Pátio';const rem=parseFloat(m.qty)-qty;if(rem<=0)nd.patio=nd.patio.filter(x=>x.id!==matId);else m.qty=String(rem);}
 }
+
 const newMat={id:Date.now(),code:srcMat.code||'',name:srcMat.name,qty:String(qty),unit:srcMat.unit,minStock:srcMat.minStock||''};
 let destLoc='';
 if(dest==='patio'){if(!nd.patio)nd.patio=[];nd.patio.push({...newMat,arrivedAt:new Date().toISOString(),status:'transit'});destLoc='Pátio';}
 else if(dest==='vini'){if(!Array.isArray(nd.vini))nd.vini=[];nd.vini.push(newMat);destLoc='Vini Galpão';}
 else if(dest.startsWith('emas:')){const zone=dest.split(':')[1];if(!Array.isArray(nd.emas))nd.emas=[];nd.emas.push({...newMat,zone});destLoc='Emas — Zona '+zone;}
 else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logistica[i].materials.push(newMat);destLoc='Contentor '+nd.logistica[i].label;}
+
 appData=nd;
 closeModal();
 await saveStock(nd);
@@ -2576,6 +2707,7 @@ showToast('✓ Transferência concluída!');
 spawnParticles();
 refreshAll();
 };
+
 function renderPatio(){
 if(!appData)return;
 if(!appData.patio)appData.patio=[];
@@ -2583,12 +2715,15 @@ const items=appData.patio;
 const today=new Date().toISOString().slice(0,10);
 const todayGE=historyData.filter(h=>h.type==='ENTRADA'&&h.ts&&h.ts.startsWith(today)).length;
 const todayTR=historyData.filter(h=>h.type==='TRANSFERÊNCIA'&&h.ts&&h.ts.startsWith(today)).length;
+
 animateCount('patio-total',items.length);
 animateCount('patio-guias',todayGE);
 animateCount('patio-transfers',todayTR);
 animateCount('patio-trucks',Math.floor(items.length/2)||0);
+
 const badge=document.getElementById('badge-patio');
 if(badge){if(items.length>0){badge.textContent=items.length;badge.style.display='inline';}else badge.style.display='none';}
+
 const palletsEl=document.getElementById('patio-pallets');
 if(palletsEl){
 palletsEl.innerHTML=items.slice(0,6).map((_,i)=>{
@@ -2600,10 +2735,11 @@ return`<div class="pallet" style="left:${left}%;bottom:50px;animation-delay:${i*
 <div class="pallet-wrap"></div>
 </div>
 <div class="pallet-base"></div>
-<div class="pallet-scan">📦 ${escapeHtml(items[i]?.name?.substring(0,8)||'MAT')}</div>
+<div class="pallet-scan">📦 ${items[i]?.name?.substring(0,8)||'MAT'}</div>
 </div>`;
 }).join('');
 }
+
 const listEl=document.getElementById('patio-list');
 if(!listEl)return;
 if(!items.length){
@@ -2623,9 +2759,9 @@ listEl.innerHTML=renderSortBar('patio')+`<table style="width:100%;border-collaps
 <tbody>${sortedItems.map(m=>{
 const arr=m.arrivedAt?new Date(m.arrivedAt).toLocaleDateString('pt-PT'):'—';
 return`<tr style="border-bottom:1px solid var(--border)">
-<td style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--green)">${escapeHtml(m.code||'—')}</td>
-<td style="padding:10px 12px;font-size:13px;font-weight:500">${escapeHtml(m.name)}</td>
-<td style="padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">${m.qty} ${escapeHtml(m.unit)}</td>
+<td style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--green)">${m.code||'—'}</td>
+<td style="padding:10px 12px;font-size:13px;font-weight:500">${m.name}</td>
+<td style="padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">${m.qty} ${m.unit}</td>
 <td style="padding:10px 12px;font-size:12px;color:var(--text3)">${arr}</td>
 <td style="padding:10px 12px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Em Trânsito</span></td>
 <td style="padding:10px 12px">
@@ -2640,6 +2776,7 @@ return`<tr style="border-bottom:1px solid var(--border)">
 }).join('')}</tbody>
 </table>`;
 }
+
 function editMat(type,idx,matId){
   var mat=null;
   if(type==='log'){var ci=parseInt(idx);if(appData.logistica[ci])mat=appData.logistica[ci].materials.find(function(m){return m.id===matId;});}
@@ -2647,10 +2784,10 @@ function editMat(type,idx,matId){
   else if(type==='emas'){var ea=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});}
   else if(type==='patio'){mat=(appData.patio||[]).find(function(m){return m.id===matId;});}
   if(!mat){showToast('Material não encontrado',true);return;}
-  var html='<div class="modal-header"><span class="modal-title">Editar Material</span><button class="modal-close" onclick="closeModal()">✕</button></div>';
+  var html='<div class="modal-header"><span class="modal-title">Editar Material</span><button class="modal-close" onclick="closeModal()">x</button></div>';
   html+='<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">';
-  html+='<div><label class="modal-label">CÓDIGO</label><input class="form-input" id="em-code" value="'+escapeHtml(mat.code||'')+'" style="width:100%"></div>';
-  html+='<div><label class="modal-label">NOME</label><input class="form-input" id="em-name" value="'+escapeHtml(mat.name)+'" style="width:100%"></div>';
+  html+='<div><label class="modal-label">CÓDIGO</label><input class="form-input" id="em-code" value="'+(mat.code||'')+'" style="width:100%"></div>';
+  html+='<div><label class="modal-label">NOME</label><input class="form-input" id="em-name" value="'+mat.name+'" style="width:100%"></div>';
   html+='</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">';
   html+='<div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="em-qty" type="number" value="'+mat.qty+'" style="width:100%"></div>';
@@ -2666,6 +2803,7 @@ function editMat(type,idx,matId){
   openModal(html);
   document.getElementById('em-confirm-btn').onclick=function(){confirmEditMat(type,idx,matId);};
 };
+
 async function confirmEditMat(type,idx,matId){
   var code=document.getElementById('em-code')?.value.trim()||'';
   var name=document.getElementById('em-name')?.value.trim()||'';
@@ -2688,14 +2826,15 @@ async function confirmEditMat(type,idx,matId){
   showToast('✓ Material actualizado!');
   refreshAll();
 };
+
 function editPatioMat(matId){
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
   openModal(`
     <div class="modal-header"><span class="modal-title">✏ Editar Material em Trânsito</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px">
-      <div><label class="modal-label">CÓDIGO</label><input class="form-input" id="ep-code" value="${escapeHtml(mat.code||'')}" style="width:100%"></div>
-      <div><label class="modal-label">NOME DO MATERIAL</label><input class="form-input" id="ep-name" value="${escapeHtml(mat.name)}" style="width:100%"></div>
+      <div><label class="modal-label">CÓDIGO</label><input class="form-input" id="ep-code" value="${mat.code||''}" style="width:100%"></div>
+      <div><label class="modal-label">NOME DO MATERIAL</label><input class="form-input" id="ep-name" value="${mat.name}" style="width:100%"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
       <div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="ep-qty" type="number" value="${mat.qty}" style="width:100%"></div>
@@ -2707,6 +2846,7 @@ function editPatioMat(matId){
       <button class="btn btn-primary" onclick="confirmEditPatio(${matId})">✓ Guardar</button>
     </div>`);
 };
+
 async function confirmEditPatio(matId){
   const code=document.getElementById('ep-code')?.value.trim()||'';
   const name=document.getElementById('ep-name')?.value.trim()||'';
@@ -2723,6 +2863,7 @@ async function confirmEditPatio(matId){
   showToast('✓ Material actualizado!');
   renderPatio();
 };
+
 function quickTransferFromPatio(matId){
 const mat=appData.patio?.find(m=>m.id===matId);
 if(!mat)return;
@@ -2730,8 +2871,8 @@ const destOpts=buildDestOptions().replace('<option value="patio">📦 Pátio (tr
 openModal(`
 <div class="modal-header"><span class="modal-title">⇄ Transferir do Pátio</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between">
-<span style="font-size:13px;font-weight:600">${escapeHtml(mat.name)}</span>
-<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">${mat.qty} ${escapeHtml(mat.unit)}</span>
+<span style="font-size:13px;font-weight:600">${mat.name}</span>
+<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">${mat.qty} ${mat.unit}</span>
 </div>
 <div style="margin-bottom:12px">
 <label class="modal-label">QUANTIDADE A TRANSFERIR</label>
@@ -2746,6 +2887,7 @@ openModal(`
 <button class="btn btn-primary" onclick="confirmQuickTransfer(${matId})">⇄ Transferir</button>
 </div>`);
 };
+
 async function confirmQuickTransfer(matId){
 document.getElementById('tr-mat') && (document.getElementById('tr-mat').value='Pátio|GERAL|'+matId);
 const qty=parseFloat(document.getElementById('qtr-qty')?.value||'0');
@@ -2759,10 +2901,9 @@ if(rem<=0)nd.patio=nd.patio.filter(m=>m.id!==matId);
 else nd.patio.find(m=>m.id===matId).qty=String(rem);
 const newMat={id:Date.now(),code:mat.code||'',name:mat.name,qty:String(qty),unit:mat.unit,minStock:mat.minStock||''};
 let destLoc='';
-if(dest==='vini'){if(!Array.isArray(nd.vini))nd.vini=[];nd.vini.push(newMat);destLoc='Vini Galpão';}
-else if(dest.startsWith('emas:')){const zone=dest.split(':')[1];if(!Array.isArray(nd.emas))nd.emas=[];nd.emas.push({...newMat,zone});destLoc='Emas — Zona '+zone;}
+if(dest==='emas'){nd.emas.push(newMat);destLoc='Armazém Emas';}
 else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logistica[i].materials.push(newMat);destLoc='Contentor '+nd.logistica[i].label;}
-else if(dest==='patio'){if(!nd.patio)nd.patio=[];nd.patio.push({...newMat,arrivedAt:new Date().toISOString(),status:'transit'});destLoc='Pátio';}
+else if(dest.startsWith('vini:')){const[,si,li]=dest.split(':').map(Number);nd.vini[si].levels[li].materials.push(newMat);destLoc='Prat. '+nd.vini[si].label+'/'+nd.vini[si].levels[li].label;}
 appData=nd;
 closeModal();
 await saveStock(nd);
@@ -2772,8 +2913,10 @@ spawnParticles();
 renderPatio();
 updateBadges();
 };
+
 let invData=[];
 let invUnsubscribe=null;
+
 function getINVNumber(){
 const y=new Date().getFullYear();
 const k='inv-counter-'+y;
@@ -2781,17 +2924,20 @@ let n=parseInt(localStorage.getItem(k)||'0')+1;
 localStorage.setItem(k,n);
 return'INV-'+y+'-'+String(n).padStart(3,'0');
 }
+
 function startInventoryListener(){
 invUnsubscribe=onSnapshot(collection(db,'wms','inventory','counts'),snap=>{
 invData=snap.docs.map(d=>({id:d.id,...d.data(),
 createdAt:d.data().createdAt?.toDate?.()?.toISOString()||new Date().toISOString(),
 scheduledFor:d.data().scheduledFor||null
 }));
+
 invData.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
 if(document.getElementById('page-inventory')?.classList.contains('active'))renderInventory();
 updateInvBadge();
 });
 }
+
 async function saveInventoryCount(count){
 if(count.id){
 await setDoc(doc(db,'wms','inventory','counts',count.id),{...count,updatedAt:serverTimestamp()});
@@ -2800,23 +2946,30 @@ const ref=await addDoc(collection(db,'wms','inventory','counts'),{...count,creat
 return ref.id;
 }
 }
+
 function updateInvBadge(){
 const pending=invData.filter(c=>c.status==='pending'||c.status==='in_progress').length;
 const badge=document.getElementById('badge-inv');
 if(badge){if(pending>0){badge.textContent=pending;badge.style.display='inline';}else badge.style.display='none';}
 }
+
 function getLocationsForCount(){
 const locs=[];
+
 appData.logistica.forEach((c,i)=>locs.push({key:'log:'+i,label:'Logística — Contentor '+c.label,items:c.materials}));
+
 const viniArr=Array.isArray(appData.vini)?appData.vini:[];
 if(viniArr.length)locs.push({key:'vini',label:'Vini Galpão',items:viniArr});
+
 ['A','B','C','D'].forEach(z=>{
 const zItems=(Array.isArray(appData.emas)?appData.emas:[]).filter(m=>m.zone===z);
 locs.push({key:'emas:'+z,label:'Emas — Zona '+z,items:zItems});
 });
+
 if((appData.patio||[]).length)locs.push({key:'patio',label:'Pátio',items:appData.patio||[]});
 return locs;
 }
+
 function renderInventory(){
 if(!appData)return;
 const total=invData.length;
@@ -2828,6 +2981,7 @@ animateCount('inv-pending',pending);
 animateCount('inv-diff',withDiff);
 animateCount('inv-ok',ok);
 updateInvBadge();
+
 const scheduled=invData.filter(c=>c.scheduledFor&&c.status==='scheduled');
 const schedEl=document.getElementById('inv-scheduled');
 if(schedEl){
@@ -2838,8 +2992,8 @@ schedEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${sch
 <div style="display:flex;align-items:center;gap:16px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:8px;padding:12px 16px">
 <div style="font-size:22px">📅</div>
 <div style="flex:1">
-<div style="font-size:13px;font-weight:600">${escapeHtml(c.location)}</div>
-<div style="font-size:11px;color:var(--text3);margin-top:2px">Agendada para: <strong>${new Date(c.scheduledFor).toLocaleDateString('pt-PT')}</strong> · ${escapeHtml(c.number)}</div>
+<div style="font-size:13px;font-weight:600">${c.location}</div>
+<div style="font-size:11px;color:var(--text3);margin-top:2px">Agendada para: <strong>${new Date(c.scheduledFor).toLocaleDateString('pt-PT')}</strong> · ${c.number}</div>
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary btn-sm" onclick="startCount('${c.id}')">▶ Iniciar contagem</button>
@@ -2848,6 +3002,7 @@ schedEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${sch
 </div>`).join('')}</div>`;
 }
 }
+
 const histEl=document.getElementById('inv-history-list');
 if(!histEl)return;
 const active=invData.filter(c=>c.status!=='scheduled');
@@ -2871,10 +3026,10 @@ const statusMap={pending:{label:'Pendente',cls:'badge-edit'},in_progress:{label:
 const s=statusMap[c.status]||{label:c.status,cls:'badge-edit'};
 const diffs=c.differences?.length||0;
 return`<tr style="border-bottom:1px solid var(--border)">
-<td style="padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--blue)">${escapeHtml(c.number)}</td>
-<td style="padding:10px 12px;font-size:13px;font-weight:500">${escapeHtml(c.location)}</td>
+<td style="padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--blue)">${c.number}</td>
+<td style="padding:10px 12px;font-size:13px;font-weight:500">${c.location}</td>
 <td style="padding:10px 12px;font-size:12px;color:var(--text3)">${dt}</td>
-<td style="padding:10px 12px;font-size:12px">${escapeHtml(c.responsible||'—')}</td>
+<td style="padding:10px 12px;font-size:12px">${c.responsible||'—'}</td>
 <td style="padding:10px 12px"><span class="badge ${s.cls}">${s.label}</span></td>
 <td style="padding:10px 12px">
 ${c.status==='completed'
@@ -2896,6 +3051,7 @@ ${c.status==='pending'||c.status==='in_progress'
 }).join('')}</tbody>
 </table>`;
 }
+
 function openNewCountModal(){
 const locs=getLocationsForCount();
 const locOpts=locs.map(l=>`<option value="${l.key}">${l.label} (${l.items.length} materiais)</option>`).join('');
@@ -2906,7 +3062,7 @@ openModal(`
 <select class="form-select" id="nc-loc" style="width:100%">${locOpts}</select>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-<div><label class="modal-label">RESPONSÁVEL</label><input class="form-input" id="nc-resp" value="${escapeHtml(currentUser.name)}" style="width:100%"></div>
+<div><label class="modal-label">RESPONSÁVEL</label><input class="form-input" id="nc-resp" value="${currentUser.name}" style="width:100%"></div>
 <div><label class="modal-label">DATA</label><input class="form-input" id="nc-date" type="date" value="${new Date().toISOString().slice(0,10)}" style="width:100%"></div>
 </div>
 <div><label class="modal-label">OBSERVAÇÕES</label><textarea class="form-input" id="nc-obs" rows="2" style="width:100%;resize:none" placeholder="Ex: Contagem trimestral, auditoria interna..."></textarea></div>
@@ -2916,6 +3072,7 @@ openModal(`
 <button class="btn btn-primary" onclick="confirmNewCount(false)">▶ Iniciar contagem</button>
 </div>`);
 };
+
 async function confirmNewCount(printOnly){
 const locKey=document.getElementById('nc-loc')?.value;
 const resp=document.getElementById('nc-resp')?.value.trim()||currentUser.name;
@@ -2945,16 +3102,18 @@ openCountingModal(count);
 }
 showToast('✓ Contagem '+num+' criada!');
 };
+
 function openScheduleModal(){
 var locs=getLocationsForCount();
 var locOpts=locs.map(function(l){return'<option value="'+l.key+'">'+l.label+'</option>';}).join('');
+// Build checkboxes for each user
 var userChecks='';
 Object.entries(USERS).forEach(function(entry){
   var email=entry[0]; var u=entry[1];
   userChecks+='<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px">'+
     '<input type="checkbox" class="sch-user-chk" value="'+email+'" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">'+
     '<div style="flex:1">'+
-      '<div style="font-size:13px;font-weight:500">'+escapeHtml(u.name)+'</div>'+
+      '<div style="font-size:13px;font-weight:500">'+u.name+'</div>'+
       '<div style="font-size:11px;color:var(--text3)">'+(ROLES[u.role]||'Operador')+(u.telegramId?' · 📱 Telegram':'')+'</div>'+
     '</div>'+
   '</label>';
@@ -2980,10 +3139,12 @@ openModal(
 );
 document.getElementById('sch-confirm-btn').onclick = confirmSchedule;
 };
+
 async function confirmSchedule(){
 var locKey=document.getElementById('sch-loc')?.value;
 var scheduledFor=document.getElementById('sch-date')?.value;
 var obs=document.getElementById('sch-obs')?.value.trim()||'';
+// Get all selected users
 var selectedEmails=[];
 document.querySelectorAll('.sch-user-chk:checked').forEach(function(chk){
   selectedEmails.push(chk.value);
@@ -2999,8 +3160,8 @@ var count={
   location:loc.label,
   locationKey:locKey,
   responsible:responsibleNames,
-  assignedTo:selectedEmails[0],
-  assignedToAll:selectedEmails,
+  assignedTo:selectedEmails[0], // primary assignee
+  assignedToAll:selectedEmails, // all assignees
   scheduledFor:scheduledFor,
   date:scheduledFor,
   obs:obs,
@@ -3014,6 +3175,7 @@ var count={
 closeModal();
 await saveInventoryCount(count);
 showToast('📅 Contagem agendada — '+selectedEmails.length+' pessoa(s) notificada(s)');
+// Send Telegram notification to ALL assigned users
 var notified=0;
 for(var i=0;i<selectedEmails.length;i++){
   var email=selectedEmails[i];
@@ -3026,6 +3188,7 @@ for(var i=0;i<selectedEmails.length;i++){
 if(notified>0) showToast('📱 '+notified+' notificação(ões) Telegram enviada(s)!');
 updateInvBadge();
 };
+
 async function sendTelegramNotification(chatId, count){
 var token='8671592203:AAEfPk-RpUr9mjxqiV3XKerNWietiAWLme8';
 var date=new Date(count.scheduledFor).toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
@@ -3049,14 +3212,18 @@ try{
   console.error('Telegram notification failed:',e);
 }
 }
+
+
+
 function startCount(countId){
 var count=invData.find(function(c){return c.id===countId;});
 if(!count)return;
+// If already in_progress by someone else, ask if wants to join
 if(count.status==='in_progress' && count.startedBy && count.startedBy!==currentUser.name){
   openModal(
     '<div class="modal-header"><span class="modal-title">📋 Contagem em progresso</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">'+
-    '⚠️ <strong>'+escapeHtml(count.startedBy)+'</strong> já iniciou esta contagem.<br><br>'+
+    '⚠️ <strong>'+count.startedBy+'</strong> já iniciou esta contagem.<br><br>'+
     'Podes juntar-te e lançar os valores em conjunto, mas <strong>só existe uma contagem</strong> no sistema.</div>'+
     '<div class="modal-actions">'+
     '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
@@ -3077,9 +3244,11 @@ if(count.status==='scheduled'){
 }
 openCountingModal(count);
 };
+
 function joinCount(countId){
 var count=invData.find(function(c){return c.id===countId;});
 if(!count)return;
+// Add current user to participants
 if(!count.participants)count.participants=[];
 if(count.participants.indexOf(currentUser.name)<0){
   count.participants.push(currentUser.name);
@@ -3088,12 +3257,13 @@ if(count.participants.indexOf(currentUser.name)<0){
 openCountingModal(count);
 showToast('👥 Juntaste-te à contagem de '+count.startedBy);
 };
+
 function openCountingModal(count){
 const items=count.items||[];
 openModal(`
 <div class="modal-header">
-<div><span class="modal-title">Contagem — ${escapeHtml(count.location)}</span>
-<div style="font-size:11px;color:var(--text3);margin-top:2px">${escapeHtml(count.number)} · ${escapeHtml(count.responsible)}</div>
+<div><span class="modal-title">Contagem — ${count.location}</span>
+<div style="font-size:11px;color:var(--text3);margin-top:2px">${count.number} · ${count.responsible}</div>
 </div>
 <button class="modal-close" onclick="closeModal()">✕</button>
 </div>
@@ -3106,9 +3276,9 @@ ${items.length===0
 :items.map((m,i)=>`
 <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
 <div style="flex:1">
-${m.code?`<div style="font-size:10px;font-weight:700;color:var(--green)">${escapeHtml(m.code)}</div>`:''}
-<div style="font-size:13px;font-weight:500">${escapeHtml(m.name)}</div>
-<div style="font-size:11px;color:var(--text3);margin-top:2px">Sistema: <strong>${m.systemQty} ${escapeHtml(m.unit)}</strong></div>
+${m.code?`<div style="font-size:10px;font-weight:700;color:var(--green)">${m.code}</div>`:''}
+<div style="font-size:13px;font-weight:500">${m.name}</div>
+<div style="font-size:11px;color:var(--text3);margin-top:2px">Sistema: <strong>${m.systemQty} ${m.unit}</strong></div>
 </div>
 <div style="text-align:right">
 <div style="font-size:10px;color:var(--text3);margin-bottom:4px">CONTADO</div>
@@ -3117,20 +3287,21 @@ id="counted-${i}"
 value="${m.countedQty!==null?m.countedQty:''}"
 placeholder="${m.systemQty}"
 style="width:90px;background:white;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;text-align:right;outline:none;font-family:'Inter',sans-serif"
-oninput="this.style.borderColor=this.value===''?'var(--border)':parseFloat(this.value)===${m.systemQty}?'var(--green2)':'var(--red)'">
-<div style="font-size:10px;color:var(--text3);margin-top:2px">${escapeHtml(m.unit)}</div>
+oninput="this.style.borderColor=this.value===''?'var(--border)':parseFloat(this.value)===${m.systemQty}?'var(--green2)':'var(--red)'"
+<div style="font-size:10px;color:var(--text3);margin-top:2px">${m.unit}</div>
 </div>
 </div>`).join('')}
 </div>
 <div style="margin-bottom:12px">
 <label class="modal-label">OBSERVAÇÕES DA CONTAGEM</label>
-<textarea class="form-input" id="count-obs" rows="2" style="width:100%;resize:none" placeholder="Notas, justificações de diferenças...">${escapeHtml(count.obs||'')}</textarea>
+<textarea class="form-input" id="count-obs" rows="2" style="width:100%;resize:none" placeholder="Notas, justificações de diferenças...">${count.obs||''}</textarea>
 </div>
 <div class="modal-actions">
 <button class="btn btn-secondary" onclick="closeModal()">Guardar e continuar depois</button>
 <button class="btn btn-primary" onclick="confirmCounting('${count.id}',${items.length})">✓ Concluir contagem</button>
 </div>`);
 }
+
 async function confirmCounting(countId,itemCount){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
@@ -3160,12 +3331,14 @@ closeModal();
 await saveInventoryCount(count);
 await logHistory('INVENTÁRIO','Contagem '+count.number,count.location,'Inventário',String(count.items.length),'materiais');
 if(hasDiff){
+
 openDiffModal(count);
 } else {
 showToast('✓ Contagem concluída — sem diferenças!');
 generateCountPDF(count);
 }
 };
+
 function openDiffModal(count){
 const diffs=count.differences||[];
 openModal(`
@@ -3182,10 +3355,10 @@ Foram encontradas <strong>${diffs.length} diferença${diffs.length>1?'s':''}</st
 <th style="font-size:9px;font-weight:600;letter-spacing:1px;color:var(--text3);text-align:right;padding:6px 10px;border-bottom:1px solid var(--border)">Diferença</th>
 </tr></thead>
 <tbody>${diffs.map(d=>`<tr style="border-bottom:1px solid var(--border)">
-<td style="padding:8px 10px;font-size:12px;font-weight:500">${escapeHtml(d.name)}</td>
-<td style="padding:8px 10px;font-size:12px;text-align:right;color:var(--text2)">${d.systemQty} ${escapeHtml(d.unit)}</td>
-<td style="padding:8px 10px;font-size:12px;text-align:right;font-weight:600">${d.countedQty} ${escapeHtml(d.unit)}</td>
-<td style="padding:8px 10px;font-size:12px;text-align:right;font-weight:700;color:${d.diff>0?'var(--green)':'var(--red)'}">${d.diff>0?'+':''}${d.diff.toFixed(2)} ${escapeHtml(d.unit)}</td>
+<td style="padding:8px 10px;font-size:12px;font-weight:500">${d.name}</td>
+<td style="padding:8px 10px;font-size:12px;text-align:right;color:var(--text2)">${d.systemQty} ${d.unit}</td>
+<td style="padding:8px 10px;font-size:12px;text-align:right;font-weight:600">${d.countedQty} ${d.unit}</td>
+<td style="padding:8px 10px;font-size:12px;text-align:right;font-weight:700;color:${d.diff>0?'var(--green)':'var(--red)'}">${d.diff>0?'+':''}${d.diff.toFixed(2)} ${d.unit}</td>
 </tr>`).join('')}</tbody>
 </table>
 </div>
@@ -3194,12 +3367,14 @@ Foram encontradas <strong>${diffs.length} diferença${diffs.length>1?'s':''}</st
 <button class="btn btn-primary" onclick="applyAdjustments('${count.id}')">✓ Ajustar stock ao contado</button>
 </div>`);
 }
+
 async function applyAdjustments(countId){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 const nd=JSON.parse(JSON.stringify(appData));
 const locs=getLocationsForCount();
 const loc=locs.find(l=>l.key===count.locationKey);
+
 count.items.forEach(item=>{
 if(item.countedQty===null||item.countedQty===undefined)return;
 if(count.locationKey.startsWith('log:')){
@@ -3227,37 +3402,42 @@ spawnParticles();
 generateCountPDF(count);
 refreshAll();
 };
+
 async function deleteCount(countId){
 if(!confirm('Eliminar esta contagem?'))return;
 await deleteDoc(doc(db,'wms','inventory','counts',countId));
 showToast('Contagem eliminada');
 };
+
 function viewCountResult(countId){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 if(count.hasDifferences)openDiffModal(count);
 else openModal(`
-<div class="modal-header"><span class="modal-title">✅ ${escapeHtml(count.number)}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+<div class="modal-header"><span class="modal-title">✅ ${count.number}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;font-weight:500;color:var(--green)">
 ✓ Contagem concluída sem diferenças
 </div>
-<div class="sr"><span class="sk" style="font-size:12px;color:var(--text3)">Localização</span><span style="font-size:12px;font-weight:600">${escapeHtml(count.location)}</span></div>
-<div class="sr" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text3)">Responsável</span><span style="font-size:12px;font-weight:600">${escapeHtml(count.responsible)}</span></div>
+<div class="sr"><span class="sk" style="font-size:12px;color:var(--text3)">Localização</span><span style="font-size:12px;font-weight:600">${count.location}</span></div>
+<div class="sr" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text3)">Responsável</span><span style="font-size:12px;font-weight:600">${count.responsible}</span></div>
 <div class="sr" style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:12px;color:var(--text3)">Materiais contados</span><span style="font-size:12px;font-weight:600">${count.items?.length||0}</span></div>
 <div class="modal-actions">
 <button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
 <button class="btn btn-primary" onclick="closeModal();generateCountPDF(invData.find(c=>c.id==='${count.id}'))">🖨 Imprimir PDF</button>
 </div>`);
 };
+
 function printCountSheet(countId,countObj){
 const count=countObj||invData.find(c=>c.id===countId);
 if(!count&&!countId)return;
+
 if(!count){return;}
 const locs=getLocationsForCount();
 const loc=locs.find(l=>l.key===count.locationKey)||{items:[]};
 const items=count.items?.length?count.items:loc.items.map(m=>({...m,systemQty:parseFloat(m.qty)||0}));
 generateCountSheet(count,items);
 };
+
 function generateCountSheet(count,items,isReport){
 const now=new Date();
 const completed=isReport||count.status==='completed';
@@ -3340,9 +3520,11 @@ body+='<script>function onload(){window.print();}<\/script>';
 var w=window.open('','_blank','width=900,height=700');
 w.document.write(html+body);w.document.close();
 }
+
 function generateCountPDF(count){
 generateCountSheet(count,count.items||[],count.status==='completed');
 }
+
 function removeMat(type,idx,matId){
   var mat=null,loc='',locFull='',wh='';
   if(type==='log'){var ci=parseInt(idx);mat=appData.logistica[ci]?.materials.find(function(m){return m.id===matId;});loc=appData.logistica[ci]?.label||'';locFull='Contentor '+loc;wh='Logística';}
@@ -3356,6 +3538,27 @@ function removeMat(type,idx,matId){
   if(!mat)return;
   openSFSModal(mat,loc,locFull,wh,type,idx,matId);
 };
+
+function openSFSForMat(type,idx,matId){
+  var mat=null, loc='', locFull='', wh='';
+  if(type==='log'){
+    var ci=parseInt(idx);
+    var c=appData.logistica[ci];
+    if(c){ mat=(c.materials||[]).find(function(m){return m.id===matId;}); loc=c.label; locFull='Contentor '+c.label+(c.name?' — '+c.name:''); wh='Logística'; }
+  } else if(type==='vini'){
+    mat=(Array.isArray(appData.vini)?appData.vini:[]).find(function(m){return m.id===matId;});
+    loc='Vini Galpão'; locFull='Vini Galpão'; wh='Vini Galpão';
+  } else if(type==='emas'){
+    mat=(appData.emas||[]).find(function(m){return m.id===matId;});
+    if(mat){ loc='Emas Zona '+(mat.zone||'A'); locFull='Emas — Zona '+(mat.zone||'A'); wh='Emas'; }
+  } else if(type==='patio'){
+    mat=(appData.patio||[]).find(function(m){return m.id===matId;});
+    loc='Pátio'; locFull='Pátio (Trânsito)'; wh='Pátio';
+  }
+  if(!mat){ showToast('Material não encontrado',true); return; }
+  openSFSModal(mat, loc, locFull, wh, type, idx, matId);
+}
+
 function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
   var sfsNum=getSFSNumber();
   var html='<div class="modal-header">'+
@@ -3363,12 +3566,12 @@ function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
     '<div style="margin-top:2px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">'+sfsNum+'</span></div></div>'+
     '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:16px">'+
-    '<div style="font-size:13px;font-weight:600">'+escapeHtml(mat.name)+'</div>'+
-    '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+escapeHtml(locFull)+' · '+escapeHtml(wh)+'</div></div>'+
+    '<div style="font-size:13px;font-weight:600">'+mat.name+'</div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+locFull+' · '+wh+'</div></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
     '<div><label class="modal-label">QUANTIDADE A RETIRAR</label>'+
     '<input class="form-input" id="sfs-qty" type="number" min="0.01" max="'+mat.qty+'" value="'+mat.qty+'" style="width:100%"></div>'+
-'<div style="font-size:10px;color:var(--text3);margin-top:3px">Máximo disponível: <strong>'+mat.qty+' '+escapeHtml(mat.unit)+'</strong></div>'+
+'<div style="font-size:10px;color:var(--text3);margin-top:3px">Máximo disponível: <strong>'+mat.qty+' '+mat.unit+'</strong></div>'+
     '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+
     '<input class="form-input" id="sfs-dest" placeholder="Ex: Oficina..." style="width:100%"></div></div>'+
     '<div><label class="modal-label">MOTIVO / OBSERVAÇÕES</label>'+
@@ -3379,30 +3582,36 @@ function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
   openModal(html);
   document.getElementById('sfs-confirm-btn').onclick=function(){confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh);};
 }
+
 function getSFSNumber(){
   var y=new Date().getFullYear(),k='sfs-counter-'+y;
   var n=parseInt(localStorage.getItem(k)||'0')+1;
   localStorage.setItem(k,n);
   return'SFS-'+y+'-'+String(n).padStart(3,'0');
 }
+
 function openGroupExitModal(){
   var allMats = getAllMaterials();
   if(!allMats.length){showToast('Sem materiais para dar saída',true);return;}
+
   var byWh = {};
   allMats.forEach(function(m){
     if(!byWh[m.warehouse])byWh[m.warehouse]=[];
     byWh[m.warehouse].push(m);
   });
+
   var matOpts = '<option value="">— Adicionar material —</option>';
   Object.entries(byWh).forEach(function(entry){
     var wh=entry[0], mats=entry[1];
     matOpts += '<optgroup label="'+wh+'">';
     mats.forEach(function(m){
-      matOpts += '<option value="'+m.warehouse+'|'+m.location+'|'+m.id+'">'+escapeHtml(m.name)+' ('+m.qty+' '+m.unit+') — '+escapeHtml(m.locFull)+'</option>';
+      matOpts += '<option value="'+m.warehouse+'|'+m.location+'|'+m.id+'">'+m.name+' ('+m.qty+' '+m.unit+') — '+m.locFull+'</option>';
     });
     matOpts += '</optgroup>';
   });
+
   var sfsNum = getSFSNumber();
+
   openModal(
     '<div class="modal-header">'+
     '<div><span class="modal-title">📤 Saída em Grupo</span>'+
@@ -3431,6 +3640,7 @@ function openGroupExitModal(){
   var _sfsNum = sfsNum;
   document.getElementById('grp-confirm-btn').onclick = function(){ confirmGroupExit(_sfsNum); };
 };
+
 function addGroupItem(){
   var sel = document.getElementById('grp-mat-select');
   var val = sel.value;
@@ -3456,10 +3666,12 @@ function addGroupItem(){
   renderGroupItems();
   sel.value = '';
 };
+
 function removeGroupItem(id){
   window._groupItems = window._groupItems.filter(function(i){return i.id!==id;});
   renderGroupItems();
 };
+
 function renderGroupItems(){
   var list = document.getElementById('grp-items-list');
   var summary = document.getElementById('grp-summary');
@@ -3474,27 +3686,29 @@ function renderGroupItems(){
   list.innerHTML = window._groupItems.map(function(item){
     return '<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid var(--border);border-radius:6px;padding:8px 10px">'+
       '<div style="flex:1">'+
-        (item.code?'<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(item.code)+'</div>':'')+
-        '<div style="font-size:12px;font-weight:500">'+escapeHtml(item.name)+'</div>'+
-        '<div style="font-size:10px;color:var(--text3)">'+escapeHtml(item.locFull)+'</div>'+
+        (item.code?'<div style="font-size:10px;font-weight:700;color:var(--green)">'+item.code+'</div>':'')+
+        '<div style="font-size:12px;font-weight:500">'+item.name+'</div>'+
+        '<div style="font-size:10px;color:var(--text3)">'+item.locFull+'</div>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:6px">'+
         '<input type="number" min="0.01" max="'+item.maxQty+'" step="0.01" value="'+item.qty+'" '+
           'id="grp-qty-'+item.id+'" '+
           'onchange="updateGroupQty('+item.id+',this.value)" '+
           'style="width:80px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;text-align:right">'+
-        '<span style="font-size:11px;color:var(--text3)">'+escapeHtml(item.unit)+'</span>'+
+        '<span style="font-size:11px;color:var(--text3)">'+item.unit+'</span>'+
         '<span style="font-size:10px;color:var(--text3)">/'+item.maxQty+'</span>'+
         '<button class="mat-btn" onclick="removeGroupItem('+item.id+')" style="flex-shrink:0">✕</button>'+
       '</div>'+
     '</div>';
   }).join('');
+
   if(summary){
     summary.style.display='block';
     summary.textContent = '✓ '+window._groupItems.length+' material(is) seleccionado(s)';
   }
   if(btn) btn.style.display='inline-flex';
 }
+
 function updateGroupQty(id, val){
   var item = window._groupItems.find(function(i){return i.id===id;});
   if(!item) return;
@@ -3506,17 +3720,21 @@ function updateGroupQty(id, val){
   }
   item.qty = q;
 };
+
 async function confirmGroupExit(sfsNum){
   var items = window._groupItems;
   if(!items.length){showToast('Adiciona pelo menos um material',true);return;}
   var dest = document.getElementById('grp-dest')?.value.trim()||'';
   var obs = document.getElementById('grp-obs')?.value.trim()||'';
+
   for(var i=0;i<items.length;i++){
     var qty = parseFloat(document.getElementById('grp-qty-'+items[i].id)?.value||items[i].qty);
     items[i].qty = qty;
     if(!qty||qty<=0){showToast('Quantidade inválida para '+items[i].name,true);return;}
   }
+
   var nd = JSON.parse(JSON.stringify(appData));
+
   items.forEach(function(item){
     var qty = item.qty;
     if(item.warehouse==='Logística'){
@@ -3538,12 +3756,15 @@ async function confirmGroupExit(sfsNum){
       if(m){var rem=parseFloat(m.qty)-qty;if(rem<=0)nd.patio=pa.filter(function(x){return x.id!==item.id;});else m.qty=String(rem);}
     }
   });
+
   appData = nd;
   closeModal();
   await saveStock(nd);
+
   for(var j=0;j<items.length;j++){
     await logHistory('SAÍDA',items[j].name,items[j].locFull,items[j].warehouse,String(items[j].qty),items[j].unit);
   }
+
   try{
     await addDoc(collection(db,'wms','sfs','records'),{
       number:sfsNum,
@@ -3559,11 +3780,15 @@ async function confirmGroupExit(sfsNum){
       ts:serverTimestamp()
     });
   }catch(e){console.error('Group SFS:',e);}
+
   showToast('✓ '+sfsNum+' — '+items.length+' artigos retirados!');
   spawnParticles();
+
   generateGroupSFSPDF(sfsNum, items, dest, obs);
   refreshAll();
 };
+
+
 function generateSFSPDF(d){
 var now=new Date();
 var html='<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>'+d.sfsNum+'</title>'+
@@ -3606,6 +3831,7 @@ html+='<script>function onload(){window.print();}<\/script>';
 var w=window.open('','_blank','width=900,height=700');
 if(w){w.document.write(html);w.document.close();}
 }
+
 function generateGroupSFSPDF(sfsNum, items, dest, obs){
   var now = new Date();
   var total = items.reduce(function(a,b){return a+b.qty;},0);
@@ -3652,6 +3878,7 @@ function generateGroupSFSPDF(sfsNum, items, dest, obs){
   var w=window.open('','_blank','width=900,height=700');
   w.document.write(html);w.document.close();
 }
+
 window._patioRestored = false;
 async function restorePatioItems(){
   if(!appData){showToast('Sistema não carregado',true);return;}
@@ -3673,11 +3900,13 @@ async function restorePatioItems(){
   var btn = document.getElementById('restore-btn');
   if(btn) btn.style.display='none';
 };
+
 async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   var qty=parseFloat(document.getElementById('sfs-qty')?.value||'0');
   var dest=document.getElementById('sfs-dest')?.value.trim()||'';
   var obs=document.getElementById('sfs-obs')?.value.trim()||'';
   if(!qty||qty<=0){showToast('Introduz uma quantidade válida',true);return;}
+  // Validate stock not negative
   var currentQty=0; var currentUnit='un';
   if(type==='log'){var ci2=parseInt(idx);var mm=appData.logistica[ci2]?.materials.find(function(m){return m.id===matId;});if(mm){currentQty=parseFloat(mm.qty)||0;currentUnit=mm.unit||'un';}}
   else if(type==='vini'){var vv=Array.isArray(appData.vini)?appData.vini:[];var mm2=vv.find(function(m){return m.id===matId;});if(mm2){currentQty=parseFloat(mm2.qty)||0;currentUnit=mm2.unit||'un';}}
@@ -3699,17 +3928,21 @@ async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   generateSFSPDF({sfsNum,matName:mat.name,matCode:mat.code||'',qty,unit:mat.unit,origem:locFull,destino:dest,obs,emitidoPor:currentUser.name});
   refreshAll();
 };
+
 function exportInventoryReport(){
 if(!invData.length){showToast('Sem dados para exportar',true);return;}
 const wb=XLSX.utils.book_new();
+
 const sum=[['Número','Localização','Data','Responsável','Estado','Diferenças','Ajustado']];
 invData.forEach(c=>sum.push([c.number,c.location,c.date||'',c.responsible,c.status,c.differences?.length||0,c.adjusted?'Sim':'Não']));
 XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'Resumo');
+
 const det=[['Contagem','Localização','Código','Material','Qtd Sistema','Qtd Contada','Diferença','Unidade']];
 invData.forEach(c=>(c.differences||[]).forEach(d=>det.push([c.number,c.location,d.code||'',d.name,d.systemQty,d.countedQty,d.diff,d.unit])));
 XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),'Diferenças');
 XLSX.writeFile(wb,'LUELE_InventarioCiclico_'+new Date().toISOString().slice(0,10)+'.xlsx');
 };
+
 function animateCount(id, target){
 const el=document.getElementById(id);
 if(!el)return;
@@ -3726,6 +3959,7 @@ if(progress<1)requestAnimationFrame(step);
 }
 requestAnimationFrame(step);
 }
+
 function spawnParticles(){
 const btn=document.querySelector('#logistica-panel .btn-primary, #vini-panel .btn-primary');
 if(!btn)return;
@@ -3751,26 +3985,34 @@ else p.remove();
 setTimeout(()=>requestAnimationFrame(animate),i*20);
 }
 }
+
 function addEntryAnimation(containerEl){
 containerEl.style.animation='none';
 containerEl.offsetHeight;
 containerEl.style.animation='matIn 0.4s cubic-bezier(.34,1.56,.64,1)';
 }
+
 function showLogin(){
   var ls=document.getElementById('loading-screen');
   var li=document.getElementById('login-screen');
   if(ls)ls.style.cssText='display:none!important';
   if(li){li.style.cssText='display:flex!important;min-height:100vh;align-items:center;justify-content:center;background:#f4f6f8';}
 }
+
 const loadingTimeout = setTimeout(showLogin, 3000);
+
 window.addEventListener('error', function(e){ console.error('App error:', e.message); });
 window.addEventListener('unhandledrejection', function(e){ console.warn('Unhandled promise:', e.reason); });
+
+// Start app — show login when Firebase is ready (or timeout after 3s)
 function waitFirebase(){
   return new Promise(function(resolve){
+    // Firebase Firestore is ready when db is defined
     if(db){ resolve(); return; }
     setTimeout(resolve, 1000);
   });
 }
+
 waitFirebase().then(function(){
   clearTimeout(loadingTimeout);
   showLogin();
@@ -3778,6 +4020,10 @@ waitFirebase().then(function(){
   clearTimeout(loadingTimeout);
   showLogin();
 });
+
+
+
+
 function openAddEmasModal(){
   if(selEmasZone){
     var listEl=document.getElementById('emas-list');
@@ -3821,6 +4067,7 @@ function openAddEmasModal(){
     };
   });
 };
+
 // ── ADD MATERIAL (Logística) ──────────────────────────────────────────────
 async function addMatLog(idx){
 var nd=JSON.parse(JSON.stringify(appData));
@@ -3839,6 +4086,7 @@ await logHistory('ENTRADA',name,'Contentor '+c.label,'Logística',qty,unit);
 showToast('✓ '+name+' adicionado ao contentor '+c.label);
 renderContainerPanel(c,parseInt(idx));
 };
+
 // ── ADD MATERIAL (Simples — Vini/Emas/Patio) ─────────────────────────────
 async function addMatSimple(type,idx){
 var nd=JSON.parse(JSON.stringify(appData));
@@ -3870,6 +4118,9 @@ if(type==='vini')renderVini();
 else if(type==='emas')renderEmas();
 else if(type==='patio')renderPatio();
 };
+
+// ── DELETE CONTAINER ──────────────────────────────────────────────────────
+
 // ── QR CODE SYSTEM ────────────────────────────────────────────────────────
 function showContainerQR(idx){
 var c=appData.logistica[idx];
@@ -3880,7 +4131,7 @@ var matCount=c.materials?c.materials.length:0;
 openModal(
   '<div class="modal-header">'+
   '<div><span class="modal-title">📱 QR Code — '+c.label+'</span>'+
-  '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+escapeHtml(c.name||c.label)+' · '+matCount+' materiais</div></div>'+
+  '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.name||c.label)+' · '+matCount+' materiais</div></div>'+
   '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
   '<div style="text-align:center;padding:20px 0">'+
   '<div id="qr-canvas" style="display:inline-block;padding:16px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'+
@@ -3904,6 +4155,7 @@ setTimeout(function(){
   }
 },300);
 };
+
 function printContainerQR(idx){
 var c=appData.logistica[idx];
 if(!c)return;
@@ -3932,6 +4184,9 @@ var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'
 var w=window.open('','_blank','width=400,height=600');
 if(w){w.document.write(html);w.document.close();}
 };
+
+
+
 function deleteContainer(idx){
 openModal(
   '<div class="modal-header"><span class="modal-title">🗑 Eliminar Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -3953,15 +4208,16 @@ document.getElementById('del-ctn-btn').onclick=async function(){
   renderLogistica();
 };
 };
+
 // ── RENAME CONTAINER ──────────────────────────────────────────────────────
 function renameContainer(idx){
 var c=appData.logistica[idx];
 openModal(
   '<div class="modal-header"><span class="modal-title">✏ Renomear Contentor</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
   '<div style="margin-bottom:12px"><label class="modal-label">CÓDIGO / ETIQUETA</label>'+
-  '<input class="form-input" id="ren-label" value="'+escapeHtml(c.label)+'" style="width:100%;margin-top:6px"></div>'+
+  '<input class="form-input" id="ren-label" value="'+c.label+'" style="width:100%;margin-top:6px"></div>'+
   '<div style="margin-bottom:12px"><label class="modal-label">NOME / DESCRIÇÃO (opcional)</label>'+
-  '<input class="form-input" id="ren-name" value="'+escapeHtml(c.name||'')+'" placeholder="Ex: Peças mecânicas" style="width:100%;margin-top:6px"></div>'+
+  '<input class="form-input" id="ren-name" value="'+(c.name||'')+'" placeholder="Ex: Peças mecânicas" style="width:100%;margin-top:6px"></div>'+
   '<div class="modal-actions">'+
   '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
   '<button class="btn btn-primary" id="ren-ctn-btn">✓ Guardar</button>'+
@@ -3981,6 +4237,8 @@ document.getElementById('ren-ctn-btn').onclick=async function(){
   if(selContainer===idx)renderContainerPanel(nd.logistica[idx],idx);
 };
 };
+
+
 // ── EXPOSE ALL FUNCTIONS TO WINDOW (required for ES modules) ──
 window.saveUsers = saveUsers;
 window.loadUsersFromFirebase = loadUsersFromFirebase;
@@ -3996,7 +4254,6 @@ window.openImportLogModal = openImportLogModal;
 window.confirmImport = confirmImport;
 window.navTo = navTo;
 window.showToast = showToast;
-window.escapeHtml = escapeHtml;
 window.getAllMaterials = getAllMaterials;
 window.getAlertLevel = getAlertLevel;
 window.getAlerts = getAlerts;
@@ -4029,7 +4286,6 @@ window.renderPieChart = renderPieChart;
 window.renderForecast = renderForecast;
 window.startSFSListener = startSFSListener;
 window.renderSFS = renderSFS;
-window.renderHistory = renderHistory;
 window.reimprimirSFS = reimprimirSFS;
 window.renderUsers = renderUsers;
 window.openAddUserModal = openAddUserModal;
@@ -4093,6 +4349,7 @@ window.generateCountSheet = generateCountSheet;
 window.generateCountPDF = generateCountPDF;
 window.removeMat = removeMat;
 window.openSFSModal = openSFSModal;
+window.openSFSForMat = openSFSForMat;
 window.getSFSNumber = getSFSNumber;
 window.openGroupExitModal = openGroupExitModal;
 window.addGroupItem = addGroupItem;
@@ -4117,6 +4374,7 @@ window.showContainerQR = showContainerQR;
 window.printContainerQR = printContainerQR;
 window.deleteContainer = deleteContainer;
 window.renameContainer = renameContainer;
+
 </script>
 </body>
 </html>

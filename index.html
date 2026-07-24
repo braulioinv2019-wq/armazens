@@ -771,7 +771,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="patio-stat"><div class="patio-stat-icon">⇄</div><div class="patio-stat-val amber" id="patio-transfers">0</div><div class="patio-stat-lbl">Transferências hoje</div></div>
         <div class="patio-stat"><div class="patio-stat-icon">🚛</div><div class="patio-stat-val" id="patio-trucks">0</div><div class="patio-stat-lbl">Veículos registados</div></div>
       </div>
-      <div class="card"><div class="card-header"><span class="card-title">Materiais em Trânsito no Pátio</span><input class="filter-input" id="patio-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderPatio()" style="width:220px"></div><div id="patio-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Materiais em Trânsito no Pátio</span><div style="display:flex;gap:8px;align-items:center"><input class="filter-input" id="patio-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderPatio()" style="width:220px"><button class="btn btn-secondary btn-sm" onclick="exportPatio()">⬇ Excel</button></div></div><div id="patio-list"></div></div>
     </div>
     
     <div class="page" id="page-history">
@@ -798,6 +798,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="report-card" onclick="exportLogistica()"><div class="report-icon">🏭</div><div class="report-name">Logística</div><div class="report-desc">Por contentor</div></div>
         <div class="report-card" onclick="exportVini()"><div class="report-icon">🏗️</div><div class="report-name">Vini Galpão</div><div class="report-desc">Stock geral</div></div>
         <div class="report-card" onclick="exportEmasReport()"><div class="report-icon">📋</div><div class="report-name">Emas</div><div class="report-desc">Stock por zona</div></div>
+        <div class="report-card" onclick="exportPatio()"><div class="report-icon">🚛</div><div class="report-name">Pátio</div><div class="report-desc">Código, estado e quantidades</div></div>
         <div class="report-card" onclick="openUndoImportModal()" style="border-color:#fca5a5"><div class="report-icon" style="background:#fff0f0">↩</div><div class="report-name" style="color:var(--red)">Cancelar Importação</div><div class="report-desc">Remove materiais importados</div></div>
       </div>
     </div>
@@ -2805,6 +2806,21 @@ function exportAlerts(){const wb=XLSX.utils.book_new();const d=[['Material','Loc
 function exportLogistica(){const wb=XLSX.utils.book_new();const d=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.length?c.materials.forEach(m=>d.push([c.label,m.name,m.qty,m.unit,m.minStock||''])):d.push([c.label,'—','','','']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Logística');xlsxDl(wb,'LUELE_Logistica');};
 function exportVini(){const wb=XLSX.utils.book_new();const d=[['Código','Material','Quantidade','Unidade','Stock Mín.']];(Array.isArray(appData.vini)?appData.vini:[]).forEach(m=>d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
 function exportEmasReport(){const wb=XLSX.utils.book_new();const d=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>d.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
+function exportPatio(){
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  var items=appData.patio||[];
+  var wb=XLSX.utils.book_new();
+  var d=[['Código','Material','Quantidade Actual','Unidade','Stock Mínimo','Ponto de Encomenda','Estado','Chegada','Fornecedor / Origem']];
+  items.forEach(function(m){
+    var level=getAlertLevel(m);
+    var estado=level==='critical'?'🔴 Crítico (abaixo do stock mínimo)':level==='warning'?'🟡 Ponto de encomenda':'🟢 Normal';
+    var chegada=m.arrivedAt?new Date(m.arrivedAt).toLocaleString('pt-PT'):'';
+    d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'',m.reorderPoint||'',estado,chegada,m.supplier||'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Pátio');
+  xlsxDl(wb,'LUELE_Patio');
+  showToast('✓ Relatório do Pátio exportado');
+};
 function getGENumber(){
 const y=new Date().getFullYear();
 const k='ge-counter-'+y;
@@ -4837,6 +4853,7 @@ window.exportAlerts = exportAlerts;
 window.exportLogistica = exportLogistica;
 window.exportVini = exportVini;
 window.exportEmasReport = exportEmasReport;
+window.exportPatio = exportPatio;
 window.getGENumber = getGENumber;
 window.openEntryModal = openEntryModal;
 window.buildDestOptions = buildDestOptions;

@@ -851,6 +851,47 @@ let USERS = {
 'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator', telegramId:'' }
 };
 let usersLoaded = false;
+// Centros de custo (importados de "Centros de Custo.xlsx", nível operacional/"M" apenas).
+// Usados para sugerir o destino/requisitante nas saídas de material.
+const COST_CENTERS = [{"code":"1000000000","name":"Mesa da Assembleia Geral"},{"code":"1000100000","name":"Gestão do Conselho Fiscal"},{"code":"1000100010","name":"Fiscalização Financeira"},{"code":"1000100020","name":"Pareceres e Relatórios"},{"code":"2000000000","name":"Conselho de Administração Não Executivo"},{"code":"2000100000","name":"Comissão de Nomeações, Avaliações e Remunerações"},{"code":"2000100010","name":"Comissão de Governança e Sustentabilidade"},{"code":"2000200000","name":"Gabinete de Auditoria Interna"},{"code":"2000200010","name":"Gabinete de Gestão de Risco"},{"code":"2000200020","name":"Gabinete de Compliance"},{"code":"2000200030","name":"Auditor Externo"},{"code":"2000200040","name":"Secretariado da Sociedade"},{"code":"3000000000","name":"Administrador Geral Executivo (CEO)"},{"code":"3000000010","name":"Assessores e Consultores do CEO"},{"code":"3000100000","name":"Gestão Gabinete do Administrador Geral Executivo"},{"code":"3000100010","name":"Sector de Secretariado Executivo"},{"code":"3000200000","name":"Gestão do Gabinete de Comunicação"},{"code":"3000200010","name":"Sector de Comunicação, Imagem e Protocolo"},{"code":"3000300000","name":"Gestão do Gabinete de Assuntos Jurídicos"},{"code":"3000300010","name":"Sector de Assuntos Jurídicos Gerais"},{"code":"3000300020","name":"Sector de Contencioso"},{"code":"3040101000","name":"Gestão do Dept. de Segurança Corporativa"},{"code":"3040101010","name":"Sector de Investigação e Análise de Informação"},{"code":"3040101020","name":"Sector de Operações e Segurança Empresarial"},{"code":"3040101030","name":"Sector de Seg. da CT e Produto Final"},{"code":"3040101040","name":"Sector de Apoio e Controlo"},{"code":"3050101000","name":"Gestão do Dept. de Comercialização"},{"code":"3050101010","name":"Sector de Controlo de Stocks"},{"code":"3050101020","name":"Sector de Classificação e Avaliação"},{"code":"3050101030","name":"Sector de Comerc., Mkt e Anál. Mercados"},{"code":"3060000000","name":"Gestão da Dir. de Aprovisionamento e Logística"},{"code":"3060101010","name":"Sector de Procurement"},{"code":"3060201000","name":"Gestão do Dept. de Compras"},{"code":"3060201010","name":"Sector de Compras"},{"code":"3060201020","name":"Sector de Análise e Controlo"},{"code":"3060301000","name":"Gestão do Dept. de Logística"},{"code":"3060301010","name":"Sector de Logística e Armazéns"},{"code":"3060301020","name":"Sector de Património"},{"code":"3060301030","name":"Sector de Controlo de Stocks"},{"code":"3070000000","name":"Gestão da Dir. de Capital Humano"},{"code":"3070101000","name":"Gestão do Dept. de Capital Humano"},{"code":"3070101010","name":"Sector de Operações de Capital Humano"},{"code":"3070101020","name":"Sector de Planeamento, Recrutamento e Seleção"},{"code":"3070101030","name":"Sector de Políticas, Benefícios e Recompensas"},{"code":"3070201000","name":"Gestão do Dept. de Formação Profissional"},{"code":"3070201010","name":"Sector de Alianças e Parcerias"},{"code":"3070201020","name":"Sector de Planif. Formativa e Gest. Conhecimento"},{"code":"3070201030","name":"Sector de Formação Profissional"},{"code":"3080000000","name":"Gestão da Dir. Técnica"},{"code":"3080101000","name":"Gestão da Dir. Adjunta para Geologia"},{"code":"3080102000","name":"Gestão do Dept. de Geologia"},{"code":"3080102010","name":"Sector de Planeamento, Geologia e Análise"},{"code":"3080102020","name":"Sector de Prospecção e Pesquisa Geológica"},{"code":"3080102030","name":"Sector de Geologia Prod. e Stocks Mineiros"},{"code":"3080102040","name":"Sector de Mineralogia e Petrografia"},{"code":"3080102050","name":"Sector de Tratamento de Amostras Geológicas"},{"code":"3080103000","name":"Gestão do Dept. de Engenharia Geológica"},{"code":"3080103010","name":"Sector de Hidrogeologia"},{"code":"3080103020","name":"Sector de Geomecânica"},{"code":"3080104000","name":"Gestão do Dept. de Suporte Técnico e Tecnológico"},{"code":"3080104010","name":"Sector de Suporte Técnico e Tecnológico"},{"code":"3080104020","name":"Sector de Controlo Técnico das Unid. Tratamento"},{"code":"3080104030","name":"Sector de Geoinformática, Base de Dados e Arquivos"},{"code":"3080201000","name":"Gestão da Dir. Adj. Plan. e Oper. Mineiras"},{"code":"3080202000","name":"Gestão do Dept. Plan. e Controlo Produção"},{"code":"3080202010","name":"Sector de Planeamento e Estudo"},{"code":"3080202020","name":"Sector de Controlo, Eficiência Oper. e Reporting"},{"code":"3080202030","name":"Sector de Despacho e Controlo Operacional"},{"code":"3080202040","name":"Sector de Pesquisa e Desenvolvimento"},{"code":"3080203000","name":"Gestão do Dept. de Mineração"},{"code":"3080203010","name":"Sector de Operações Mineiras"},{"code":"3080203020","name":"Sector de Perfuração e Detonação"},{"code":"3080203030","name":"Sector de Instalações Hidrotécnicas e Bombeamento"},{"code":"3080203040","name":"Sector de Terraplanagem e Trabalhos Preparatórios"},{"code":"3080204000","name":"Gestão do Dept. de Topografia"},{"code":"3080204010","name":"Sector de Topografia e Geodésia"},{"code":"3080204020","name":"Sector de Monitoramento Estrutural"},{"code":"3080301000","name":"Gestão da Dir. Adj. Eng., Manut. e Projetos"},{"code":"3080302000","name":"Gestão do Dept. de Energia e Águas"},{"code":"3080302010","name":"Sector de Produção de Energia"},{"code":"3080302020","name":"Sector de Transp. e Dist. Energia MT/BT"},{"code":"3080302030","name":"Sector de Manutenção Elétrica da CT"},{"code":"3080302040","name":"Sector de Águas"},{"code":"3080303000","name":"Gestão do Dept. de Manutenção Técnica"},{"code":"3080303010","name":"Sector de Planeamento e Controlo de Manutenção"},{"code":"3080303020","name":"Sector de Engenharia de Manutenção"},{"code":"3080303030","name":"Sector de Manutenção Industrial"},{"code":"3080303040","name":"Sector de Lubrificação, Recauch. e Içamento"},{"code":"3080304000","name":"Gestão do Dept. de Projectos, Estudos e Inovação"},{"code":"3080304010","name":"Sector de Projectos e Infraestruturas"},{"code":"3080304020","name":"Sector de Fiscalização de Obras"},{"code":"3080401000","name":"Gestão da Dir. Adjunta para Metalurgia"},{"code":"3080402000","name":"Gestão do Dept. de Metalurgia"},{"code":"3080402010","name":"Sector de Tratamento"},{"code":"3080402020","name":"Sector de Recuperação"},{"code":"3080402030","name":"Sector de Separação Manual e Acidif. Diamantes"},{"code":"3080403000","name":"Gestão do Dept. de Gestão de Bacias de Rejeitados"},{"code":"3080403010","name":"Sector de Exploração e Monitor. Bacia Rejeitos"},{"code":"3080403020","name":"Sector de Manutenção da Bacia de Rejeitados"},{"code":"4000000000","name":"Administrador(a) Executivo Financeiro (CFO)"},{"code":"4000000010","name":"Assessores e Consultores do (CFO)"},{"code":"4000000020","name":"Sector de Secretariado Executivo (CFO)"},{"code":"4010101000","name":"Gestão do Dept. de Contratos"},{"code":"4010101010","name":"Sector de Análise e Elaboração de Contratos"},{"code":"4020101000","name":"Gestão do Dept. de Marketing e Novos Negócios"},{"code":"4030000000","name":"Gestão da Dir. de Finanças e Fiscalidade"},{"code":"403010100","name":"Departamento de Finanças"},{"code":"4030101000","name":"Gestão do Departamento de Finanças"},{"code":"4030101010","name":"Sector de Planeamento e Orçamentação"},{"code":"4030101020","name":"Sector de Operações Financeiras"},{"code":"4030201000","name":"Departamento de Contabilidade"},{"code":"4030201010","name":"Sector de Contabilidade Geral"},{"code":"4030201020","name":"Sector de Contabilidade Patrimonial"},{"code":"4030301000","name":"Gestão do Dept. de Fiscalidade"},{"code":"4030301010","name":"Sector de Análise de Custos"},{"code":"4030301020","name":"Sector de Planeamento Fiscal e Tributação"},{"code":"4040000000","name":"Gestão da Dir. de Administração e Serviços"},{"code":"4040101000","name":"Gestão do Dept. de Administração e Serviços"},{"code":"4040101010","name":"Sector de Serviços Gerais Mina"},{"code":"4040101020","name":"Sector de Serviços Gerais Luanda"},{"code":"4040101030","name":"Sector de Desporto, Cultura e Recreação"},{"code":"4040201000","name":"Gestão do Dept. de Tecnologia de Informação"},{"code":"4040201010","name":"Sector de Suporte Técnico"},{"code":"4040201020","name":"Sector de Gestão e Desenvolvimento de T.I"},{"code":"4040201030","name":"Sector de Sistema de Segurança da Informação"},{"code":"4050000000","name":"Gestão da Dir. de Qualidade e Sustentabilidade"},{"code":"4050101000","name":"Gestão do Dept. de Qualidade e Normalização"},{"code":"4050101010","name":"Sector de Qualidade e Normalização"},{"code":"4050101020","name":"Sector de Otimização e Melhoria Contínua"},{"code":"4050201000","name":"Gestão do Dept. de Saúde e Segurança no Trabalho"},{"code":"4050201010","name":"Sector de Segurança no Trabalho"},{"code":"4050201020","name":"Sector de Medicina Ocupacional"},{"code":"4050301000","name":"Gestão do Dept. de Sustentabilidade"},{"code":"4050301010","name":"Sector de Ambiente"},{"code":"4050301020","name":"Sector de Gestão de Benefícios"},{"code":"4050301030","name":"Sector de Responsabilidade Social"},{"code":"DT00001","name":"Governo Provincial da Lunda Sul"},{"code":"DT00002","name":"Clube Desportivo da Lunda Sul"},{"code":"DT00003","name":"Grupo Desportivo Sagrada Esperança"},{"code":"DT00004","name":"Fundação Brilhante"},{"code":"DT00005","name":"Caritas"},{"code":"DT00006","name":"Comite Miss Lunda Sul"},{"code":"DT00007","name":"ANJE-Assoc.Nac.Protecç.Congr.Jovens Empresarios"},{"code":"DT00008","name":"Fundação Bornito de sousa"},{"code":"DT00009","name":"Comando Nacional Serv. de prot. civil e  Bombeiros"},{"code":"DT00010","name":"Comite Miss Luanda"},{"code":"DT00011","name":"Associação Cultural Baixa de Cassange"},{"code":"DT00012","name":"Evafil - segurança, higiene e segurança no trabalh"},{"code":"DT00013","name":"Arquidiocese de Saurimo"},{"code":"DT99999","name":"Outros Donativos"},{"code":"T000001","name":"GEOSONDAS"},{"code":"T000002","name":"AGS & MIT-MINING, LDA"},{"code":"T000003","name":"GEOANGOL"},{"code":"T000004","name":"HIPERMAQUINAS"},{"code":"T000005","name":"CONSULMET"},{"code":"T000006","name":"INGENIUM"},{"code":"T000007","name":"ARTE STRONI"},{"code":"T000008","name":"EDUSILP"},{"code":"T000009","name":"ALVERDE"},{"code":"T000010","name":"NOVAGEST"},{"code":"T000011","name":"CIMALEST"},{"code":"T000012","name":"ILV MIBRAG"},{"code":"T000013","name":"TRANSIMPERIUM"},{"code":"T000014","name":"ALFA 5 SEGURANÇA INDUSTRIAL E PATRIMONIAL"},{"code":"T000015","name":"ENDIAMA MINING"},{"code":"T000016","name":"DUDA MARCHI"},{"code":"T000017","name":"CET POWER"},{"code":"T000018","name":"OMEGA RISK SOLUTIONS ANGOLA,LDA"},{"code":"T000019","name":"KUFUNGA - SEGURANÇA INDUSTRIAL E PATRIMONIAL, S.A"},{"code":"T000020","name":"REPASSE DO CATOCA (MAO DE OBRA, DEPR.EQUIP.)"},{"code":"T000021","name":"LUMEGE SOCIEDADE COMERCIAL, LDA"},{"code":"T000022","name":"GJ BRAZ - COMERCIO E SERVIÇOS, LDA"},{"code":"T000023","name":"JILA-LESTE, LDA"},{"code":"T000024","name":"WANGOL"},{"code":"T000025","name":"GEO WORLD"},{"code":"T000026","name":"THUEIA"},{"code":"T000027","name":"CLINICA SAGRADA ESPERANÇA"},{"code":"T000028","name":"CIMERTEX"},{"code":"T000029","name":"ALIANCE GROUP"},{"code":"T000030","name":"JAGMEL"},{"code":"T000031","name":"NACEL"},{"code":"T000032","name":"MACON"},{"code":"T000033","name":"TRANSGRUA - TRANSP., REPRES. E ALUGUER DE EQUIP"},{"code":"T000034","name":"GEO WORLD SERVICE, S.A."},{"code":"T000039","name":"ALVA VENTURES,SA"},{"code":"T000040","name":"GEO WORLD SECURITIES"},{"code":"T000041","name":"TRANSMACHADO"},{"code":"T000042","name":"PROMSTROI"},{"code":"T000046","name":"ENSA SEGUROS DE ANGOLA,S.A"},{"code":"T000047","name":"ALIANCE SERVICE GROUP, LDA"},{"code":"T000048","name":"TWENDA KUPALA, LIMITADA"},{"code":"T000050","name":"GLOBAL CATERING PRESTAÇÃO DE SERVIÇOS,LDA"},{"code":"T000051","name":"NORS CONSTRUCTION EQUIPMENT ANGOLA, AUTOMAQUINARIA"},{"code":"T000052","name":"ENDIAMA EP"},{"code":"T000053","name":"CIMERTEX"},{"code":"T000056","name":"GEO DRILL - COMERCIO E SERVIÇOS"},{"code":"T000057","name":"xxxxxxxx"}];
+function destFieldHtml(id, ph){
+  return '<div class="cc-search-wrap" style="position:relative">'+
+    '<input class="form-input" id="'+id+'" placeholder="'+(ph||'Nome/código do centro de custo, ou texto livre...')+'" style="width:100%" autocomplete="off" oninput="renderCostCenterSuggestions(\''+id+'\',this.value)" onfocus="renderCostCenterSuggestions(\''+id+'\',this.value)">'+
+    '<div id="'+id+'-cc-suggestions" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow3);max-height:220px;overflow-y:auto;z-index:60"></div>'+
+  '</div>';
+}
+function renderCostCenterSuggestions(inputId, q){
+  var box = document.getElementById(inputId+'-cc-suggestions');
+  if(!box) return;
+  var ql=(q||'').toLowerCase().trim();
+  var matches = !ql ? COST_CENTERS.slice(0,8) : COST_CENTERS.filter(function(c){
+    return c.name.toLowerCase().indexOf(ql)>=0 || c.code.toLowerCase().indexOf(ql)>=0;
+  }).slice(0,20);
+  if(!matches.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = matches.map(function(c){
+    var val = (c.name+' — '+c.code).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div onmousedown="event.preventDefault();selectCostCenter(\''+inputId+'\',\''+val+'\')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
+      '<div style="font-size:12px;font-weight:500">'+escapeHtml(c.name)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-family:monospace">'+escapeHtml(c.code)+'</div>'+
+    '</div>';
+  }).join('');
+  box.style.display='block';
+}
+function selectCostCenter(inputId, value){
+  var el = document.getElementById(inputId);
+  if(el) el.value = value;
+  var box = document.getElementById(inputId+'-cc-suggestions');
+  if(box) box.style.display='none';
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.cc-search-wrap')){
+    document.querySelectorAll('[id$="-cc-suggestions"]').forEach(function(b){b.style.display='none';});
+  }
+  if(!e.target.closest('.grp-search-wrap')){
+    var b2=document.getElementById('grp-mat-suggestions');
+    if(b2) b2.style.display='none';
+  }
+});
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
 // AVISO: password guardada em texto simples — isto é um fix funcional, não de segurança. Migrar para Firebase Authentication é fortemente recomendado.
@@ -3456,8 +3497,7 @@ function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
     '<div><label class="modal-label">QUANTIDADE A RETIRAR</label>'+
     '<input class="form-input" id="sfs-qty" type="number" min="0.01" max="'+mat.qty+'" value="'+mat.qty+'" style="width:100%"></div>'+
 '<div style="font-size:10px;color:var(--text3);margin-top:3px">Máximo disponível: <strong>'+escapeHtml(mat.qty)+' '+escapeHtml(mat.unit)+'</strong></div>'+
-    '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+
-    '<input class="form-input" id="sfs-dest" placeholder="Ex: Oficina..." style="width:100%"></div></div>'+
+    '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+destFieldHtml('sfs-dest')+'</div></div>'+
     '<div><label class="modal-label">MOTIVO / OBSERVAÇÕES</label>'+
     '<textarea class="form-input" id="sfs-obs" rows="2" style="width:100%;resize:none"></textarea></div>'+
     '<div class="modal-actions">'+
@@ -3472,34 +3512,10 @@ function getSFSNumber(){
   localStorage.setItem(k,n);
   return'SFS-'+y+'-'+String(n).padStart(3,'0');
 }
-function buildGroupMatOptions(mats){
-  var byWh = {};
-  mats.forEach(function(m){
-    if(!byWh[m.warehouse])byWh[m.warehouse]=[];
-    byWh[m.warehouse].push(m);
-  });
-  var matOpts = '<option value="">— Adicionar material —</option>';
-  Object.entries(byWh).forEach(function(entry){
-    var wh=entry[0], list=entry[1];
-    matOpts += '<optgroup label="'+escapeHtml(wh)+'">';
-    list.forEach(function(m){
-      // key = warehouse|location|id — a composite key, since material.id alone is
-      // NOT guaranteed unique across different warehouses/containers (ids are
-      // generated from Date.now(), which can collide between two separate bulk
-      // imports done close together). Using the composite key as the sole
-      // identifier fixes the "cannot add a second article" bug.
-      var key=m.warehouse+'|'+m.location+'|'+m.id;
-      matOpts += '<option value="'+escapeHtml(key)+'">'+escapeHtml(m.name)+' ('+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+') — '+escapeHtml(m.locFull)+'</option>';
-    });
-    matOpts += '</optgroup>';
-  });
-  return matOpts;
-}
 function openGroupExitModal(){
   var allMats = getAllMaterials();
   if(!allMats.length){showToast('Sem materiais para dar saída',true);return;}
   window._groupAllMats = allMats;
-  var matOpts = buildGroupMatOptions(allMats);
   var sfsNum = getSFSNumber();
   openModal(
     '<div class="modal-header">'+
@@ -3507,19 +3523,18 @@ function openGroupExitModal(){
     '<div style="margin-top:2px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">'+sfsNum+'</span></div></div>'+
     '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
-    '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+
-    '<input class="form-input" id="grp-dest" placeholder="Ex: Oficina, João Silva..." style="width:100%"></div>'+
+    '<div><label class="modal-label">DESTINO / REQUISITANTE</label>'+destFieldHtml('grp-dest')+'</div>'+
     '<div><label class="modal-label">MOTIVO / OBSERVAÇÕES</label>'+
     '<input class="form-input" id="grp-obs" placeholder="Ex: Manutenção preventiva..." style="width:100%"></div>'+
     '</div>'+
     '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px">'+
     '<div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">MATERIAIS A RETIRAR</div>'+
     '<div id="grp-items-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"><div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum material adicionado ainda</div></div>'+
-    '<input class="form-input" id="grp-mat-search" placeholder="🔍 Pesquisar material por nome..." style="width:100%;margin-bottom:8px" oninput="filterGroupMatOptions(this.value)">'+
-    '<div style="display:flex;gap:8px">'+
-    '<select class="form-select" id="grp-mat-select" style="flex:1">'+matOpts+'</select>'+
-    '<button class="btn btn-secondary btn-sm" onclick="addGroupItem()">+ Adicionar</button>'+
-    '</div></div>'+
+    '<div class="grp-search-wrap" style="position:relative">'+
+    '<input class="form-input" id="grp-mat-search" placeholder="🔍 Escreve o nome ou código do material..." style="width:100%" autocomplete="off" oninput="renderGroupMatSuggestions(this.value)" onfocus="renderGroupMatSuggestions(this.value)">'+
+    '<div id="grp-mat-suggestions" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow3);max-height:240px;overflow-y:auto;z-index:55"></div>'+
+    '</div>'+
+    '</div>'+
     '<div id="grp-summary" style="display:none;background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:4px;font-size:12px;font-weight:500;color:var(--green)"></div>'+
     '<div class="modal-actions">'+
     '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
@@ -3530,22 +3545,46 @@ function openGroupExitModal(){
   var _sfsNum = sfsNum;
   document.getElementById('grp-confirm-btn').onclick = function(){ confirmGroupExit(_sfsNum); };
 };
-function filterGroupMatOptions(q){
-  var sel = document.getElementById('grp-mat-select');
-  if(!sel || !window._groupAllMats) return;
+function renderGroupMatSuggestions(q){
+  var box = document.getElementById('grp-mat-suggestions');
+  if(!box || !window._groupAllMats) return;
   var ql = (q||'').toLowerCase().trim();
-  var filtered = !ql ? window._groupAllMats : window._groupAllMats.filter(function(m){
+  var already = {};
+  (window._groupItems||[]).forEach(function(i){ already[i.key]=true; });
+  var pool = window._groupAllMats.filter(function(m){
+    var key = m.warehouse+'|'+m.location+'|'+m.id;
+    return !already[key];
+  });
+  var matches = !ql ? pool : pool.filter(function(m){
     return m.name.toLowerCase().indexOf(ql)>=0 || (m.code||'').toLowerCase().indexOf(ql)>=0;
   });
-  sel.innerHTML = buildGroupMatOptions(filtered);
-};
-function addGroupItem(){
-  var sel = document.getElementById('grp-mat-select');
-  var key = sel.value;
-  if(!key) return;
+  if(!ql){ box.style.display='none'; box.innerHTML=''; return; }
+  if(!matches.length){
+    box.innerHTML = '<div style="padding:12px;text-align:center;font-size:12px;color:var(--text3)">Nenhum material encontrado</div>';
+    box.style.display='block';
+    return;
+  }
+  var shown = matches.slice(0,30);
+  box.innerHTML = shown.map(function(m){
+    var key = m.warehouse+'|'+m.location+'|'+m.id;
+    var jsKey = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div onmousedown="event.preventDefault();addGroupItemByKey(\''+jsKey+'\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
+      (m.code?'<div style="font-size:9px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>':'')+
+      '<div style="font-size:12px;font-weight:500">'+escapeHtml(m.name)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+' — '+escapeHtml(m.locFull)+'</div>'+
+    '</div>';
+  }).join('') + (matches.length>30 ? '<div style="padding:8px;text-align:center;font-size:10px;color:var(--text3)">+'+(matches.length-30)+' mais — continua a escrever para filtrar</div>' : '');
+  box.style.display='block';
+}
+function addGroupItemByKey(key){
   var parts = key.split('|');
   var wh=parts[0], loc=parts[1], id=parseInt(parts[2]);
-  // Match on warehouse + location + id together (not id alone) — see buildGroupMatOptions comment.
+  // Match on warehouse + location + id together (not id alone), since material.id
+  // alone is NOT guaranteed unique across different warehouses/containers (ids are
+  // generated from Date.now(), which can collide between two separate bulk imports
+  // done close together). This composite key + click-to-add suggestion list (instead
+  // of a native <select>, which silently collapses to one visible line and confused
+  // users into thinking only one article could ever be added) fixes the bug for real.
   var mat = getAllMaterials().find(function(m){return m.warehouse===wh && m.location===loc && m.id===id;});
   if(!mat) return;
   if(window._groupItems.some(function(i){return i.key===key;})){
@@ -3564,7 +3603,9 @@ function addGroupItem(){
     locFull: mat.locFull
   });
   renderGroupItems();
-  sel.value = '';
+  showToast('✓ '+mat.name+' adicionado — '+mat.locFull);
+  var search = document.getElementById('grp-mat-search');
+  if(search){ renderGroupMatSuggestions(search.value); search.focus(); }
 };
 function removeGroupItem(key){
   window._groupItems = window._groupItems.filter(function(i){return i.key!==key;});
@@ -3676,7 +3717,10 @@ async function confirmGroupExit(sfsNum){
       ts:serverTimestamp()
     });
   }catch(e){console.error('Group SFS:',e);}
-  showToast('✓ '+sfsNum+' — '+items.length+' artigos retirados!');
+  var _locs = items.map(function(i){return i.locFull;});
+  var _uniqLocs = _locs.filter(function(v,i){return _locs.indexOf(v)===i;});
+  var _locMsg = _uniqLocs.length===1 ? ' de '+_uniqLocs[0] : ' de '+_uniqLocs.length+' localizações diferentes';
+  showToast('✓ '+sfsNum+' — '+items.length+' artigos retirados'+_locMsg+'!');
   spawnParticles();
   generateGroupSFSPDF(sfsNum, items, dest, obs);
   refreshAll();
@@ -3792,7 +3836,7 @@ async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   await saveStock(nd);
   await logHistory('SAÍDA',mat.name,loc,wh,String(qty),mat.unit);
   try{await addDoc(collection(db,'wms','sfs','records'),{number:sfsNum,material:mat.name,code:mat.code||'',qty:String(qty),unit:mat.unit,origem:locFull,destino:dest,obs:obs,wh:wh,emitidoPor:currentUser.name,ts:serverTimestamp()});}catch(e){console.error('SFS:',e);}
-  showToast('✓ SFS '+sfsNum+' emitida!');
+  showToast('✓ SFS '+sfsNum+' emitida! Retirado de: '+locFull);
   generateSFSPDF({sfsNum,matName:mat.name,matCode:mat.code||'',qty,unit:mat.unit,origem:locFull,destino:dest,obs,emitidoPor:currentUser.name});
   refreshAll();
 };
@@ -4199,9 +4243,11 @@ window.removeMat = removeMat;
 window.openSFSModal = openSFSModal;
 window.getSFSNumber = getSFSNumber;
 window.openGroupExitModal = openGroupExitModal;
-window.buildGroupMatOptions = buildGroupMatOptions;
-window.filterGroupMatOptions = filterGroupMatOptions;
-window.addGroupItem = addGroupItem;
+window.renderGroupMatSuggestions = renderGroupMatSuggestions;
+window.addGroupItemByKey = addGroupItemByKey;
+window.destFieldHtml = destFieldHtml;
+window.renderCostCenterSuggestions = renderCostCenterSuggestions;
+window.selectCostCenter = selectCostCenter;
 window.removeGroupItem = removeGroupItem;
 window.renderGroupItems = renderGroupItems;
 window.updateGroupQty = updateGroupQty;

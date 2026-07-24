@@ -746,6 +746,7 @@ tbody tr:hover td{background:var(--bg)}
           <button class="btn btn-secondary" onclick="openTransferModal()">⇄ Transferir Material</button>
           <button class="btn btn-secondary" onclick="openGroupExitModal()" style="border-color:var(--red);color:var(--red)">📤 Saída em Grupo</button>
           <button class="btn btn-secondary" onclick="openImportModal('patio','Pátio')" style="border-color:var(--blue);color:var(--blue)">⬆ Importar Excel</button>
+          <button class="btn btn-secondary" onclick="openGroupEntryModal()" style="border-color:var(--blue);color:var(--blue)">📥 Entrada em Grupo</button>
           <button class="btn btn-primary" onclick="openEntryModal()">+ Dar Entrada</button>
         </div>
       </div>
@@ -2941,6 +2942,220 @@ ${d.obs?`<div class="section"><div class="section-title">Observações</div><div
 const w=window.open('','_blank','width=900,height=700');
 w.document.write(html);w.document.close();
 }
+function resolveDestTarget(nd,dest){
+  if(dest==='vini'){
+    if(!Array.isArray(nd.vini))nd.vini=[];
+    return {arr:nd.vini,loc:'Vini Galpão',kind:'vini'};
+  } else if(dest&&dest.startsWith('emas:')){
+    var zone=dest.split(':')[1];
+    if(!Array.isArray(nd.emas))nd.emas=[];
+    return {arr:nd.emas,loc:'Emas — Zona '+zone,kind:'emas',zone:zone};
+  } else if(dest&&dest.startsWith('log:')){
+    var i=parseInt(dest.split(':')[1]);
+    if(!nd.logistica[i].materials)nd.logistica[i].materials=[];
+    return {arr:nd.logistica[i].materials,loc:'Contentor '+nd.logistica[i].label,kind:'log',logIdx:i};
+  }
+  if(!nd.patio)nd.patio=[];
+  return {arr:nd.patio,loc:'Pátio (Trânsito)',kind:'patio'};
+}
+function peekDestArr(dest){
+  if(!appData)return[];
+  if(dest==='vini')return Array.isArray(appData.vini)?appData.vini:[];
+  if(dest&&dest.startsWith('emas:')){
+    var zone=dest.split(':')[1];
+    if(Array.isArray(appData.emas))return appData.emas.filter(function(m){return(m.zone||'A')===zone;});
+    return(appData.emas&&appData.emas[zone])||[];
+  }
+  if(dest&&dest.startsWith('log:')){
+    var i=parseInt(dest.split(':')[1]);
+    return(appData.logistica[i]&&appData.logistica[i].materials)||[];
+  }
+  return appData.patio||[];
+}
+function findExistingMatSync(arr,item){
+  if(!arr)return null;
+  var nameKey=(item.name||'').toLowerCase().trim();
+  for(var i=0;i<arr.length;i++){
+    var em=arr[i];
+    if(item.code&&em.code&&em.code===item.code)return em;
+    if((em.name||'').toLowerCase().trim()===nameKey)return em;
+  }
+  return null;
+}
+function openGroupEntryModal(){
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  var geNum=getGENumber();
+  window._groupEntryItems=[];
+  var destOpts=buildDestOptions();
+  openModal(
+    '<div class="modal-header">'+
+    '<div><span class="modal-title">📥 Entrada em Grupo</span>'+
+    '<div style="margin-top:2px"><span class="ge-badge">'+geNum+'</span></div></div>'+
+    '<button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
+    '<div><label class="modal-label">DESTINO</label><select class="form-select" id="gen-dest" style="width:100%" onchange="renderGroupEntryItems()">'+destOpts+'</select></div>'+
+    '<div><label class="modal-label">FORNECEDOR / ORIGEM</label><input class="form-input" id="gen-supplier" placeholder="Ex: ABC Lda" style="width:100%"></div>'+
+    '</div>'+
+    '<div style="margin-bottom:12px"><label class="modal-label">Nº GUIA FORNECEDOR / MANIFESTO</label><input class="form-input" id="gen-ref" placeholder="Ex: GF-2026-123" style="width:100%"></div>'+
+    '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">MATERIAIS A RECEBER</div>'+
+    '<div id="gen-items-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"><div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum material adicionado ainda</div></div>'+
+    '<div style="display:grid;grid-template-columns:100px 1fr 80px 80px auto;gap:6px;align-items:end">'+
+    '<div><label class="modal-label" style="font-size:9px">CÓDIGO</label><input class="form-input" id="gen-add-code" style="width:100%" placeholder="opcional"></div>'+
+    '<div><label class="modal-label" style="font-size:9px">NOME</label><input class="form-input" id="gen-add-name" style="width:100%" placeholder="Nome do material" autocomplete="off"></div>'+
+    '<div><label class="modal-label" style="font-size:9px">QTD</label><input class="form-input" id="gen-add-qty" type="number" min="0" style="width:100%" placeholder="0"></div>'+
+    '<div><label class="modal-label" style="font-size:9px">UN.</label><select class="form-select" id="gen-add-unit" style="width:100%">'+unitOpts()+'</select></div>'+
+    '<button class="btn btn-secondary btn-sm" onclick="addGroupEntryItem()">+ Adicionar</button>'+
+    '</div>'+
+    '</div>'+
+    '<div style="margin-bottom:4px"><label class="modal-label">OBSERVAÇÕES</label><textarea class="form-input" id="gen-obs" rows="2" placeholder="Notas adicionais..." style="width:100%;resize:none"></textarea></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn btn-primary" id="gen-confirm-btn" style="display:none">✓ Confirmar Entrada em Grupo &amp; gerar GE</button>'+
+    '</div>'
+  );
+  document.getElementById('gen-confirm-btn').onclick=function(){confirmGroupEntry(geNum);};
+  var nameEl=document.getElementById('gen-add-name');
+  if(nameEl)nameEl.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addGroupEntryItem();}});
+}
+function addGroupEntryItem(){
+  var code=document.getElementById('gen-add-code')?.value.trim()||'';
+  var name=document.getElementById('gen-add-name')?.value.trim()||'';
+  var qty=parseFloat(document.getElementById('gen-add-qty')?.value)||0;
+  var unit=document.getElementById('gen-add-unit')?.value||'un';
+  if(!name){showToast('Escreve o nome do material',true);return;}
+  if(!qty||qty<=0){showToast('Introduz uma quantidade válida',true);return;}
+  window._groupEntryItems.push({code:code,name:name,qty:qty,unit:unit});
+  var codeEl=document.getElementById('gen-add-code');var nameEl=document.getElementById('gen-add-name');var qtyEl=document.getElementById('gen-add-qty');
+  if(codeEl)codeEl.value='';
+  if(nameEl)nameEl.value='';
+  if(qtyEl)qtyEl.value='';
+  if(nameEl)nameEl.focus();
+  renderGroupEntryItems();
+}
+function removeGroupEntryItem(i){
+  window._groupEntryItems.splice(i,1);
+  renderGroupEntryItems();
+}
+function renderGroupEntryItems(){
+  var list=document.getElementById('gen-items-list');
+  var btn=document.getElementById('gen-confirm-btn');
+  if(!list)return;
+  var items=window._groupEntryItems||[];
+  if(!items.length){
+    list.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum material adicionado ainda</div>';
+    if(btn)btn.style.display='none';
+    return;
+  }
+  var destEl=document.getElementById('gen-dest');
+  var pool=peekDestArr(destEl?destEl.value:'patio');
+  list.innerHTML=items.map(function(item,i){
+    var existing=findExistingMatSync(pool,item);
+    var statusHtml=existing?
+      '<div style="font-size:10px;color:var(--amber);font-weight:600">já existe — ficará '+((parseFloat(existing.qty)||0)+item.qty)+' '+escapeHtml(item.unit)+'</div>':
+      '<div style="font-size:10px;color:var(--green);font-weight:600">novo material</div>';
+    return '<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid var(--border);border-radius:6px;padding:8px 10px">'+
+      '<div style="flex:1">'+
+        (item.code?'<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(item.code)+'</div>':'')+
+        '<div style="font-size:12px;font-weight:500">'+escapeHtml(item.name)+'</div>'+
+        statusHtml+
+      '</div>'+
+      '<div style="font-size:12px;font-weight:600;white-space:nowrap">+'+item.qty+' '+escapeHtml(item.unit)+'</div>'+
+      '<button class="mat-btn" onclick="removeGroupEntryItem('+i+')">✕</button>'+
+    '</div>';
+  }).join('');
+  if(btn)btn.style.display='inline-flex';
+}
+async function confirmGroupEntry(geNum){
+  var items=window._groupEntryItems||[];
+  if(!items.length){showToast('Adiciona pelo menos um material',true);return;}
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  var dest=document.getElementById('gen-dest')?.value||'patio';
+  var supplier=document.getElementById('gen-supplier')?.value.trim()||'';
+  var ref=document.getElementById('gen-ref')?.value.trim()||'';
+  var obs=document.getElementById('gen-obs')?.value.trim()||'';
+  var nd=JSON.parse(JSON.stringify(appData));
+  var target=resolveDestTarget(nd,dest);
+  var added=0,merged=0;
+  var receiptItems=[];
+  items.forEach(function(item){
+    var existing=findExistingMatSync(target.arr,item);
+    if(existing){
+      var oldQty=parseFloat(existing.qty)||0;
+      var newQty=oldQty+item.qty;
+      existing.qty=String(newQty);
+      if(item.code&&!existing.code)existing.code=item.code;
+      merged++;
+      receiptItems.push({code:existing.code||item.code,name:existing.name,qty:item.qty,unit:item.unit,resultingQty:newQty,merged:true});
+    } else {
+      var mat={id:Date.now()+Math.floor(Math.random()*1000),code:item.code,name:item.name,qty:String(item.qty),unit:item.unit,minStock:'',geNum:geNum,supplier:supplier,ref:ref};
+      if(target.kind==='patio'){target.arr.push(Object.assign({},mat,{arrivedAt:new Date().toISOString(),status:'transit'}));}
+      else if(target.kind==='emas'){target.arr.push(Object.assign({},mat,{zone:target.zone}));}
+      else{target.arr.push(mat);}
+      added++;
+      receiptItems.push({code:item.code,name:item.name,qty:item.qty,unit:item.unit,resultingQty:item.qty,merged:false});
+    }
+  });
+  appData=nd;
+  closeModal();
+  await saveStock(nd);
+  var whLabel=target.kind==='log'?'Logística':(target.kind==='vini'?'Vini Galpão':(target.kind==='emas'?'Emas':'Pátio'));
+  for(var j=0;j<receiptItems.length;j++){
+    await logHistory('ENTRADA',receiptItems[j].name,target.loc,whLabel,String(receiptItems[j].qty),receiptItems[j].unit);
+  }
+  showToast('✓ '+geNum+' — '+items.length+' artigos recebidos em '+target.loc+' ('+added+' novo(s), '+merged+' actualizado(s))');
+  spawnParticles();
+  generateGroupGEPDF(geNum,receiptItems,target.loc,supplier,ref,obs);
+  refreshAll();
+}
+function generateGroupGEPDF(geNum,items,destLabel,supplier,ref,obs){
+  var now=new Date();
+  var html='<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>'+geNum+'</title>'+
+  '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:28px}'+
+  '.header{display:flex;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #1a6b2f}'+
+  '.logo{width:40px;height:40px;background:#1a6b2f;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:900}'+
+  '.bar{background:#2563eb;color:white;padding:6px 14px;text-align:center;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:16px;border-radius:4px}'+
+  '.info{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}'+
+  '.box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:8px 10px}'+
+  '.lbl{font-size:8px;font-weight:700;color:#2563eb;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}'+
+  '.val{font-size:12px;font-weight:600}'+
+  'table{width:100%;border-collapse:collapse;margin-bottom:16px}'+
+  'th{background:#eff6ff;font-size:9px;font-weight:700;color:#2563eb;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;border:1px solid #bfdbfe;text-align:left}'+
+  'td{padding:8px 10px;border:1px solid #dbeafe;font-size:12px}'+
+  'tr:nth-child(even) td{background:#f8fbff}'+
+  '.total{background:#eff6ff;border-top:2px solid #2563eb;font-weight:700}'+
+  '.tag-new{color:#16a34a;font-size:10px;font-weight:700}'+
+  '.tag-upd{color:#d97706;font-size:10px;font-weight:700}'+
+  '.sig{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}'+
+  '.sig-box{border-top:1.5px solid #2563eb;padding-top:8px;text-align:center}'+
+  '.sig-line{height:36px;border-bottom:1px dashed #ccc;margin-bottom:6px}'+
+  '.footer{margin-top:16px;padding-top:10px;border-top:1px solid #dbeafe;display:flex;justify-content:space-between;font-size:9px;color:#aaa}'+
+  '</style></head><body>';
+  html+='<div class="header">';
+  html+='<div style="display:flex;align-items:center;gap:10px"><div class="logo">L</div><div><div style="font-size:20px;font-weight:900;color:#1a6b2f;letter-spacing:3px">LUELE</div><div style="font-size:9px;color:#888">WMS</div></div></div>';
+  html+='<div style="text-align:right"><div style="font-size:9px;color:#888;margin-bottom:3px">ENTRADA EM GRUPO</div><div style="font-size:20px;font-weight:900;color:#2563eb;letter-spacing:2px">'+geNum+'</div><div style="font-size:11px;color:#444;margin-top:3px">'+now.toLocaleDateString('pt-PT')+' · '+now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+  html+='</div>';
+  html+='<div class="bar">GE — GUIA DE ENTRADA (GRUPO)</div>';
+  html+='<div class="info">';
+  html+='<div class="box"><div class="lbl">Total de artigos</div><div class="val" style="color:#2563eb">'+items.length+'</div></div>';
+  html+='<div class="box"><div class="lbl">Destino</div><div class="val">'+destLabel+'</div></div>';
+  html+='<div class="box"><div class="lbl">Fornecedor</div><div class="val">'+(supplier||'—')+'</div></div>';
+  html+='</div>';
+  if(ref)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Nº Guia Fornecedor</div><div class="val">'+ref+'</div></div>';
+  if(obs)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Observações</div><div class="val" style="font-weight:400">'+obs+'</div></div>';
+  html+='<table><thead><tr><th>#</th><th>Código</th><th>Material</th><th>Quantidade Recebida</th><th>Un.</th><th>Estado</th></tr></thead><tbody>';
+  items.forEach(function(item,i){
+    html+='<tr><td style="color:#888;text-align:center">'+(i+1)+'</td><td style="font-family:monospace;color:#1a6b2f">'+(item.code||'—')+'</td><td style="font-weight:500">'+item.name+'</td><td style="text-align:center;font-weight:700;color:#2563eb">'+item.qty+'</td><td style="text-align:center">'+item.unit+'</td><td>'+(item.merged?'<span class="tag-upd">ACTUALIZADO (total: '+item.resultingQty+')</span>':'<span class="tag-new">NOVO</span>')+'</td></tr>';
+  });
+  html+='<tr class="total"><td colspan="3" style="text-align:right;padding:8px 10px">TOTAL DE REFERÊNCIAS:</td><td style="text-align:center;color:#2563eb">'+items.length+'</td><td></td><td></td></tr>';
+  html+='</tbody></table>';
+  html+='<div class="sig"><div class="sig-box"><div class="sig-line"></div><div style="font-size:11px;font-weight:600">'+currentUser.name+'</div><div style="font-size:9px;color:#888;text-transform:uppercase">Processado por</div></div>';
+  html+='<div class="sig-box"><div class="sig-line"></div><div style="font-size:11px"> </div><div style="font-size:9px;color:#888;text-transform:uppercase">Conferido por</div></div></div>';
+  html+='<div class="footer"><div>LUELE WMS · '+geNum+' · Entrada em Grupo</div><div>'+now.toLocaleDateString('pt-PT')+'</div></div>';
+  html+='<script>function onload(){window.print();}<\/script>';
+  var w=window.open('','_blank','width=900,height=700');
+  if(w){w.document.write(html);w.document.close();}
+}
 function addStockToMat(type,idx,matId){
 let mat;
 if(type==='log') mat=appData.logistica[parseInt(idx)].materials.find(m=>m.id===matId);
@@ -4701,6 +4916,12 @@ window.buildCodeSuggestions = buildCodeSuggestions;
 window.renderCodeSuggestions = renderCodeSuggestions;
 window.dismissCodeSuggestion = dismissCodeSuggestion;
 window.acceptCodeSuggestion = acceptCodeSuggestion;
+window.openGroupEntryModal = openGroupEntryModal;
+window.addGroupEntryItem = addGroupEntryItem;
+window.removeGroupEntryItem = removeGroupEntryItem;
+window.renderGroupEntryItems = renderGroupEntryItems;
+window.confirmGroupEntry = confirmGroupEntry;
+window.generateGroupGEPDF = generateGroupGEPDF;
 </script>
 </body>
 </html>

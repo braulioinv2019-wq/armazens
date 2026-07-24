@@ -522,6 +522,9 @@ tbody tr:hover td{background:var(--bg)}
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg> Inventário Cíclico
         <span class="nav-badge" id="badge-inv" style="background:var(--blue);display:none">0</span>
       </div>
+      <div class="nav-item" onclick="navTo('reconciliacao',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 13c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 004 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Reconciliação Primavera
+      </div>
       <div class="nav-item" onclick="navTo('users',this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> Utilizadores
       </div>
@@ -828,6 +831,36 @@ tbody tr:hover td{background:var(--bg)}
       <div class="card"><div class="card-header"><span class="card-title">📋 Histórico de Contagens</span><button class="btn btn-secondary btn-sm" onclick="exportInventoryReport()">⬇ Excel</button></div><div id="inv-history-list"></div></div>
     </div>
     
+    <div class="page" id="page-reconciliacao">
+      <div class="page-header">
+        <div><div class="page-title">Reconciliação Primavera</div><div class="page-sub">Compara a posição de stock exportada do Primavera com o stock actual no sistema</div></div>
+        <button class="btn btn-export" id="recon-export-btn" style="display:none" onclick="exportReconciliation()">⬇ Exportar divergências</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">📂 Carregar posição de stock do Primavera</span></div>
+        <div style="padding:16px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:12px">
+            Ficheiro Excel exportado do Primavera. Reconhece automaticamente colunas com os nomes <strong>Artigo</strong> (ou Código), <strong>Descrição</strong> e <strong>Stock</strong> (ou Quantidade). As restantes colunas são ignoradas. Podes repetir o carregamento sempre que quiseres — cada comparação é feita na hora, nada fica guardado no servidor.
+          </div>
+          <input type="file" id="recon-file" accept=".xlsx,.xls,.csv" style="padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer">
+        </div>
+      </div>
+      <div id="recon-summary"></div>
+      <div class="filters-bar" id="recon-filters" style="display:none">
+        <input class="filter-input" id="recon-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderReconciliationTable()" style="width:240px">
+        <select class="filter-select" id="recon-filter-mode" onchange="renderReconciliationTable()">
+          <option value="diff">Só com diferenças</option>
+          <option value="all">Todos os artigos comparados</option>
+          <option value="primavera-only">Só no Primavera (não existe no sistema)</option>
+          <option value="system-only">Só no sistema (não existe no Primavera)</option>
+        </select>
+      </div>
+      <div class="card" id="recon-result-card" style="display:none">
+        <div class="card-header"><span class="card-title">Resultado da comparação</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Código</th><th>Material</th><th style="text-align:right">Qtd Primavera</th><th style="text-align:right">Qtd Sistema</th><th style="text-align:right">Diferença</th><th>Localizações no sistema</th></tr></thead><tbody id="recon-tbody"></tbody></table></div>
+      </div>
+    </div>
+
     <div class="page" id="page-users">
       <div class="page-header"><div><div class="page-title">Utilizadores</div><div class="page-sub">Gestão de acessos ao sistema</div></div><button class="btn btn-primary" onclick="openAddUserModal()">+ Novo utilizador</button></div>
       <div class="users-grid" id="users-grid"></div>
@@ -1495,6 +1528,8 @@ document.addEventListener('click',function(e){
   else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);return;}
 });
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+var reconFileEl=document.getElementById('recon-file');
+if(reconFileEl)reconFileEl.addEventListener('change',handleReconFile);
 function navTo(page,el){
 if(page==='sfs')setTimeout(renderSFS,100);
 if(page==='history')setTimeout(renderHistory,100);
@@ -1539,6 +1574,156 @@ const emasArr=Array.isArray(appData.emas)?appData.emas:
 emasArr.forEach(m=>r.push({...m,location:'EMAS'+(m.zone?'-'+m.zone:''),warehouse:'Emas',locFull:'Emas — Zona '+(m.zone||'A')}));
 (appData.patio||[]).forEach(m=>r.push({...m,location:'PÁTIO',warehouse:'Pátio',locFull:'Pátio (Trânsito)'}));
 return r;
+}
+let reconciliationData=null;
+function handleReconFile(e){
+  var file=e.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=new Uint8Array(ev.target.result);
+      var wb=XLSX.read(data,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      var primaveraMap={};
+      var skipped=0;
+      rows.forEach(function(row){
+        var code=String(row['Artigo']!==undefined&&row['Artigo']!==''?row['Artigo']:(row['Código']!==undefined?row['Código']:(row['Code']||''))).trim();
+        var name=String(row['Descrição']!==undefined&&row['Descrição']!==''?row['Descrição']:(row['Descricao']||row['Nome']||'')).trim();
+        var qtyRaw=row['Stock']!==undefined&&row['Stock']!==''?row['Stock']:(row['Quantidade']!==undefined?row['Quantidade']:row['Qtd']);
+        var qty=parseFloat(qtyRaw)||0;
+        if(!code){skipped++;return;}
+        if(!primaveraMap[code])primaveraMap[code]={code:code,name:name,qty:0};
+        primaveraMap[code].qty+=qty;
+        if(name&&!primaveraMap[code].name)primaveraMap[code].name=name;
+      });
+      if(!Object.keys(primaveraMap).length){
+        showToast('Não encontrei nenhuma linha com código de artigo neste ficheiro — confirma se a coluna se chama "Artigo" ou "Código".',true);
+        return;
+      }
+      compareWithPrimavera(primaveraMap);
+    }catch(err){
+      showToast('Erro ao ler ficheiro: '+err.message,true);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function compareWithPrimavera(primaveraMap){
+  var all=getAllMaterials();
+  var systemByCode={};
+  var systemNoCodeCount=0;
+  all.forEach(function(m){
+    var code=(m.code||'').trim();
+    var qty=parseFloat(m.qty)||0;
+    if(!code){systemNoCodeCount++;return;}
+    if(!systemByCode[code])systemByCode[code]={code:code,name:m.name,qty:0,locations:[]};
+    systemByCode[code].qty+=qty;
+    systemByCode[code].locations.push(m.locFull);
+  });
+  var codes={};
+  Object.keys(primaveraMap).forEach(function(c){codes[c]=true;});
+  Object.keys(systemByCode).forEach(function(c){codes[c]=true;});
+  var rowsOut=[];
+  Object.keys(codes).forEach(function(code){
+    var p=primaveraMap[code];
+    var s=systemByCode[code];
+    var pQty=p?+p.qty.toFixed(3):null;
+    var sQty=s?+s.qty.toFixed(3):null;
+    rowsOut.push({
+      code:code,
+      name:(s&&s.name)||(p&&p.name)||'',
+      primaveraQty:pQty,
+      systemQty:sQty,
+      diff:(p&&s)?+(p.qty-s.qty).toFixed(3):null,
+      onlyPrimavera:!!p&&!s,
+      onlySystem:!!s&&!p,
+      locations:s?s.locations:[]
+    });
+  });
+  rowsOut.sort(function(a,b){
+    var da=a.diff===null?(a.onlyPrimavera||a.onlySystem?999999:0):Math.abs(a.diff);
+    var db=b.diff===null?(b.onlyPrimavera||b.onlySystem?999999:0):Math.abs(b.diff);
+    return db-da;
+  });
+  reconciliationData={rows:rowsOut,generatedAt:new Date(),systemNoCodeCount:systemNoCodeCount};
+  renderReconciliationSummary();
+  var filtEl=document.getElementById('recon-filters');
+  var cardEl=document.getElementById('recon-result-card');
+  var expBtn=document.getElementById('recon-export-btn');
+  if(filtEl)filtEl.style.display='flex';
+  if(cardEl)cardEl.style.display='block';
+  if(expBtn)expBtn.style.display='inline-flex';
+  renderReconciliationTable();
+  showToast('✓ Comparação concluída — '+rowsOut.length+' artigos analisados');
+}
+function renderReconciliationSummary(){
+  if(!reconciliationData)return;
+  var rows=reconciliationData.rows;
+  var withDiff=rows.filter(function(r){return r.diff!==null&&r.diff!==0;}).length;
+  var onlyP=rows.filter(function(r){return r.onlyPrimavera;}).length;
+  var onlyS=rows.filter(function(r){return r.onlySystem;}).length;
+  var ok=rows.filter(function(r){return r.diff===0;}).length;
+  var el=document.getElementById('recon-summary');
+  if(!el)return;
+  el.innerHTML='<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">'+
+    '<div class="stat-card"><div class="stat-card-icon green">✅</div><div class="stat-value green">'+ok+'</div><div class="stat-label">Iguais nos dois sistemas</div></div>'+
+    '<div class="stat-card"><div class="stat-card-icon red">⚠️</div><div class="stat-value red">'+withDiff+'</div><div class="stat-label">Com diferença de quantidade</div></div>'+
+    '<div class="stat-card"><div class="stat-card-icon amber">📥</div><div class="stat-value amber">'+onlyP+'</div><div class="stat-label">Só no Primavera</div></div>'+
+    '<div class="stat-card"><div class="stat-card-icon blue">💻</div><div class="stat-value blue">'+onlyS+'</div><div class="stat-label">Só no sistema (LUELE WMS)</div></div>'+
+  '</div>'+
+  (reconciliationData.systemNoCodeCount>0?'<div style="font-size:11px;color:var(--text3);margin:-8px 0 16px">⚠️ '+reconciliationData.systemNoCodeCount+' material(is) no sistema não têm código atribuído e não entraram nesta comparação — para os incluir, edita o material e preenche o campo Código com o código do Primavera.</div>':'');
+}
+function renderReconciliationTable(){
+  if(!reconciliationData)return;
+  var searchEl=document.getElementById('recon-search');
+  var modeEl=document.getElementById('recon-filter-mode');
+  var q=(searchEl?searchEl.value||'':'').toLowerCase().trim();
+  var mode=modeEl?modeEl.value:'diff';
+  var rows=reconciliationData.rows.filter(function(r){
+    if(q&&r.code.toLowerCase().indexOf(q)<0&&(r.name||'').toLowerCase().indexOf(q)<0)return false;
+    if(mode==='diff')return r.diff!==null&&r.diff!==0;
+    if(mode==='primavera-only')return r.onlyPrimavera;
+    if(mode==='system-only')return r.onlySystem;
+    return true;
+  });
+  var tbody=document.getElementById('recon-tbody');
+  if(!tbody)return;
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Nenhum artigo encontrado para este filtro</td></tr>';
+    return;
+  }
+  tbody.innerHTML=rows.map(function(r){
+    var diffHtml;
+    if(r.diff===null){
+      diffHtml='<span style="color:var(--text3)">—</span>';
+    } else if(r.diff===0){
+      diffHtml='<span style="color:var(--green);font-weight:600">0</span>';
+    } else {
+      diffHtml='<span style="color:var(--red);font-weight:700">'+(r.diff>0?'+':'')+r.diff+'</span>';
+    }
+    var tag='';
+    if(r.onlyPrimavera)tag=' <span style="background:var(--amber-bg,#fff7e6);color:var(--amber);font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px">SÓ PRIMAVERA</span>';
+    if(r.onlySystem)tag=' <span style="background:var(--blue-bg,#eef4ff);color:var(--blue);font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px">SÓ SISTEMA</span>';
+    return '<tr>'+
+      '<td style="font-family:monospace;color:var(--green)">'+escapeHtml(r.code)+'</td>'+
+      '<td>'+escapeHtml(r.name||'—')+tag+'</td>'+
+      '<td style="text-align:right">'+(r.primaveraQty===null?'—':r.primaveraQty)+'</td>'+
+      '<td style="text-align:right">'+(r.systemQty===null?'—':r.systemQty)+'</td>'+
+      '<td style="text-align:right">'+diffHtml+'</td>'+
+      '<td style="font-size:11px;color:var(--text3)">'+(r.locations&&r.locations.length?escapeHtml(r.locations.join(', ')):'—')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+function exportReconciliation(){
+  if(!reconciliationData){showToast('Nenhuma comparação feita ainda',true);return;}
+  var wb=XLSX.utils.book_new();
+  var d=[['Código','Material','Qtd Primavera','Qtd Sistema','Diferença','Localizações no sistema']];
+  reconciliationData.rows.forEach(function(r){
+    d.push([r.code,r.name||'',r.primaveraQty===null?'':r.primaveraQty,r.systemQty===null?'':r.systemQty,r.diff===null?'':r.diff,(r.locations||[]).join(', ')]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Reconciliação');
+  xlsxDl(wb,'LUELE_Reconciliacao_Primavera');
 }
 function getAlertLevel(m){
   var qty=parseFloat(m.qty)||0;

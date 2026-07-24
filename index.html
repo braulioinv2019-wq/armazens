@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <style>
 :root {
   --green:#1a6b2f;--green2:#2d9e4a;--green3:#e8f5ec;--green4:#c8e6d0;--green5:#f0faf2;
@@ -547,6 +548,7 @@ tbody tr:hover td{background:var(--bg)}
       <input class="topbar-search-input" id="topbar-search" placeholder="Pesquisar material..." oninput="topbarSearch(this.value)" autocomplete="off">
       <div class="topbar-search-results" id="topbar-results"></div>
     </div>
+    <button class="btn btn-secondary btn-sm" id="scan-btn" onclick="openScanModal()" style="margin-left:8px;flex-shrink:0" title="Ler código QR / código de barras">📷 Ler código</button>
     <div class="topbar-right">
       <div class="topbar-date" id="topbar-date"></div>
       <div class="sync-badge" id="sync-status"><span class="sync-dot"></span>Sincronizado</div>
@@ -876,7 +878,7 @@ tbody tr:hover td{background:var(--bg)}
 <div class="toast" id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
 authDomain:"armazens-7a4de.firebaseapp.com",
@@ -2821,15 +2823,40 @@ function exportPatio(){
   xlsxDl(wb,'LUELE_Patio');
   showToast('✓ Relatório do Pátio exportado');
 };
-function getGENumber(){
+async function getNextCounter(prefix){
+  // Atomic, shared counter stored in Firestore (wms/counters), one field per prefix+year
+  // (e.g. "ge_2026"). Uses a transaction so two devices issuing a guide number at the
+  // same instant can never receive the same number. Falls back to the old per-device
+  // localStorage counter only if the transaction itself fails (e.g. offline), so the
+  // app never gets stuck unable to issue a guide.
+  var y=new Date().getFullYear();
+  var field=prefix+'_'+y;
+  try{
+    var n=await runTransaction(db, async function(tx){
+      var ref=doc(db,'wms','counters');
+      var snap=await tx.get(ref);
+      var data=snap.exists()?snap.data():{};
+      var next=(parseInt(data[field])||0)+1;
+      var upd={};upd[field]=next;
+      tx.set(ref,upd,{merge:true});
+      return next;
+    });
+    return n;
+  }catch(e){
+    console.error('Contador partilhado falhou, a usar numeração local de reserva:',e);
+    var k=prefix+'-counter-'+y;
+    var ln=parseInt(localStorage.getItem(k)||'0')+1;
+    localStorage.setItem(k,ln);
+    return ln;
+  }
+}
+async function getGENumber(){
 const y=new Date().getFullYear();
-const k='ge-counter-'+y;
-let n=parseInt(localStorage.getItem(k)||'0')+1;
-localStorage.setItem(k,n);
+const n=await getNextCounter('ge');
 return'GE-'+y+'-'+String(n).padStart(3,'0');
 }
-function openEntryModal(){
-const geNum=getGENumber();
+async function openEntryModal(){
+const geNum=await getGENumber();
 const now=new Date();
 const destOpts=buildDestOptions();
 openModal(`
@@ -2998,9 +3025,9 @@ function findExistingMatSync(arr,item){
   }
   return null;
 }
-function openGroupEntryModal(){
+async function openGroupEntryModal(){
   if(!appData){showToast('Sistema não carregado',true);return;}
-  var geNum=getGENumber();
+  var geNum=await getGENumber();
   window._groupEntryItems=[];
   var destOpts=buildDestOptions();
   openModal(
@@ -3546,11 +3573,9 @@ updateBadges();
 };
 let invData=[];
 let invUnsubscribe=null;
-function getINVNumber(){
+async function getINVNumber(){
 const y=new Date().getFullYear();
-const k='inv-counter-'+y;
-let n=parseInt(localStorage.getItem(k)||'0')+1;
-localStorage.setItem(k,n);
+const n=await getNextCounter('inv');
 return'INV-'+y+'-'+String(n).padStart(3,'0');
 }
 function startInventoryListener(){
@@ -3697,7 +3722,7 @@ if(!locKey)return;
 const locs=getLocationsForCount();
 const loc=locs.find(l=>l.key===locKey);
 if(!loc)return;
-const num=getINVNumber();
+const num=await getINVNumber();
 const count={
 number:num, location:loc.label, locationKey:locKey,
 responsible:resp, date, obs,
@@ -3767,7 +3792,7 @@ if(!selectedEmails.length){showToast('Selecciona pelo menos um responsável',tru
 var locs=getLocationsForCount();
 var loc=locs.find(function(l){return l.key===locKey;});
 var responsibleNames=selectedEmails.map(function(e){return USERS[e]?USERS[e].name:e;}).join(', ');
-var num=getINVNumber();
+var num=await getINVNumber();
 var count={
   number:num,
   location:loc.label,
@@ -4137,8 +4162,8 @@ function removeMat(type,idx,matId){
   if(!mat)return;
   openSFSModal(mat,loc,locFull,wh,type,idx,matId);
 };
-function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
-  var sfsNum=getSFSNumber();
+async function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
+  var sfsNum=await getSFSNumber();
   var html='<div class="modal-header">'+
     '<div><span class="modal-title">Saída Fora do Sistema</span>'+
     '<div style="margin-top:2px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">'+sfsNum+'</span></div></div>'+
@@ -4159,17 +4184,16 @@ function openSFSModal(mat,loc,locFull,wh,type,idx,matId){
   openModal(html);
   document.getElementById('sfs-confirm-btn').onclick=function(){confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh);};
 }
-function getSFSNumber(){
-  var y=new Date().getFullYear(),k='sfs-counter-'+y;
-  var n=parseInt(localStorage.getItem(k)||'0')+1;
-  localStorage.setItem(k,n);
+async function getSFSNumber(){
+  var y=new Date().getFullYear();
+  var n=await getNextCounter('sfs');
   return'SFS-'+y+'-'+String(n).padStart(3,'0');
 }
-function openGroupExitModal(){
+async function openGroupExitModal(){
   var allMats = getAllMaterials();
   if(!allMats.length){showToast('Sem materiais para dar saída',true);return;}
   window._groupAllMats = allMats;
-  var sfsNum = getSFSNumber();
+  var sfsNum = await getSFSNumber();
   openModal(
     '<div class="modal-header">'+
     '<div><span class="modal-title">📤 Saída em Grupo</span>'+
@@ -4670,6 +4694,91 @@ else if(type==='patio')renderPatio();
 };
 // ── DELETE CONTAINER ──────────────────────────────────────────────────────
 // ── QR CODE SYSTEM ────────────────────────────────────────────────────────
+function openScanModal(){
+  if(typeof Html5Qrcode==='undefined'){
+    showToast('⚠️ Leitor de código ainda a carregar ou sem ligação à internet — tenta novamente em alguns segundos',true);
+    return;
+  }
+  openModal(
+    '<div class="modal-header"><span class="modal-title">📷 Ler Código QR / Barras</span><button class="modal-close" onclick="closeScanModal()">✕</button></div>'+
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;text-align:center">Aponta a câmara para a etiqueta do contentor ou o código do material</div>'+
+    '<div id="scan-reader" style="width:100%;border-radius:10px;overflow:hidden;background:#000;min-height:250px"></div>'+
+    '<div id="scan-status" style="text-align:center;font-size:12px;color:var(--text3);margin-top:10px">A iniciar câmara...</div>'+
+    '<div class="modal-actions"><button class="btn btn-secondary" onclick="closeScanModal()">Cancelar</button></div>'
+  );
+  window._scanHandled=false;
+  window._scanInstance=new Html5Qrcode('scan-reader');
+  window._scanInstance.start(
+    {facingMode:'environment'},
+    {fps:10,qrbox:230},
+    handleScanResult,
+    function(){}
+  ).then(function(){
+    var st=document.getElementById('scan-status');
+    if(st)st.textContent='A procurar código...';
+  }).catch(function(err){
+    var st=document.getElementById('scan-status');
+    if(st)st.textContent='Não foi possível aceder à câmara.';
+    showToast('⚠️ Não foi possível aceder à câmara — verifica as permissões do browser',true);
+    console.error('Scan camera error:',err);
+  });
+}
+function closeScanModal(){
+  if(window._scanInstance){
+    try{
+      window._scanInstance.stop().then(function(){
+        try{window._scanInstance.clear();}catch(e){}
+        window._scanInstance=null;
+      }).catch(function(){window._scanInstance=null;});
+    }catch(e){window._scanInstance=null;}
+  }
+  closeModal();
+}
+function handleScanResult(decodedText){
+  if(window._scanHandled)return;
+  window._scanHandled=true;
+  closeScanModal();
+  resolveScannedCode(decodedText);
+}
+function resolveScannedCode(text){
+  var raw=(text||'').trim();
+  if(!raw){showToast('Código vazio — tenta novamente',true);return;}
+  try{
+    var u=new URL(raw);
+    var cLabel=u.searchParams.get('c');
+    if(cLabel&&appData){
+      var idxU=appData.logistica.findIndex(function(c){return c.label===cLabel;});
+      if(idxU>=0){
+        navToPage('logistica');
+        setTimeout(function(){selContainer=null;openContainerId=null;selectContainer(idxU);},300);
+        showToast('📱 Contentor '+cLabel+' localizado via QR Code');
+        return;
+      }
+    }
+  }catch(e){/* não é um URL — segue para as outras verificações */}
+  if(appData){
+    var all=getAllMaterials();
+    var mat=all.find(function(m){return (m.code||'').trim()===raw;});
+    if(mat){
+      goToMaterialLocation(mat);
+      showToast('📦 '+mat.name+' localizado — '+mat.locFull);
+      return;
+    }
+    var ci=appData.logistica.findIndex(function(c){return c.label===raw;});
+    if(ci>=0){
+      navToPage('logistica');
+      setTimeout(function(){selContainer=null;openContainerId=null;selectContainer(ci);},300);
+      showToast('📱 Contentor '+raw+' localizado');
+      return;
+    }
+  }
+  navToPage('search');
+  setTimeout(function(){
+    var input=document.getElementById('global-search');
+    if(input){input.value=raw;doSearch(raw);}
+  },300);
+  showToast('🔍 Código não reconhecido directamente — a pesquisar "'+raw+'"');
+}
 function showContainerQR(idx){
 var c=appData.logistica[idx];
 if(!c)return;
@@ -4921,6 +5030,10 @@ window.openAddEmasModal = openAddEmasModal;
 window.addMatLog = addMatLog;
 window.addMatSimple = addMatSimple;
 window.showContainerQR = showContainerQR;
+window.openScanModal = openScanModal;
+window.closeScanModal = closeScanModal;
+window.handleScanResult = handleScanResult;
+window.resolveScannedCode = resolveScannedCode;
 window.printContainerQR = printContainerQR;
 window.deleteContainer = deleteContainer;
 window.renameContainer = renameContainer;

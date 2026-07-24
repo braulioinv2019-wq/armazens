@@ -627,7 +627,10 @@ tbody tr:hover td{background:var(--bg)}
         <div class="log-inv">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div style="font-size:14px;font-weight:600" id="log-inv-title">Inventário — seleccione um contentor</div>
-            <button class="detail-close" onclick="selContainer=null;openContainerId=null;renderLogistica()" style="display:none" id="log-close-btn">✕ Fechar</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="filter-input" id="log-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="selContainer!==null&&renderContainerPanel(appData.logistica[selContainer],selContainer)" style="width:220px;display:none">
+              <button class="detail-close" onclick="selContainer=null;openContainerId=null;renderLogistica()" style="display:none" id="log-close-btn">✕ Fechar</button>
+            </div>
           </div>
           <div id="logistica-panel"></div>
         </div>
@@ -672,7 +675,10 @@ tbody tr:hover td{background:var(--bg)}
         <div class="nave-inv">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div style="font-size:14px;font-weight:600" id="vini-inv-title">Clique na porta para entrar no galpão</div>
-            <button class="detail-close" onclick="viniDoorOpen=false;renderVini()" style="display:none" id="vini-close-btn">✕ Fechar</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="filter-input" id="vini-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderVini()" style="width:220px;display:none">
+              <button class="detail-close" onclick="viniDoorOpen=false;renderVini()" style="display:none" id="vini-close-btn">✕ Fechar</button>
+            </div>
           </div>
           <div id="vini-panel"></div>
         </div>
@@ -761,7 +767,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="patio-stat"><div class="patio-stat-icon">⇄</div><div class="patio-stat-val amber" id="patio-transfers">0</div><div class="patio-stat-lbl">Transferências hoje</div></div>
         <div class="patio-stat"><div class="patio-stat-icon">🚛</div><div class="patio-stat-val" id="patio-trucks">0</div><div class="patio-stat-lbl">Veículos registados</div></div>
       </div>
-      <div class="card"><div class="card-header"><span class="card-title">Materiais em Trânsito no Pátio</span></div><div id="patio-list"></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Materiais em Trânsito no Pátio</span><input class="filter-input" id="patio-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderPatio()" style="width:220px"></div><div id="patio-list"></div></div>
     </div>
     
     <div class="page" id="page-history">
@@ -857,41 +863,76 @@ const COST_CENTERS = [{"code":"1000000000","name":"Mesa da Assembleia Geral"},{"
 function destFieldHtml(id, ph){
   return '<div class="cc-search-wrap" style="position:relative">'+
     '<input class="form-input" id="'+id+'" placeholder="'+(ph||'Nome/código do centro de custo, ou texto livre...')+'" style="width:100%" autocomplete="off" oninput="renderCostCenterSuggestions(\''+id+'\',this.value)" onfocus="renderCostCenterSuggestions(\''+id+'\',this.value)">'+
-    '<div id="'+id+'-cc-suggestions" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow3);max-height:220px;overflow-y:auto;z-index:60"></div>'+
   '</div>';
 }
+// As caixas de sugestão (centros de custo e materiais da Saída em Grupo) são criadas
+// como elementos "flutuantes" fixos, anexados directamente ao <body> e posicionados via
+// getBoundingClientRect(), em vez de viverem dentro do modal. O .modal tem overflow-y:auto
+// (para caber em ecrãs pequenos), e um dropdown position:absolute lá dentro fica recortado
+// pelos limites do próprio modal — era por isso que a lista aparecia cortada/incompleta.
+// Ficando fora do modal, a caixa flutuante nunca é cortada e pode ser tão alta quanto for preciso.
+function getFloatingBox(boxId){
+  var box = document.getElementById(boxId);
+  if(!box){
+    box = document.createElement('div');
+    box.id = boxId;
+    box.className = 'floating-suggest-box';
+    box.style.cssText = 'display:none;position:fixed;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow3);overflow-y:auto;z-index:9999';
+    document.body.appendChild(box);
+  }
+  return box;
+}
+function positionFloatingBox(box, inputEl, maxHeight){
+  var r = inputEl.getBoundingClientRect();
+  var w = Math.max(r.width, 300);
+  var left = r.left;
+  if(left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - w - 8);
+  box.style.left = left+'px';
+  box.style.top = (r.bottom+4)+'px';
+  box.style.width = w+'px';
+  box.style.maxHeight = (maxHeight||340)+'px';
+}
 function renderCostCenterSuggestions(inputId, q){
-  var box = document.getElementById(inputId+'-cc-suggestions');
-  if(!box) return;
+  var input = document.getElementById(inputId);
+  if(!input) return;
+  var box = getFloatingBox('float-cc-'+inputId);
   var ql=(q||'').toLowerCase().trim();
   var matches = !ql ? COST_CENTERS.slice(0,8) : COST_CENTERS.filter(function(c){
     return c.name.toLowerCase().indexOf(ql)>=0 || c.code.toLowerCase().indexOf(ql)>=0;
-  }).slice(0,20);
+  }).slice(0,30);
   if(!matches.length){ box.style.display='none'; box.innerHTML=''; return; }
   box.innerHTML = matches.map(function(c){
     var val = (c.name+' — '+c.code).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return '<div onmousedown="event.preventDefault();selectCostCenter(\''+inputId+'\',\''+val+'\')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
-      '<div style="font-size:12px;font-weight:500">'+escapeHtml(c.name)+'</div>'+
-      '<div style="font-size:10px;color:var(--text3);font-family:monospace">'+escapeHtml(c.code)+'</div>'+
+    return '<div onmousedown="event.preventDefault();selectCostCenter(\''+inputId+'\',\''+val+'\')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
+      '<div style="font-size:13px;font-weight:500;line-height:1.4">'+escapeHtml(c.name)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-family:monospace;margin-top:2px">'+escapeHtml(c.code)+'</div>'+
     '</div>';
   }).join('');
+  positionFloatingBox(box, input, 340);
   box.style.display='block';
 }
 function selectCostCenter(inputId, value){
   var el = document.getElementById(inputId);
   if(el) el.value = value;
-  var box = document.getElementById(inputId+'-cc-suggestions');
+  var box = document.getElementById('float-cc-'+inputId);
   if(box) box.style.display='none';
 }
 document.addEventListener('click',function(e){
+  if(e.target.closest('.floating-suggest-box')) return;
   if(!e.target.closest('.cc-search-wrap')){
-    document.querySelectorAll('[id$="-cc-suggestions"]').forEach(function(b){b.style.display='none';});
+    document.querySelectorAll('.floating-suggest-box[id^="float-cc-"]').forEach(function(b){b.style.display='none';});
   }
   if(!e.target.closest('.grp-search-wrap')){
-    var b2=document.getElementById('grp-mat-suggestions');
+    var b2=document.getElementById('float-grp-mat-suggestions');
     if(b2) b2.style.display='none';
   }
 });
+// Fecha as caixas flutuantes quando qualquer contentor com scroll é deslocado (ex: o próprio
+// modal), para nunca ficarem "penduradas" fora do sítio certo. Fase de captura para apanhar
+// scroll de qualquer elemento, não só da janela.
+document.addEventListener('scroll', function(){
+  document.querySelectorAll('.floating-suggest-box').forEach(function(b){ b.style.display='none'; });
+}, true);
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
 // AVISO: password guardada em texto simples — isto é um fix funcional, não de segurança. Migrar para Firebase Authentication é fortemente recomendado.
@@ -948,6 +989,7 @@ let unsubStock = null;
 let unsubHistory = null;
 let unsubSFS = null;
 let unsubInventory = null;
+let unsubUsers = null;
 function escapeHtml(str) {
   if(str===null||str===undefined) return '';
   return String(str)
@@ -1039,6 +1081,30 @@ try{
     err=>console.warn('History fallback:',err)
   );
 }
+// Escuta em tempo real a lista de utilizadores: sem isto, um utilizador criado num
+// dispositivo só aparecia nos outros depois de recarregar a página (loadUsersFromFirebase
+// só corria uma vez, no login). Agora qualquer alteração feita por alguém — noutro telemóvel
+// ou computador — chega a todos os dispositivos com sessão aberta em poucos segundos.
+unsubUsers = onSnapshot(doc(db,'wms','users'),
+  snap=>{
+    try{
+      if(!snap.exists()) return;
+      var fbData = snap.data();
+      Object.keys(fbData).forEach(function(email){
+        if(USERS[email]){
+          USERS[email].name = fbData[email].name || USERS[email].name;
+          USERS[email].role = fbData[email].role || USERS[email].role;
+          USERS[email].pass = fbData[email].pass || USERS[email].pass;
+          USERS[email].telegramId = fbData[email].telegramId || USERS[email].telegramId || '';
+        } else {
+          USERS[email] = fbData[email];
+        }
+      });
+      if(document.getElementById('page-users')?.classList.contains('active')) renderUsers();
+    }catch(e){console.error('Users snapshot error:',e);}
+  },
+  err=>console.warn('Users listener:',err)
+);
 }
 async function doLogin(){
 const u=document.getElementById('login-user').value.trim().toLowerCase();
@@ -1088,7 +1154,7 @@ if(USERS[u]&&USERS[u].pass===p){
   if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
 }
 };
-function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubInventory)unsubInventory();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
+function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubInventory)unsubInventory();if(unsubUsers)unsubUsers();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
 function openEmasImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -1730,6 +1796,8 @@ if(selContainer===idx){
   document.getElementById('log-sum-content').innerHTML='<div style="font-size:12px;color:var(--text3)">Nenhum contentor seleccionado</div>';
   document.getElementById('logistica-panel').innerHTML='';
   document.getElementById('log-close-btn').style.display='none';
+  var logSearchEl=document.getElementById('log-search');
+  if(logSearchEl){logSearchEl.style.display='none';logSearchEl.value='';}
   updateSteps(0);
   return;
 }
@@ -1759,9 +1827,11 @@ function renderContainerPanel(c,idx){
 var el=document.getElementById('logistica-panel');
 var titleEl=document.getElementById('log-inv-title');
 var closeBtn=document.getElementById('log-close-btn');
+var searchEl=document.getElementById('log-search');
 if(!el)return;
 if(titleEl)titleEl.textContent='Inventário — '+c.label+(c.name?' — '+c.name:'');
 if(closeBtn)closeBtn.style.display='inline-flex';
+if(searchEl)searchEl.style.display='inline-block';
 var pct=c.materials.length?Math.min(Math.round(c.materials.length/20*100),100):0;
 var sumEl=document.getElementById('log-sum-content');
 if(sumEl)sumEl.innerHTML=
@@ -1780,7 +1850,9 @@ if(sumEl)sumEl.innerHTML=
   '<button class="btn btn-danger btn-sm" style="width:100%" id="del-btn-'+idx+'">🗑 Eliminar</button>'+
   '</div>';
 updateSteps(3);
-var sortedMats=sortMats(c.materials, sortMode.log);
+var logQ=(searchEl?searchEl.value||'':'').toLowerCase().trim();
+var filteredMats=!logQ?c.materials:c.materials.filter(function(m){return m.name.toLowerCase().indexOf(logQ)>=0||(m.code||'').toLowerCase().indexOf(logQ)>=0;});
+var sortedMats=sortMats(filteredMats, sortMode.log);
 el.innerHTML=renderSortBar('log',idx)+renderMatItems(sortedMats,'log',String(idx))+renderSimpleAddForm('log',String(idx));
 // Attach button handlers safely
 var qrBtn=document.getElementById('qr-btn-'+idx);
@@ -1852,21 +1924,26 @@ var closeBtn=document.getElementById('vini-close-btn');
 var sumEl=document.getElementById('vini-sum-content');
 var door=document.getElementById('vini-main-door');
 var stag=document.getElementById('vini-door-stag');
+var viniSearchEl=document.getElementById('vini-search');
 if(viniDoorOpen){
   if(door)door.classList.add('wh-open');
   if(stag){stag.textContent='🔓 Aberto';stag.className='wh-door-stag open-s';}
   if(titleEl)titleEl.textContent='Vini Galpão — '+viniArr.length+' materiais';
   if(closeBtn)closeBtn.style.display='inline-flex';
+  if(viniSearchEl)viniSearchEl.style.display='inline-block';
   if(sumEl)sumEl.innerHTML='<div class="sr"><span class="sk">Zona</span><span style="font-weight:600">Vini Galpão</span></div>'+
     '<div class="sr"><span class="sk">Materiais</span><span style="font-weight:600;color:var(--amber)">'+viniArr.length+'</span></div>'+
     '<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="viniDoorOpen=false;renderVini()">🔒 Fechar galpão</button>';
-  var sortedVini=sortMats(viniArr, sortMode.vini);
+  var viniQ=(viniSearchEl?viniSearchEl.value||'':'').toLowerCase().trim();
+  var filteredVini=!viniQ?viniArr:viniArr.filter(function(m){return m.name.toLowerCase().indexOf(viniQ)>=0||(m.code||'').toLowerCase().indexOf(viniQ)>=0;});
+  var sortedVini=sortMats(filteredVini, sortMode.vini);
 if(el)el.innerHTML=renderSortBar('vini')+renderSimpleMatList(sortedVini,'vini','0')+renderSimpleAddForm('vini','0');
 } else {
   if(door)door.classList.remove('wh-open');
   if(stag){stag.textContent='🔒 Fechado';stag.className='wh-door-stag closed-s';}
   if(titleEl)titleEl.textContent='Clique na porta para entrar no galpão';
   if(closeBtn)closeBtn.style.display='none';
+  if(viniSearchEl){viniSearchEl.style.display='none';viniSearchEl.value='';}
   if(sumEl)sumEl.innerHTML='<div style="font-size:12px;color:var(--text3)">Porta fechada</div>';
   if(el)el.innerHTML='';
 }
@@ -2286,7 +2363,12 @@ const role=document.getElementById('u-role').value;
 if(!name||!id||!pass){showToast('Preenche todos os campos',true);return;}
 if(USERS[id]){showToast('Username já existe',true);return;}
 var tgId=document.getElementById('nu-telegram')?.value.trim()||'';
-USERS[id]={name,pass,role,telegramId:tgId};await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador criado e sincronizado!');
+// Actualização optimista: mostra logo na lista (a UI já lê directamente de USERS) e só
+// depois grava no Firestore em segundo plano — antes disto, o ecrã só actualizava depois
+// da gravação terminar, o que parecia "lento" cada vez que se criava um utilizador.
+USERS[id]={name,pass,role,telegramId:tgId};
+closeModal();renderUsers();showToast('✓ Utilizador criado!');
+saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 function openEditUserModal(uid){
 const u=USERS[uid];
@@ -2303,12 +2385,14 @@ const role=document.getElementById('eu-role').value;
 if(!name)return;
 USERS[uid].name=name;USERS[uid].role=role;
 if(pass)USERS[uid].pass=pass;
-await saveUsers();closeModal();renderUsers();showToast('✓ Utilizador actualizado e sincronizado!');
+closeModal();renderUsers();showToast('✓ Utilizador actualizado!');
+saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 async function deleteUser(uid){
 if(currentUser.role!=='admin'){showToast('Sem permissão para esta ação.',true);return;}
 if(!confirm('Eliminar utilizador "'+USERS[uid].name+'"?'))return;
-delete USERS[uid];await saveUsers();renderUsers();showToast('✓ Utilizador eliminado');
+delete USERS[uid];renderUsers();showToast('✓ Utilizador eliminado');
+saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');};
@@ -2727,7 +2811,14 @@ if(!items.length){
 listEl.innerHTML='<div class="empty-state" style="padding:32px"><div class="empty-icon">🏗️</div><div class="empty-text">Pátio vazio — nenhum material em trânsito</div></div>';
 return;
 }
-var sortedItems=sortMats(items, sortMode.patio);
+var patioSearchEl=document.getElementById('patio-search');
+var patioQ=(patioSearchEl?patioSearchEl.value||'':'').toLowerCase().trim();
+var filteredItems=!patioQ?items:items.filter(function(m){return m.name.toLowerCase().indexOf(patioQ)>=0||(m.code||'').toLowerCase().indexOf(patioQ)>=0;});
+if(patioQ&&!filteredItems.length){
+listEl.innerHTML=renderSortBar('patio')+'<div class="empty-state" style="padding:32px"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum material encontrado para "'+escapeHtml(patioSearchEl.value)+'"</div></div>';
+return;
+}
+var sortedItems=sortMats(filteredItems, sortMode.patio);
 listEl.innerHTML=renderSortBar('patio')+`<table style="width:100%;border-collapse:collapse">
 <thead><tr>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Código</th>
@@ -3532,7 +3623,6 @@ function openGroupExitModal(){
     '<div id="grp-items-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"><div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum material adicionado ainda</div></div>'+
     '<div class="grp-search-wrap" style="position:relative">'+
     '<input class="form-input" id="grp-mat-search" placeholder="🔍 Escreve o nome ou código do material..." style="width:100%" autocomplete="off" oninput="renderGroupMatSuggestions(this.value)" onfocus="renderGroupMatSuggestions(this.value)">'+
-    '<div id="grp-mat-suggestions" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow3);max-height:240px;overflow-y:auto;z-index:55"></div>'+
     '</div>'+
     '</div>'+
     '<div id="grp-summary" style="display:none;background:var(--green3);border:1px solid var(--green4);border-radius:8px;padding:10px 14px;margin-bottom:4px;font-size:12px;font-weight:500;color:var(--green)"></div>'+
@@ -3546,8 +3636,9 @@ function openGroupExitModal(){
   document.getElementById('grp-confirm-btn').onclick = function(){ confirmGroupExit(_sfsNum); };
 };
 function renderGroupMatSuggestions(q){
-  var box = document.getElementById('grp-mat-suggestions');
-  if(!box || !window._groupAllMats) return;
+  var input = document.getElementById('grp-mat-search');
+  if(!input || !window._groupAllMats) return;
+  var box = getFloatingBox('float-grp-mat-suggestions');
   var ql = (q||'').toLowerCase().trim();
   var already = {};
   (window._groupItems||[]).forEach(function(i){ already[i.key]=true; });
@@ -3561,6 +3652,7 @@ function renderGroupMatSuggestions(q){
   if(!ql){ box.style.display='none'; box.innerHTML=''; return; }
   if(!matches.length){
     box.innerHTML = '<div style="padding:12px;text-align:center;font-size:12px;color:var(--text3)">Nenhum material encontrado</div>';
+    positionFloatingBox(box, input, 320);
     box.style.display='block';
     return;
   }
@@ -3568,12 +3660,13 @@ function renderGroupMatSuggestions(q){
   box.innerHTML = shown.map(function(m){
     var key = m.warehouse+'|'+m.location+'|'+m.id;
     var jsKey = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return '<div onmousedown="event.preventDefault();addGroupItemByKey(\''+jsKey+'\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
+    return '<div onmousedown="event.preventDefault();addGroupItemByKey(\''+jsKey+'\')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'white\'">'+
       (m.code?'<div style="font-size:9px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>':'')+
-      '<div style="font-size:12px;font-weight:500">'+escapeHtml(m.name)+'</div>'+
-      '<div style="font-size:10px;color:var(--text3)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+' — '+escapeHtml(m.locFull)+'</div>'+
+      '<div style="font-size:13px;font-weight:500">'+escapeHtml(m.name)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+' — '+escapeHtml(m.locFull)+'</div>'+
     '</div>';
   }).join('') + (matches.length>30 ? '<div style="padding:8px;text-align:center;font-size:10px;color:var(--text3)">+'+(matches.length-30)+' mais — continua a escrever para filtrar</div>' : '');
+  positionFloatingBox(box, input, 320);
   box.style.display='block';
 }
 function addGroupItemByKey(key){

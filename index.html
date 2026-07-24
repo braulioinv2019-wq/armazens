@@ -1883,6 +1883,45 @@ function getAlertLevel(m){
   if(reorder>0&&qty<=reorder)return'warning'; // 🟡 Ponto encomenda
   return null;
 }
+function daysUntilExpiry(expiryDate,now){
+  if(!expiryDate)return null;
+  var n=now?new Date(now):new Date();
+  var today=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  var parts=String(expiryDate).split('-');
+  if(parts.length!==3)return null;
+  var exp=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  if(isNaN(exp.getTime()))return null;
+  return Math.round((exp-today)/86400000);
+}
+function getExpiryStatus(expiryDate,now){
+  var d=daysUntilExpiry(expiryDate,now);
+  if(d===null)return null;
+  if(d<0)return'expired';
+  if(d<=30)return'soon';
+  return'ok';
+}
+function formatExpiryDate(expiryDate){
+  if(!expiryDate)return'';
+  var d=new Date(expiryDate+'T00:00:00');
+  if(isNaN(d.getTime()))return expiryDate;
+  return d.toLocaleDateString('pt-PT');
+}
+function renderExpiryTag(m){
+  if(!m||!m.expiryDate)return'';
+  var st=getExpiryStatus(m.expiryDate);
+  var d=daysUntilExpiry(m.expiryDate);
+  if(st==='expired')return'<div class="mat-alert-tag" style="color:var(--red)">⛔ Validade expirada ('+formatExpiryDate(m.expiryDate)+')</div>';
+  if(st==='soon')return'<div class="mat-alert-tag" style="color:var(--amber)">⏳ Expira em '+d+' dia'+(d===1?'':'s')+' ('+formatExpiryDate(m.expiryDate)+')</div>';
+  return'<div style="font-size:10px;color:var(--text3)">Val: '+formatExpiryDate(m.expiryDate)+(m.lot?' · Lote: '+escapeHtml(m.lot):'')+'</div>';
+}
+function getExpiringMaterials(withinDays){
+  var limit=withinDays===undefined?30:withinDays;
+  return getAllMaterials().filter(function(m){
+    if(!m.expiryDate)return false;
+    var d=daysUntilExpiry(m.expiryDate);
+    return d!==null&&d<=limit;
+  }).sort(function(a,b){return daysUntilExpiry(a.expiryDate)-daysUntilExpiry(b.expiryDate);});
+}
 function getAlerts(){
   return getAllMaterials().filter(function(m){return getAlertLevel(m)!==null;});
 }
@@ -1901,8 +1940,10 @@ return c.materials.length<=5?'partial':'full';
 function unitOpts(sel='un'){return['un','kg','L','m','m²','cx','pç','rolo','t'].map(u=>`<option${u===sel?' selected':''}>${u}</option>`).join('');}
 function updateBadges(){
 const a=getAlerts();
+const expCount=getExpiringMaterials(30).length;
+const totalAlerts=a.length+expCount;
 const b=document.getElementById('badge-alerts');
-if(a.length){b.textContent=a.length;b.style.display='inline';}else b.style.display='none';
+if(totalAlerts){b.textContent=totalAlerts;b.style.display='inline';}else b.style.display='none';
 if(appData)document.getElementById('badge-log').textContent=appData.logistica.filter(c=>c.materials.length>0).length;
 }
 function refreshAll(){
@@ -2049,6 +2090,7 @@ function renderSimpleMatList(mats, type, idx){
     html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
     if(alvl==='critical') html+='<div style="font-size:10px;color:var(--red)">🔴 Stock crítico</div>';
     else if(alvl==='warning') html+='<div style="font-size:10px;color:var(--amber)">🟡 Ponto encomenda</div>';
+    html+=renderExpiryTag(m);
     html+='</div>';
     html+='<div class="mat-qty">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</div>';
     html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
@@ -2237,6 +2279,7 @@ for(var i=0;i<mats.length;i++){
   html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
   if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico ('+escapeHtml(m.qty)+'/'+escapeHtml(m.minStock)+' '+escapeHtml(m.unit)+')</div>';
   else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+escapeHtml(m.qty)+'/'+escapeHtml(m.reorderPoint)+' '+escapeHtml(m.unit)+')</div>';
+  html+=renderExpiryTag(m);
   html+='</div>';
   html+='<div class="mat-qty">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</div>';
   html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
@@ -2365,11 +2408,44 @@ function renderAlerts(){
   var all=getAllMaterials();
   var critical=all.filter(function(m){return getAlertLevel(m)==='critical';});
   var warning=all.filter(function(m){return getAlertLevel(m)==='warning';});
-  if(!critical.length&&!warning.length){
+  var expired=all.filter(function(m){return getExpiryStatus(m.expiryDate)==='expired';}).sort(function(a,b){return daysUntilExpiry(a.expiryDate)-daysUntilExpiry(b.expiryDate);});
+  var expiringSoon=all.filter(function(m){return getExpiryStatus(m.expiryDate)==='soon';}).sort(function(a,b){return daysUntilExpiry(a.expiryDate)-daysUntilExpiry(b.expiryDate);});
+  if(!critical.length&&!warning.length&&!expired.length&&!expiringSoon.length){
     el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Sem alertas activos</div><div class="empty-sub">Todos os materiais estão dentro dos limites de stock</div></div>';
     return;
   }
   var html='';
+  if(expired.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px;margin-bottom:8px">⛔ VALIDADE EXPIRADA ('+expired.length+')</div>';
+    html+='<div class="mat-list" style="margin-bottom:20px">';
+    expired.forEach(function(m){
+      html+='<div class="mat-item">';
+      html+='<div style="flex:1">';
+      html+='<div class="mat-name" style="color:var(--red)">'+escapeHtml(m.name)+(m.lot?' <span style="font-weight:400;color:var(--text3)">(Lote: '+escapeHtml(m.lot)+')</span>':'')+'</div>';
+      html+='<div style="font-size:11px;color:var(--text3)">'+escapeHtml(m.locFull)+'</div>';
+      html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Expirou em: '+formatExpiryDate(m.expiryDate)+'</div>';
+      html+='</div>';
+      html+='<div class="mat-qty" style="color:var(--red)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  if(expiringSoon.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:1px;margin-bottom:8px">⏳ A EXPIRAR EM 30 DIAS ('+expiringSoon.length+')</div>';
+    html+='<div class="mat-list" style="margin-bottom:20px">';
+    expiringSoon.forEach(function(m){
+      var d=daysUntilExpiry(m.expiryDate);
+      html+='<div class="mat-item">';
+      html+='<div style="flex:1">';
+      html+='<div class="mat-name" style="color:var(--amber)">'+escapeHtml(m.name)+(m.lot?' <span style="font-weight:400;color:var(--text3)">(Lote: '+escapeHtml(m.lot)+')</span>':'')+'</div>';
+      html+='<div style="font-size:11px;color:var(--text3)">'+escapeHtml(m.locFull)+'</div>';
+      html+='<div style="font-size:11px;color:var(--amber);margin-top:2px">Expira em '+d+' dia'+(d===1?'':'s')+' ('+formatExpiryDate(m.expiryDate)+')</div>';
+      html+='</div>';
+      html+='<div class="mat-qty" style="color:var(--amber)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
   if(critical.length){
     html+='<div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px;margin-bottom:8px">🔴 STOCK CRÍTICO ('+critical.length+')</div>';
     html+='<div class="mat-list" style="margin-bottom:20px">';
@@ -2804,7 +2880,19 @@ try{
 }
 }
 function exportHistory(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
-function exportAlerts(){const wb=XLSX.utils.book_new();const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];getAlerts().forEach(a=>d.push([a.name,a.locFull,a.warehouse,a.qty,a.minStock,a.unit]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alertas');xlsxDl(wb,'LUELE_Alertas');};
+function exportAlerts(){
+  const wb=XLSX.utils.book_new();
+  const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];
+  getAlerts().forEach(a=>d.push([a.name,a.locFull,a.warehouse,a.qty,a.minStock,a.unit]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alertas Stock');
+  const ed=[['Material','Localização','Armazém','Lote','Validade','Estado','Quantidade','Unidade']];
+  getExpiringMaterials(30).forEach(function(m){
+    var st=getExpiryStatus(m.expiryDate);
+    ed.push([m.name,m.locFull,m.warehouse,m.lot||'',formatExpiryDate(m.expiryDate),st==='expired'?'Expirada':'A expirar',m.qty,m.unit]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ed),'Validade');
+  xlsxDl(wb,'LUELE_Alertas');
+};
 function exportLogistica(){const wb=XLSX.utils.book_new();const d=[['Contentor','Material','Quantidade','Unidade','Stock Mín.']];appData.logistica.forEach(c=>c.materials.length?c.materials.forEach(m=>d.push([c.label,m.name,m.qty,m.unit,m.minStock||''])):d.push([c.label,'—','','','']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Logística');xlsxDl(wb,'LUELE_Logistica');};
 function exportVini(){const wb=XLSX.utils.book_new();const d=[['Código','Material','Quantidade','Unidade','Stock Mín.']];(Array.isArray(appData.vini)?appData.vini:[]).forEach(m=>d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Vini Galpão');xlsxDl(wb,'LUELE_ViniGalpao');};
 function exportEmasReport(){const wb=XLSX.utils.book_new();const d=[['Material','Quantidade','Unidade','Stock Mín.']];appData.emas.forEach(m=>d.push([m.name,m.qty,m.unit,m.minStock||'']));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Emas');xlsxDl(wb,'LUELE_Emas');};
@@ -2812,12 +2900,14 @@ function exportPatio(){
   if(!appData){showToast('Sistema não carregado',true);return;}
   var items=appData.patio||[];
   var wb=XLSX.utils.book_new();
-  var d=[['Código','Material','Quantidade Actual','Unidade','Stock Mínimo','Ponto de Encomenda','Estado','Chegada','Fornecedor / Origem']];
+  var d=[['Código','Material','Quantidade Actual','Unidade','Stock Mínimo','Ponto de Encomenda','Estado','Chegada','Nº Lote','Validade','Fornecedor / Origem']];
   items.forEach(function(m){
     var level=getAlertLevel(m);
     var estado=level==='critical'?'🔴 Crítico (abaixo do stock mínimo)':level==='warning'?'🟡 Ponto de encomenda':'🟢 Normal';
     var chegada=m.arrivedAt?new Date(m.arrivedAt).toLocaleString('pt-PT'):'';
-    d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'',m.reorderPoint||'',estado,chegada,m.supplier||'']);
+    var expSt=getExpiryStatus(m.expiryDate);
+    var validade=m.expiryDate?formatExpiryDate(m.expiryDate)+(expSt==='expired'?' (EXPIRADA)':expSt==='soon'?' (a expirar)':''):'';
+    d.push([m.code||'',m.name,m.qty,m.unit,m.minStock||'',m.reorderPoint||'',estado,chegada,m.lot||'',validade,m.supplier||'']);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Pátio');
   xlsxDl(wb,'LUELE_Patio');
@@ -2881,6 +2971,10 @@ openModal(`
 </div>
 <div><label class="modal-label">FORNECEDOR / ORIGEM</label><input class="form-input" id="ge-supplier" placeholder="Ex: ABC Lda" style="width:100%"></div>
 </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="ge-lot" placeholder="Opcional" style="width:100%"></div>
+<div><label class="modal-label">DATA DE VALIDADE</label><input class="form-input" id="ge-expiry" type="date" style="width:100%"></div>
+</div>
 <div style="margin-bottom:12px"><label class="modal-label">Nº GUIA FORNECEDOR / MANIFESTO</label><input class="form-input" id="ge-ref" placeholder="Ex: GF-2026-123" style="width:100%"></div>
 <div style="margin-bottom:4px"><label class="modal-label">OBSERVAÇÕES</label><textarea class="form-input" id="ge-obs" rows="2" placeholder="Notas adicionais..." style="width:100%;resize:none"></textarea></div>
 <div class="modal-actions">
@@ -2907,10 +3001,12 @@ const unit=document.getElementById('ge-unit')?.value||'un';
 const min=document.getElementById('ge-min')?.value||'';
 const dest=document.getElementById('ge-dest')?.value||'patio';
 const supplier=document.getElementById('ge-supplier')?.value.trim()||'';
+const lot=document.getElementById('ge-lot')?.value.trim()||'';
+const expiryDate=document.getElementById('ge-expiry')?.value||'';
 const ref=document.getElementById('ge-ref')?.value.trim()||'';
 const obs=document.getElementById('ge-obs')?.value.trim()||'';
 if(!name){showToast('Escreve o nome do material',true);return;}
-const mat={id:Date.now(),code,name,qty,unit,minStock:min,geNum,supplier,ref};
+const mat={id:Date.now(),code,name,qty,unit,minStock:min,geNum,supplier,ref,lot,expiryDate};
 const nd=JSON.parse(JSON.stringify(appData));
 let loc='';
 if(dest==='patio'){
@@ -2933,7 +3029,7 @@ appData=nd;
 closeModal();
 await saveStock(nd);
 await logHistory('ENTRADA',name,loc,'Logística',qty,unit);
-generateGEPDF({geNum,name,code,qty,unit,dest:loc,supplier,ref,obs,processadoPor:currentUser.name});
+generateGEPDF({geNum,name,code,qty,unit,dest:loc,supplier,ref,obs,lot,expiryDate,processadoPor:currentUser.name});
 showToast('✓ Entrada registada — GE gerado!');
 updateBadges();
 };
@@ -2964,6 +3060,8 @@ const html=`<!DOCTYPE html><!-- build:1780415638 --><html lang="pt"><head><meta 
 <div class="field"><div class="field-label">Descrição</div><div class="field-value" style="color:#1a6b2f">${d.name}</div></div>
 <div class="field"><div class="field-label">Quantidade</div><div class="field-value" style="color:#d97706">${d.qty} ${d.unit}</div></div>
 <div class="field"><div class="field-label">Destino</div><div class="field-value">${d.dest}</div></div>
+${d.lot?`<div class="field"><div class="field-label">Nº Lote</div><div class="field-value">${d.lot}</div></div>`:''}
+${d.expiryDate?`<div class="field"><div class="field-label">Validade</div><div class="field-value">${new Date(d.expiryDate+'T00:00:00').toLocaleDateString('pt-PT')}</div></div>`:''}
 </div>
 </div>
 <div class="section"><div class="section-title">Origem</div>
@@ -3039,7 +3137,11 @@ async function openGroupEntryModal(){
     '<div><label class="modal-label">DESTINO</label><select class="form-select" id="gen-dest" style="width:100%" onchange="renderGroupEntryItems()">'+destOpts+'</select></div>'+
     '<div><label class="modal-label">FORNECEDOR / ORIGEM</label><input class="form-input" id="gen-supplier" placeholder="Ex: ABC Lda" style="width:100%"></div>'+
     '</div>'+
-    '<div style="margin-bottom:12px"><label class="modal-label">Nº GUIA FORNECEDOR / MANIFESTO</label><input class="form-input" id="gen-ref" placeholder="Ex: GF-2026-123" style="width:100%"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">'+
+    '<div><label class="modal-label">Nº GUIA FORNECEDOR / MANIFESTO</label><input class="form-input" id="gen-ref" placeholder="Ex: GF-2026-123" style="width:100%"></div>'+
+    '<div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="gen-lot" placeholder="Opcional (aplica-se a todos)" style="width:100%"></div>'+
+    '<div><label class="modal-label">DATA DE VALIDADE</label><input class="form-input" id="gen-expiry" type="date" style="width:100%"></div>'+
+    '</div>'+
     '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px">'+
     '<div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:8px">MATERIAIS A RECEBER</div>'+
     '<div id="gen-items-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"><div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum material adicionado ainda</div></div>'+
@@ -3116,6 +3218,8 @@ async function confirmGroupEntry(geNum){
   var dest=document.getElementById('gen-dest')?.value||'patio';
   var supplier=document.getElementById('gen-supplier')?.value.trim()||'';
   var ref=document.getElementById('gen-ref')?.value.trim()||'';
+  var lot=document.getElementById('gen-lot')?.value.trim()||'';
+  var expiryDate=document.getElementById('gen-expiry')?.value||'';
   var obs=document.getElementById('gen-obs')?.value.trim()||'';
   var nd=JSON.parse(JSON.stringify(appData));
   var target=resolveDestTarget(nd,dest);
@@ -3128,10 +3232,12 @@ async function confirmGroupEntry(geNum){
       var newQty=oldQty+item.qty;
       existing.qty=String(newQty);
       if(item.code&&!existing.code)existing.code=item.code;
+      if(lot&&!existing.lot)existing.lot=lot;
+      if(expiryDate&&!existing.expiryDate)existing.expiryDate=expiryDate;
       merged++;
       receiptItems.push({code:existing.code||item.code,name:existing.name,qty:item.qty,unit:item.unit,resultingQty:newQty,merged:true});
     } else {
-      var mat={id:Date.now()+Math.floor(Math.random()*1000),code:item.code,name:item.name,qty:String(item.qty),unit:item.unit,minStock:'',geNum:geNum,supplier:supplier,ref:ref};
+      var mat={id:Date.now()+Math.floor(Math.random()*1000),code:item.code,name:item.name,qty:String(item.qty),unit:item.unit,minStock:'',geNum:geNum,supplier:supplier,ref:ref,lot:lot,expiryDate:expiryDate};
       if(target.kind==='patio'){target.arr.push(Object.assign({},mat,{arrivedAt:new Date().toISOString(),status:'transit'}));}
       else if(target.kind==='emas'){target.arr.push(Object.assign({},mat,{zone:target.zone}));}
       else{target.arr.push(mat);}
@@ -3148,10 +3254,10 @@ async function confirmGroupEntry(geNum){
   }
   showToast('✓ '+geNum+' — '+items.length+' artigos recebidos em '+target.loc+' ('+added+' novo(s), '+merged+' actualizado(s))');
   spawnParticles();
-  generateGroupGEPDF(geNum,receiptItems,target.loc,supplier,ref,obs);
+  generateGroupGEPDF(geNum,receiptItems,target.loc,supplier,ref,obs,lot,expiryDate);
   refreshAll();
 }
-function generateGroupGEPDF(geNum,items,destLabel,supplier,ref,obs){
+function generateGroupGEPDF(geNum,items,destLabel,supplier,ref,obs,lot,expiryDate){
   var now=new Date();
   var html='<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>'+geNum+'</title>'+
   '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:28px}'+
@@ -3185,6 +3291,8 @@ function generateGroupGEPDF(geNum,items,destLabel,supplier,ref,obs){
   html+='<div class="box"><div class="lbl">Fornecedor</div><div class="val">'+(supplier||'—')+'</div></div>';
   html+='</div>';
   if(ref)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Nº Guia Fornecedor</div><div class="val">'+ref+'</div></div>';
+  if(lot)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Nº Lote</div><div class="val">'+lot+'</div></div>';
+  if(expiryDate)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Validade</div><div class="val">'+new Date(expiryDate+'T00:00:00').toLocaleDateString('pt-PT')+'</div></div>';
   if(obs)html+='<div class="box" style="margin-bottom:14px"><div class="lbl">Observações</div><div class="val" style="font-weight:400">'+obs+'</div></div>';
   html+='<table><thead><tr><th>#</th><th>Código</th><th>Material</th><th>Quantidade Recebida</th><th>Un.</th><th>Estado</th></tr></thead><tbody>';
   items.forEach(function(item,i){
@@ -3414,16 +3522,20 @@ listEl.innerHTML=renderSortBar('patio')+`<table style="width:100%;border-collaps
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Material</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Quantidade</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Chegada</th>
+<th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Validade</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Estado</th>
 <th style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:left;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.01)">Acções</th>
 </tr></thead>
 <tbody>${sortedItems.map(m=>{
 const arr=m.arrivedAt?new Date(m.arrivedAt).toLocaleDateString('pt-PT'):'—';
+const expSt=getExpiryStatus(m.expiryDate);
+const expCell=m.expiryDate?(expSt==='expired'?`<span style="color:var(--red);font-weight:600">⛔ ${formatExpiryDate(m.expiryDate)}</span>`:expSt==='soon'?`<span style="color:var(--amber);font-weight:600">⏳ ${formatExpiryDate(m.expiryDate)}</span>`:formatExpiryDate(m.expiryDate)):'—';
 return`<tr style="border-bottom:1px solid var(--border)">
 <td style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--green)">${escapeHtml(m.code||'—')}</td>
 <td style="padding:10px 12px;font-size:13px;font-weight:500">${escapeHtml(m.name)}</td>
 <td style="padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--amber)">${escapeHtml(m.qty)} ${escapeHtml(m.unit)}</td>
 <td style="padding:10px 12px;font-size:12px;color:var(--text3)">${arr}</td>
+<td style="padding:10px 12px;font-size:12px">${expCell}</td>
 <td style="padding:10px 12px"><span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Em Trânsito</span></td>
 <td style="padding:10px 12px">
 <div style="display:flex;gap:6px">
@@ -3456,6 +3568,10 @@ function editMat(type,idx,matId){
   html+='</div>';
   html+='<div style="margin-bottom:12px"><label class="modal-label">PONTO DE ENCOMENDA 🟡</label><input class="form-input" id="em-reorder" type="number" value="'+(mat.reorderPoint||'')+'" placeholder="Ex: 10" style="width:100%;margin-top:4px"></div>';
   html+='<div style="font-size:10px;color:var(--text3);margin-bottom:12px">🔴 Alerta crítico quando stock ≤ mínimo &nbsp;·&nbsp; 🟡 Alerta de encomenda quando stock ≤ ponto de encomenda</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
+  html+='<div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="em-lot" value="'+escapeHtml(mat.lot||'')+'" placeholder="Opcional" style="width:100%"></div>';
+  html+='<div><label class="modal-label">DATA DE VALIDADE</label><input class="form-input" id="em-expiry" type="date" value="'+(mat.expiryDate||'')+'" style="width:100%"></div>';
+  html+='</div>';
   html+='<div class="modal-actions">';
   html+='<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>';
   html+='<button class="btn btn-primary" id="em-confirm-btn">✓ Guardar</button>';
@@ -3470,6 +3586,8 @@ async function confirmEditMat(type,idx,matId){
   var unit=document.getElementById('em-unit')?.value||'un';
   var min=document.getElementById('em-min')?.value||'';
   var reorder=document.getElementById('em-reorder')?.value||'';
+  var lot=document.getElementById('em-lot')?.value.trim()||'';
+  var expiryDate=document.getElementById('em-expiry')?.value||'';
   if(!name){showToast('Escreve o nome do material',true);return;}
   var nd=JSON.parse(JSON.stringify(appData));
   var mat=null; var loc=''; var wh='';
@@ -3477,7 +3595,7 @@ async function confirmEditMat(type,idx,matId){
   else if(type==='vini'){var arr=Array.isArray(nd.vini)?nd.vini:[];mat=arr.find(function(m){return m.id===matId;});loc='Vini Galpão';wh='Vini Galpão';}
   else if(type==='emas'){var arr2=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});loc='Emas — Zona '+(mat?.zone||idx||'A');wh='Emas';nd.emas=arr2;}
   else if(type==='patio'){mat=nd.patio?.find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
-  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder});}
+  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder,lot:lot,expiryDate:expiryDate});}
   appData=nd;
   closeModal();
   await saveStock(nd);
@@ -3499,6 +3617,10 @@ function editPatioMat(matId){
       <div><label class="modal-label">UNIDADE</label><select class="form-select" id="ep-unit" style="width:100%">${unitOpts(mat.unit)}</select></div>
       <div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="ep-min" type="number" value="${mat.minStock||''}" style="width:100%"></div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="ep-lot" value="${escapeHtml(mat.lot||'')}" placeholder="Opcional" style="width:100%"></div>
+      <div><label class="modal-label">DATA DE VALIDADE</label><input class="form-input" id="ep-expiry" type="date" value="${mat.expiryDate||''}" style="width:100%"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmEditPatio(${matId})">✓ Guardar</button>
@@ -3510,10 +3632,12 @@ async function confirmEditPatio(matId){
   const qty=document.getElementById('ep-qty')?.value||'0';
   const unit=document.getElementById('ep-unit')?.value||'un';
   const min=document.getElementById('ep-min')?.value||'';
+  const lot=document.getElementById('ep-lot')?.value.trim()||'';
+  const expiryDate=document.getElementById('ep-expiry')?.value||'';
   if(!name){showToast('Escreve o nome do material',true);return;}
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
-  Object.assign(mat,{code,name,qty,unit,minStock:min});
+  Object.assign(mat,{code,name,qty,unit,minStock:min,lot,expiryDate});
   closeModal();
   await saveStock(JSON.parse(JSON.stringify(appData)));
   await logHistory('EDIÇÃO',name,'Pátio','Pátio',qty,unit);

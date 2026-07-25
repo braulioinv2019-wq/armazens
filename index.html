@@ -783,7 +783,7 @@ tbody tr:hover td{background:var(--bg)}
         <select class="filter-select" id="hist-type" onchange="renderHistory()"><option value="">Todos os tipos</option><option value="ENTRADA">Entrada</option><option value="SAÍDA">Saída</option><option value="EDIÇÃO">Edição</option><option value="TRANSFERÊNCIA">Transferência</option><option value="AJUSTE">Ajuste</option></select>
         <select class="filter-select" id="hist-wh" onchange="renderHistory()"><option value="">Todos os armazéns</option><option value="Logística">Logística</option><option value="Vini Galpão">Vini Galpão</option><option value="Emas">Emas</option><option value="Pátio">Pátio</option></select>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Localização</th><th>Armazém</th><th>Qtd</th><th>Utilizador</th></tr></thead><tbody id="history-tbody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Localização</th><th>Armazém</th><th>Qtd</th><th>Utilizador</th><th>Acções</th></tr></thead><tbody id="history-tbody"></tbody></table></div>
     </div>
     
     <div class="page" id="page-alerts">
@@ -878,7 +878,7 @@ tbody tr:hover td{background:var(--bg)}
 <div class="toast" id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
 authDomain:"armazens-7a4de.firebaseapp.com",
@@ -2494,12 +2494,18 @@ var list=historyData.filter(function(h){
   return true;
 });
 if(!list.length){
-  el.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text3)">Sem movimentos para os filtros seleccionados</td></tr>';
+  el.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text3)">Sem movimentos para os filtros seleccionados</td></tr>';
   return;
 }
 el.innerHTML=list.map(function(h){
   var badgeCls=h.type==='ENTRADA'?'badge-in':h.type==='SAÍDA'?'badge-out':h.type==='TRANSFERÊNCIA'?'badge-edit':h.type==='AJUSTE'?'badge-alert':'badge-edit';
   var dt=h.ts?new Date(h.ts).toLocaleString('pt-PT'):'—';
+  var actionsCell='';
+  if(h.type==='SAÍDA'){
+    actionsCell=h.corrected?
+      '<span style="font-size:10px;color:var(--green);font-weight:600">✓ Corrigido</span>':
+      '<button class="mat-btn edit" onclick="openCorrectExitModal(\''+h.id+'\')" title="Corrigir esta saída">✏ Corrigir</button>';
+  }
   return '<tr>'+
     '<td style="font-size:12px;color:var(--text3)">'+escapeHtml(dt)+'</td>'+
     '<td><span class="badge '+badgeCls+'">'+escapeHtml(h.type||'')+'</span></td>'+
@@ -2508,6 +2514,7 @@ el.innerHTML=list.map(function(h){
     '<td style="font-size:12px">'+escapeHtml(h.warehouse||h.wh||'')+'</td>'+
     '<td style="font-weight:600;color:var(--amber)">'+escapeHtml(h.qty||'')+' '+escapeHtml(h.unit||'')+'</td>'+
     '<td style="font-size:12px">'+escapeHtml(h.user||'')+'</td>'+
+    '<td>'+actionsCell+'</td>'+
   '</tr>';
 }).join('');
 }
@@ -2879,7 +2886,7 @@ try{
   showToast('❌ Erro ao gerar relatório: '+e.message,true);
 }
 }
-function exportHistory(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
+function exportHistory(){const wb=XLSX.utils.book_new();const d=[['Data/Hora','Tipo','Material','Localização','Armazém','Quantidade','Utilizador','Corrigido']];historyData.forEach(h=>d.push([new Date(h.ts).toLocaleString('pt-PT'),h.type,h.material,h.location,h.warehouse,h.qty,h.user,h.corrected?'Sim (por '+(h.correctedBy||'—')+')':''])); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Histórico');xlsxDl(wb,'LUELE_Historico');};
 function exportAlerts(){
   const wb=XLSX.utils.book_new();
   const d=[['Material','Localização','Armazém','Quantidade Actual','Stock Mínimo','Unidade']];
@@ -3122,6 +3129,109 @@ function findExistingMatSync(arr,item){
     if((em.name||'').toLowerCase().trim()===nameKey)return em;
   }
   return null;
+}
+function findMatByNameSync(arr,name){
+  if(!arr)return null;
+  var key=(name||'').toLowerCase().trim();
+  for(var i=0;i<arr.length;i++){
+    if((arr[i].name||'').toLowerCase().trim()===key)return arr[i];
+  }
+  return null;
+}
+// ── CORRIGIR SAÍDA (histórico) ──────────────────────────────────────────
+// Maps a history entry's stored warehouse+location text (free text, written at the
+// time of the original SAÍDA) back to a dest string usable by resolveDestTarget,
+// so a correction can be applied to the same place stock was originally removed from.
+// Returns null when the location can no longer be resolved (e.g. a container was
+// renamed or deleted since) — callers must handle that by asking for a manual fix.
+function historyLocationToDest(nd,h){
+  var wh=h.warehouse||h.wh||'';
+  if(wh==='Vini Galpão')return'vini';
+  if(wh==='Pátio')return'patio';
+  if(wh==='Emas'){
+    var loc=h.location||'';
+    var parts=loc.split('Zona ');
+    var zone=parts.length>1?parts[1].trim():'A';
+    return'emas:'+zone;
+  }
+  if(wh==='Logística'){
+    var label=h.location||'';
+    var idx=-1;
+    var list=nd.logistica||[];
+    for(var i=0;i<list.length;i++){
+      if(list[i].label===label){idx=i;break;}
+    }
+    if(idx===-1)return null;
+    return'log:'+idx;
+  }
+  return null;
+}
+function openCorrectExitModal(historyId){
+  var h=historyData.find(function(x){return x.id===historyId;});
+  if(!h){showToast('Movimento não encontrado',true);return;}
+  if(h.type!=='SAÍDA'){showToast('Só é possível corrigir movimentos de Saída',true);return;}
+  if(h.corrected){showToast('Esta saída já foi corrigida anteriormente',true);return;}
+  var originalQty=parseFloat(h.qty)||0;
+  var dt=h.ts?new Date(h.ts).toLocaleString('pt-PT'):'—';
+  var html='<div class="modal-header"><span class="modal-title">✏ Corrigir Saída</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:16px">'+
+    '<div style="font-size:13px;font-weight:600">'+escapeHtml(h.material||'')+'</div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+escapeHtml(h.location||'')+' · '+escapeHtml(h.warehouse||h.wh||'')+' · '+escapeHtml(dt)+'</div>'+
+    '<div style="font-size:12px;margin-top:6px">Quantidade retirada registada: <strong>'+escapeHtml(h.qty)+' '+escapeHtml(h.unit)+'</strong></div>'+
+    '</div>'+
+    '<div style="margin-bottom:12px"><label class="modal-label">QUANTIDADE CORRECTA QUE DEVIA TER SAÍDO</label>'+
+    '<input class="form-input" id="cor-qty" type="number" min="0" step="any" value="'+originalQty+'" style="width:100%"></div>'+
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:12px">Se a quantidade correcta for menor, a diferença volta ao stock. Se for maior, a diferença é retirada do stock (se houver disponibilidade).</div>'+
+    '<div style="margin-bottom:4px"><label class="modal-label">OBSERVAÇÕES (opcional)</label><textarea class="form-input" id="cor-obs" rows="2" style="width:100%;resize:none" placeholder="Ex: erro de digitação, confirmado com o armazém..."></textarea></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn btn-primary" onclick="confirmCorrectExit(\''+historyId+'\')">✓ Aplicar Correcção</button>'+
+    '</div>';
+  openModal(html);
+}
+async function confirmCorrectExit(historyId){
+  if(currentUser.role!=='admin'){showToast('Sem permissão para esta ação.',true);return;}
+  var h=historyData.find(function(x){return x.id===historyId;});
+  if(!h){showToast('Movimento não encontrado',true);return;}
+  if(h.corrected){showToast('Esta saída já foi corrigida anteriormente',true);return;}
+  var correctedQty=parseFloat(document.getElementById('cor-qty')?.value);
+  if(isNaN(correctedQty)||correctedQty<0){showToast('Introduz uma quantidade válida',true);return;}
+  var obs=document.getElementById('cor-obs')?.value.trim()||'';
+  var originalQty=parseFloat(h.qty)||0;
+  var delta=originalQty-correctedQty; // >0: devolver ao stock · <0: retirar mais
+  if(delta===0){showToast('Sem alteração — a quantidade é igual à registada',true);return;}
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  var nd=JSON.parse(JSON.stringify(appData));
+  var dest=historyLocationToDest(nd,h);
+  if(!dest){showToast('⚠️ Não foi possível localizar automaticamente onde estava este material (o local pode ter sido renomeado ou eliminado) — corrige o stock manualmente',true);return;}
+  var target=resolveDestTarget(nd,dest);
+  var existing=findMatByNameSync(target.arr,h.material);
+  if(delta>0){
+    if(existing){
+      existing.qty=String((parseFloat(existing.qty)||0)+delta);
+    } else {
+      var mat={id:Date.now()+Math.floor(Math.random()*1000),code:'',name:h.material,qty:String(delta),unit:h.unit||'un',minStock:''};
+      if(target.kind==='patio')target.arr.push(Object.assign({},mat,{arrivedAt:new Date().toISOString(),status:'transit'}));
+      else if(target.kind==='emas')target.arr.push(Object.assign({},mat,{zone:target.zone}));
+      else target.arr.push(mat);
+    }
+  } else {
+    var need=Math.abs(delta);
+    if(!existing){showToast('⚠️ O material já não existe nesse local — não é possível retirar mais stock automaticamente. Ajusta manualmente.',true);return;}
+    var curQty=parseFloat(existing.qty)||0;
+    if(curQty<need){showToast('⚠️ Stock insuficiente para aplicar esta correcção — disponível: '+curQty+' '+(existing.unit||h.unit),true);return;}
+    var newQty=curQty-need;
+    if(newQty<=0)target.arr.splice(target.arr.indexOf(existing),1);
+    else existing.qty=String(newQty);
+  }
+  appData=nd;
+  closeModal();
+  await saveStock(nd);
+  var deltaLabel=(delta>0?'+':'')+delta;
+  await logHistory('AJUSTE','Correcção de saída — '+h.material+(obs?' ('+obs+')':''),h.location,h.warehouse||h.wh,deltaLabel,h.unit);
+  try{await updateDoc(doc(db,'wms','history','entries',historyId),{corrected:true,correctedBy:currentUser.name,correctedQty:String(correctedQty),correctedDelta:deltaLabel,correctedAt:serverTimestamp()});}catch(e){console.error('Marcar correcção:',e);}
+  showToast(delta>0?'✓ Correcção aplicada — devolvidas '+delta+' '+h.unit+' ao stock':'✓ Correcção aplicada — retiradas mais '+Math.abs(delta)+' '+h.unit+' do stock');
+  refreshAll();
 }
 async function openGroupEntryModal(){
   if(!appData){showToast('Sistema não carregado',true);return;}
@@ -5130,6 +5240,8 @@ window.generateCountSheet = generateCountSheet;
 window.generateCountPDF = generateCountPDF;
 window.removeMat = removeMat;
 window.openSFSModal = openSFSModal;
+window.openCorrectExitModal = openCorrectExitModal;
+window.confirmCorrectExit = confirmCorrectExit;
 window.getSFSNumber = getSFSNumber;
 window.openGroupExitModal = openGroupExitModal;
 window.renderGroupMatSuggestions = renderGroupMatSuggestions;

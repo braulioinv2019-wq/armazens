@@ -1,0 +1,11 @@
+{
+  "name": "luele-wms-backup",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Backup diário do Firestore do LUELE WMS, corrido via GitHub Actions.",
+  "main": "backup-firestore.js",
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "xlsx": "^0.18.5"
+  }
+}

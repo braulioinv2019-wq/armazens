@@ -1195,7 +1195,12 @@ onAuthStateChanged(auth, async function(fbUser){
   if(fbUser){
     if(_appEntered)return;
     var email=(fbUser.email||'').toLowerCase();
-    if(!usersLoaded) await loadUsersFromFirebase();
+    // Vai sempre buscar os perfis mais recentes ao Firestore antes de decidir se deixa
+    // entrar — nunca confia só na cópia em memória. Sem isto, se um login falhasse por o
+    // perfil ainda não existir, um administrador podia criar o perfil a seguir e a pessoa
+    // continuaria bloqueada até recarregar a página inteira (a flag usersLoaded já estaria
+    // a true da tentativa anterior, impedindo uma nova leitura).
+    await loadUsersFromFirebase();
     var profile=USERS[email];
     if(!profile){
       // Conta válida na Firebase Authentication mas sem perfil (nome/perfil de acesso) no

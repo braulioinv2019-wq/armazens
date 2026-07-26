@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LUELE WMS">
 <meta name="theme-color" content="#0a1f10">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>LUELE WMS</title>
 <style>body,input,select,button,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.loading-logo-text,.page-title,.stat-value,.login-title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:700}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
@@ -475,6 +478,9 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 <div id="app" style="display:none">
+  <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:#7a1f1f;color:#fff;font-size:12px;font-weight:600;text-align:center;padding:6px 12px;align-items:center;justify-content:center;gap:6px">
+    📴 Sem ligação à internet — as acções continuam a funcionar e sincronizam automaticamente quando a rede voltar
+  </div>
   <div class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">
@@ -878,7 +884,7 @@ tbody tr:hover td{background:var(--bg)}
 <div class="toast" id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction, enableMultiTabIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
@@ -891,6 +897,23 @@ appId:"1:28060645948:web:6644b36e81fcdedb266139"
 const app = initializeApp(cfg);
 const db = getFirestore(app);
 const auth = getAuth(app);
+// Persistência offline: guarda uma cópia local (IndexedDB) do que já foi lido do
+// Firestore, e enfileira escritas feitas sem ligação para as enviar sozinho assim que a
+// rede voltar. "MultiTab" porque é normal haver mais que um separador/dispositivo do
+// mesmo utilizador aberto ao mesmo tempo num armazém — sem isto, activar a persistência
+// simples falharia sempre que houvesse uma segunda aba aberta. Se o browser não suportar
+// (ex: modo privado/incógnito em alguns browsers), a app continua a funcionar
+// normalmente, só sem esta rede de segurança offline.
+enableMultiTabIndexedDbPersistence(db).catch(function(err){
+  console.warn('Persistência offline não activada:', err.code, err.message);
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(e){
+      console.warn('Service worker não registado:', e);
+    });
+  });
+}
 // Login passou a ser feito pela Firebase Authentication (ver secção mais abaixo) — as
 // passwords JÁ NÃO ficam guardadas aqui nem no Firestore. Este objecto guarda apenas o
 // perfil (nome, perfil de acesso, Telegram) de cada conta, indexado pelo mesmo email
@@ -1048,6 +1071,24 @@ emas: [],
 patio: []
 };
 }
+// ── INDICADOR DE LIGAÇÃO (offline/online) ────────────────────────────────
+// Independente do estado de cada gravação (isso já é tratado em saveStock/syncEl), este
+// aviso fixo no topo avisa sempre que o dispositivo perdeu ligação à internet — as acções
+// continuam a funcionar (ficam guardadas localmente e sincronizam sozinhas), mas é
+// importante a pessoa saber que está offline, por exemplo antes de fechar a app.
+function updateNetworkStatus(){
+  var el = document.getElementById('offline-banner');
+  if(!el)return;
+  el.style.display = navigator.onLine ? 'none' : 'flex';
+}
+window.addEventListener('online', function(){
+  updateNetworkStatus();
+  showToast('✓ Ligação restabelecida — a sincronizar...');
+});
+window.addEventListener('offline', function(){
+  updateNetworkStatus();
+  showToast('📴 Sem ligação — as acções ficam guardadas e sincronizam quando a rede voltar', true);
+});
 async function saveStock(data) {
 appData = data;
 refreshAll();
@@ -1224,6 +1265,7 @@ onAuthStateChanged(auth, async function(fbUser){
 function enterApp(email,profile){
   _appEntered=true;
   currentUser={id:email,...profile};
+  updateNetworkStatus();
   document.getElementById('login-screen').style.display='none';
   document.getElementById('login-error').style.display='none';
   document.getElementById('app').style.display='block';

@@ -879,6 +879,7 @@ tbody tr:hover td{background:var(--bg)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc, serverTimestamp, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const cfg = {
 apiKey:"AIzaSyDTFUCr9_3SKHJaKr3lezZFesUCXG8_i8I",
 authDomain:"armazens-7a4de.firebaseapp.com",
@@ -889,10 +890,15 @@ appId:"1:28060645948:web:6644b36e81fcdedb266139"
 };
 const app = initializeApp(cfg);
 const db = getFirestore(app);
+const auth = getAuth(app);
+// Login passou a ser feito pela Firebase Authentication (ver secção mais abaixo) — as
+// passwords JÁ NÃO ficam guardadas aqui nem no Firestore. Este objecto guarda apenas o
+// perfil (nome, perfil de acesso, Telegram) de cada conta, indexado pelo mesmo email
+// usado para entrar. Criar/repor a password é feito na Firebase Console.
 let USERS = {
-'f.miguel@luele.co.ao': { pass:'Br@ulio10', name:'Fernando Bráulio Miguel', role:'admin', telegramId:'' },
-'brinciof7@gmail.com': { pass:'1231234', name:'Brincio F.', role:'operator', telegramId:'' },
-'adao.domingos@luele.co.ao': { pass:'iraldo', name:'Adão Domingos', role:'operator', telegramId:'' }
+'f.miguel@luele.co.ao': { name:'Fernando Bráulio Miguel', role:'admin', telegramId:'' },
+'brinciof7@gmail.com': { name:'Brincio F.', role:'operator', telegramId:'' },
+'adao.domingos@luele.co.ao': { name:'Adão Domingos', role:'operator', telegramId:'' }
 };
 let usersLoaded = false;
 // Centros de custo (importados de "Centros de Custo.xlsx", nível operacional/"M" apenas).
@@ -973,11 +979,13 @@ document.addEventListener('scroll', function(){
 }, true);
 const ROLES = { admin:'Administrador', supervisor:'Supervisor', operator:'Operador' };
 const ROLE_BADGE = { admin:'role-admin', supervisor:'role-supervisor', operator:'role-operator' };
-// AVISO: password guardada em texto simples — isto é um fix funcional, não de segurança. Migrar para Firebase Authentication é fortemente recomendado.
+// Perfis (nome/perfil de acesso/Telegram) guardados no Firestore, indexados por email.
+// A autenticação em si (password) é responsabilidade da Firebase Authentication — nunca
+// gravamos nem lemos passwords aqui.
 async function saveUsers() {
   const usersToSave = {};
   Object.entries(USERS).forEach(function([email, u]){
-    usersToSave[email] = {name: u.name, role: u.role, pass: u.pass, telegramId: u.telegramId||''};
+    usersToSave[email] = {name: u.name, role: u.role, telegramId: u.telegramId||''};
   });
   try {
     await setDoc(doc(db,'wms','users'), usersToSave);
@@ -990,22 +998,17 @@ async function loadUsersFromFirebase() {
   try {
     const snap = await getDoc(doc(db,'wms','users'));
     if(snap.exists()) {
-      // Merge Firebase data but KEEP local passwords
       const fbData = snap.data();
       Object.keys(fbData).forEach(function(email){
         if(USERS[email]) {
-          // Update name/role/password from Firebase (Firebase is now the source of truth for pass too)
           USERS[email].name = fbData[email].name || USERS[email].name;
           USERS[email].role = fbData[email].role || USERS[email].role;
-          USERS[email].pass = fbData[email].pass || USERS[email].pass;
           USERS[email].telegramId = fbData[email].telegramId || USERS[email].telegramId || '';
         } else {
-          // New user from Firebase
           USERS[email] = fbData[email];
         }
       });
     } else {
-      // First time — save defaults to Firebase (without passwords)
       await saveUsers();
     }
     usersLoaded = true;
@@ -1132,7 +1135,6 @@ unsubUsers = onSnapshot(doc(db,'wms','users'),
         if(USERS[email]){
           USERS[email].name = fbData[email].name || USERS[email].name;
           USERS[email].role = fbData[email].role || USERS[email].role;
-          USERS[email].pass = fbData[email].pass || USERS[email].pass;
           USERS[email].telegramId = fbData[email].telegramId || USERS[email].telegramId || '';
         } else {
           USERS[email] = fbData[email];
@@ -1144,23 +1146,90 @@ unsubUsers = onSnapshot(doc(db,'wms','users'),
   err=>console.warn('Users listener:',err)
 );
 }
+// ── LOGIN (Firebase Authentication) ─────────────────────────────────────
+// O botão "Entrar no Sistema" só pede à Firebase Authentication para validar o
+// email+password. Quem decide o que acontece depois (mostrar a app, carregar o
+// perfil) é sempre o listener onAuthStateChanged mais abaixo — assim o mesmo
+// caminho serve tanto para um login manual como para uma sessão já guardada no
+// browser (ex: reabrir a app sem ter de introduzir a password outra vez).
 async function doLogin(){
-const u=document.getElementById('login-user').value.trim().toLowerCase();
-const p=document.getElementById('login-pass').value;
-if(!usersLoaded) await loadUsersFromFirebase();
-if(USERS[u]&&USERS[u].pass===p){
-  currentUser={id:u,...USERS[u]};
+var u=document.getElementById('login-user').value.trim().toLowerCase();
+var p=document.getElementById('login-pass').value;
+var errEl=document.getElementById('login-error');
+if(errEl)errEl.style.display='none';
+if(!u||!p){if(errEl){errEl.textContent='Introduz o utilizador e a password.';errEl.style.display='block';}return;}
+var btn=document.querySelector('.login-btn');
+if(btn){btn.disabled=true;btn.textContent='A entrar...';}
+try{
+  await signInWithEmailAndPassword(auth,u,p);
+}catch(e){
+  console.error('Login error:',e.code,e.message);
+  var msg='Utilizador ou password incorrectos.';
+  if(e.code==='auth/too-many-requests')msg='Muitas tentativas falhadas — tenta novamente dentro de alguns minutos.';
+  else if(e.code==='auth/invalid-email')msg='Email inválido.';
+  else if(e.code==='auth/user-disabled')msg='Esta conta foi desactivada — contacta um administrador.';
+  if(errEl){errEl.textContent=msg;errEl.style.display='block';}
+}finally{
+  if(btn){btn.disabled=false;btn.textContent='Entrar no Sistema';}
+}
+};
+function doLogout(){
+  if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubInventory)unsubInventory();if(unsubUsers)unsubUsers();
+  signOut(auth).catch(function(e){console.error('signOut:',e);});
+  // O ecrã de login volta a aparecer sozinho através do onAuthStateChanged.
+};
+async function sendResetPasswordEmail(uid){
+  try{
+    await sendPasswordResetEmail(auth,uid);
+    showToast('✓ Email de reposição de password enviado para '+uid);
+  }catch(e){
+    console.error('sendPasswordResetEmail:',e);
+    showToast('⚠️ Não foi possível enviar o email: '+(e.message||e.code),true);
+  }
+}
+var _appEntered=false;
+// Corre sempre que o estado de sessão da Firebase Authentication muda — no login manual,
+// no logout, e também sozinho quando a página é recarregada e já havia uma sessão guardada
+// no browser (evita ter de reintroduzir a password de cada vez que se recarrega a página).
+onAuthStateChanged(auth, async function(fbUser){
+  if(fbUser){
+    if(_appEntered)return;
+    var email=(fbUser.email||'').toLowerCase();
+    if(!usersLoaded) await loadUsersFromFirebase();
+    var profile=USERS[email];
+    if(!profile){
+      // Conta válida na Firebase Authentication mas sem perfil (nome/perfil de acesso) no
+      // Firestore — por segurança, NÃO deixamos entrar com um perfil por defeito (isso
+      // permitiria contornar um "eliminar utilizador" feito na página Utilizadores, já que
+      // essa acção só remove o perfil, não a conta em si). Em vez disso, bloqueia e avisa.
+      console.warn('Conta autenticada sem perfil em Firestore — acesso bloqueado:',email);
+      var errEl=document.getElementById('login-error');
+      if(errEl){errEl.textContent='A tua conta ainda não tem um perfil configurado no sistema. Contacta um administrador.';errEl.style.display='block';}
+      await signOut(auth).catch(function(){});
+      return;
+    }
+    enterApp(email,profile);
+  } else {
+    _appEntered=false;
+    currentUser=null;
+    document.getElementById('app').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+});
+function enterApp(email,profile){
+  _appEntered=true;
+  currentUser={id:email,...profile};
   document.getElementById('login-screen').style.display='none';
   document.getElementById('login-error').style.display='none';
   document.getElementById('app').style.display='block';
-  document.getElementById('user-avatar').textContent=(USERS[u].name||u)[0].toUpperCase();
-  document.getElementById('user-name-display').textContent=USERS[u].name||u;
-  document.getElementById('user-role-display').textContent=ROLES[USERS[u].role]||USERS[u].role;
+  document.getElementById('user-avatar').textContent=(profile.name||email)[0].toUpperCase();
+  document.getElementById('user-name-display').textContent=profile.name||email;
+  document.getElementById('user-role-display').textContent=ROLES[profile.role]||profile.role;
   document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   try{startListeners();}catch(e){console.error('startListeners:',e);}
   try{startSFSListener();}catch(e){console.error('startSFS:',e);}
   try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
-  loadUsersFromFirebase().catch(e=>console.warn('users preload:',e));
+  loadUsersFromFirebase().catch(function(e){console.warn('users preload:',e);});
   // Test Firestore write permission on login
   (async function(){
     try{
@@ -1187,12 +1256,7 @@ if(USERS[u]&&USERS[u].pass===p){
   }, 2500);
   // Open container from QR URL param
   setTimeout(function(){try{var p=new URLSearchParams(window.location.search);var cL=p.get('c');if(cL&&appData&&typeof renderLogistica==='function'){var ci=appData.logistica.findIndex(function(c){return c.label===cL;});if(ci>=0){navTo('logistica',document.querySelector('.nav-item'));setTimeout(function(){selContainer=ci;openContainerId=ci;renderLogistica();renderContainerPanel(appData.logistica[ci],ci);showToast('📱 Contentor '+cL+' aberto via QR Code');},800);}}}catch(e){}},1500);
-} else {
-  const el=document.getElementById('login-error');
-  if(el){el.textContent='Email ou password incorrectos.';el.style.display='block';}
 }
-};
-function doLogout(){if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubInventory)unsubInventory();if(unsubUsers)unsubUsers();currentUser=null;document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';};
 function openEmasImportModal(){
   openModal(
     '<div class="modal-header"><span class="modal-title">⬆ Importar Excel — Emas</span><button class="modal-close" onclick="closeModal()">✕</button></div>'+
@@ -2752,8 +2816,7 @@ el.innerHTML=Object.entries(USERS).map(([uid,u])=>`
 <div><div class="user-card-name">${escapeHtml(u.name)}</div><span class="role-badge ${ROLE_BADGE[u.role]||'role-operator'}">${escapeHtml(ROLES[u.role]||u.role)}</span></div>
 </div>
 <div class="user-card-meta">
-<div class="user-meta-row"><span class="user-meta-key">Username</span><span class="user-meta-val">${escapeHtml(uid)}</span></div>
-<div class="user-meta-row"><span class="user-meta-key">Password</span><span class="user-meta-val">••••••</span></div>
+<div class="user-meta-row"><span class="user-meta-key">Email de acesso</span><span class="user-meta-val">${escapeHtml(uid)}</span></div>
 </div>
 <div class="user-card-actions">
 <button class="btn btn-secondary btn-sm" onclick="openEditUserModal('${uid}')" style="flex:1">✏ Editar</button>
@@ -2764,52 +2827,48 @@ ${uid!=='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${ui
 function openAddUserModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Novo utilizador</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="u-name" style="width:100%" placeholder="Ex: Ana Gomes"></div>
-<div style="margin-bottom:12px"><label class="modal-label">Username (para login)</label><input class="form-input" id="u-id" style="width:100%" placeholder="Ex: ana" autocomplete="off"></div>
-<div style="margin-bottom:12px"><label class="modal-label">Password</label><input class="form-input" id="u-pass" type="password" style="width:100%" placeholder="••••••••"></div>
+<div style="margin-bottom:12px"><label class="modal-label">Email (para login)</label><input class="form-input" id="u-id" style="width:100%" placeholder="Ex: ana@luele.co.ao" autocomplete="off"></div>
 <div style="margin-bottom:12px"><label class="modal-label">Telegram ID (opcional)</label><input class="form-input" id="nu-telegram" style="width:100%" placeholder="Ex: 123456789" autocomplete="off"></div>
-<div><label class="modal-label">Perfil</label><select class="form-select" id="u-role" style="width:100%"><option value="operator">Operador</option><option value="supervisor">Supervisor</option><option value="admin">Administrador</option></select></div>
+<div style="margin-bottom:12px"><label class="modal-label">Perfil</label><select class="form-select" id="u-role" style="width:100%"><option value="operator">Operador</option><option value="supervisor">Supervisor</option><option value="admin">Administrador</option></select></div>
+<div style="font-size:11px;color:var(--text3);margin-bottom:4px">Isto cria só o perfil (nome/permissões) no sistema. Falta ainda criar a conta de acesso com este mesmo email na Firebase Console → Authentication → Add user, para a pessoa conseguir entrar.</div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmAddUser()">Criar utilizador</button></div>`);
 };
 async function confirmAddUser(){
-// Note: password management now via Firebase Auth Console
-// Users added here get profile (name/role) saved to Firestore
-// For password, admin must add user in Firebase Auth Console
 const name=document.getElementById('u-name').value.trim();
 const id=document.getElementById('u-id').value.trim().toLowerCase();
-const pass=document.getElementById('u-pass').value;
 const role=document.getElementById('u-role').value;
-if(!name||!id||!pass){showToast('Preenche todos os campos',true);return;}
-if(USERS[id]){showToast('Username já existe',true);return;}
+if(!name||!id){showToast('Preenche o nome e o email',true);return;}
+if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)){showToast('Introduz um email válido — é o que a pessoa vai usar para entrar',true);return;}
+if(USERS[id]){showToast('Já existe um utilizador com este email',true);return;}
 var tgId=document.getElementById('nu-telegram')?.value.trim()||'';
 // Actualização optimista: mostra logo na lista (a UI já lê directamente de USERS) e só
 // depois grava no Firestore em segundo plano — antes disto, o ecrã só actualizava depois
 // da gravação terminar, o que parecia "lento" cada vez que se criava um utilizador.
-USERS[id]={name,pass,role,telegramId:tgId};
-closeModal();renderUsers();showToast('✓ Utilizador criado!');
+USERS[id]={name,role,telegramId:tgId};
+closeModal();renderUsers();
+showToast('✓ Perfil criado! Falta criar a conta em Firebase Console → Authentication → Add user, com o email '+id);
 saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 function openEditUserModal(uid){
 const u=USERS[uid];
 openModal(`<div class="modal-header"><span class="modal-title">Editar — ${escapeHtml(u.name)}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
 <div style="margin-bottom:12px"><label class="modal-label">Nome completo</label><input class="form-input" id="eu-name" value="${escapeHtml(u.name)}" style="width:100%"></div>
-<div style="margin-bottom:12px"><label class="modal-label">Nova password (deixa em branco para manter)</label><input class="form-input" id="eu-pass" type="password" style="width:100%" placeholder="••••••••"></div>
-<div><label class="modal-label">Perfil</label><select class="form-select" id="eu-role" style="width:100%"><option value="operator"${u.role==='operator'?' selected':''}>Operador</option><option value="supervisor"${u.role==='supervisor'?' selected':''}>Supervisor</option><option value="admin"${u.role==='admin'?' selected':''}>Administrador</option></select></div>
+<div style="margin-bottom:12px"><label class="modal-label">Perfil</label><select class="form-select" id="eu-role" style="width:100%"><option value="operator"${u.role==='operator'?' selected':''}>Operador</option><option value="supervisor"${u.role==='supervisor'?' selected':''}>Supervisor</option><option value="admin"${u.role==='admin'?' selected':''}>Administrador</option></select></div>
+<div style="margin-bottom:12px"><button type="button" class="btn btn-secondary btn-sm" onclick="sendResetPasswordEmail('${uid}')">✉ Enviar email para repor password</button></div>
 <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="confirmEditUser('${uid}')">Guardar</button></div>`);
 };
 async function confirmEditUser(uid){
 const name=document.getElementById('eu-name').value.trim();
-const pass=document.getElementById('eu-pass').value;
 const role=document.getElementById('eu-role').value;
 if(!name)return;
 USERS[uid].name=name;USERS[uid].role=role;
-if(pass)USERS[uid].pass=pass;
 closeModal();renderUsers();showToast('✓ Utilizador actualizado!');
 saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 async function deleteUser(uid){
 if(currentUser.role!=='admin'){showToast('Sem permissão para esta ação.',true);return;}
-if(!confirm('Eliminar utilizador "'+USERS[uid].name+'"?'))return;
-delete USERS[uid];renderUsers();showToast('✓ Utilizador eliminado');
+if(!confirm('Eliminar o perfil de "'+USERS[uid].name+'"? Isto bloqueia o acesso à app na próxima vez que essa pessoa tentar entrar — mas a conta em si só desaparece por completo se também a eliminares na Firebase Console → Authentication.'))return;
+delete USERS[uid];renderUsers();showToast('✓ Perfil eliminado — acesso bloqueado');
 saveUsers().catch(function(){showToast('⚠️ Falha ao sincronizar com o servidor — verifica a ligação',true);});
 };
 function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
@@ -5242,6 +5301,7 @@ window.removeMat = removeMat;
 window.openSFSModal = openSFSModal;
 window.openCorrectExitModal = openCorrectExitModal;
 window.confirmCorrectExit = confirmCorrectExit;
+window.sendResetPasswordEmail = sendResetPasswordEmail;
 window.getSFSNumber = getSFSNumber;
 window.openGroupExitModal = openGroupExitModal;
 window.renderGroupMatSuggestions = renderGroupMatSuggestions;

@@ -1633,12 +1633,13 @@ document.addEventListener('click',function(e){
   var type=btn.getAttribute('data-t');
   var xtra=btn.getAttribute('data-x');
   var id=parseInt(btn.getAttribute('data-id'));
-  var needsId=['addstock','transfer','edit','remove'];
+  var needsId=['addstock','transfer','edit','remove','label'];
   if(needsId.indexOf(action)>=0&&isNaN(id))return;
   if(action==='addstock')addStockToMat(type,xtra,id);
   else if(action==='transfer')openTransferForMat(type,xtra,id);
   else if(action==='edit')editMat(type,xtra,id);
   else if(action==='remove')removeMat(type,xtra,id);
+  else if(action==='label')printLabelForItem(type,xtra,id);
   else if(action==='impzone'){closeModal();setTimeout(function(){openImportModal(type,xtra);},150);}
   else if(action==='emaszone'){toggleEmasZone(type);return;}
   else if(action==='addmat'){if(type==='log')addMatLog(xtra);else addMatSimple(type,xtra);return;}
@@ -1985,6 +1986,9 @@ async function acceptCodeSuggestion(i,alsoRename){
   if(reconciliationData&&reconciliationData.primaveraMap){
     compareWithPrimavera(reconciliationData.primaveraMap);
   }
+  // Fecha o ciclo: mal um material fica codificado, já é possível imprimir logo a
+  // etiqueta física com o QR desse código, sem ter de o ir procurar noutro sítio.
+  printMaterialLabel(mat.code,mat.name,s.target.locFull,s.target.warehouse);
 }
 function getAlertLevel(m){
   var qty=parseFloat(m.qty)||0;
@@ -2207,6 +2211,7 @@ function renderSimpleMatList(mats, type, idx){
     html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
     html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
     html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
+    html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="label" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="Imprimir etiqueta">🏷️</button>';
     html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
     html+='</div>';
   });
@@ -2396,6 +2401,7 @@ for(var i=0;i<mats.length;i++){
   html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="addstock" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">+</button>';
   html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
   html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
+  html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="label" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="Imprimir etiqueta">🏷️</button>';
   html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
   html+='</div>';
 }
@@ -3758,6 +3764,7 @@ return`<tr style="border-bottom:1px solid var(--border)">
 <button class="mat-btn edit" onclick="editPatioMat(${m.id})" title="Editar">✏</button>
 <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="addStockToMat('patio','0',${m.id})" title="Dar entrada">+</button>
 <button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" onclick="quickTransferFromPatio(${m.id})" title="Transferir">⇄</button>
+<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="printLabelForItem('patio','0',${m.id})" title="Imprimir etiqueta">🏷️</button>
 <button class="mat-btn" style="border-color:var(--red);color:var(--red)" onclick="removeMat('patio','0',${m.id})" title="Saída (gera guia SFS)">⏏ Saída</button>
 </div>
 </td>
@@ -3790,6 +3797,7 @@ function editMat(type,idx,matId){
   html+='</div>';
   html+='<div class="modal-actions">';
   html+='<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>';
+  html+='<button class="btn btn-secondary" onclick="printLabelFromEditModal(\'em\')" style="border-color:var(--green2);color:var(--green)" title="Imprime uma etiqueta QR com o código actual">🏷️ Imprimir Etiqueta</button>';
   html+='<button class="btn btn-primary" id="em-confirm-btn">✓ Guardar</button>';
   html+='</div>';
   openModal(html);
@@ -3839,6 +3847,7 @@ function editPatioMat(matId){
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-secondary" onclick="printLabelFromEditModal('ep')" style="border-color:var(--green2);color:var(--green)" title="Imprime uma etiqueta QR com o código actual">🏷️ Imprimir Etiqueta</button>
       <button class="btn btn-primary" onclick="confirmEditPatio(${matId})">✓ Guardar</button>
     </div>`);
 };
@@ -5180,6 +5189,60 @@ var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR '+c.label+'
 var w=window.open('','_blank','width=400,height=600');
 if(w){w.document.write(html);w.document.close();}
 };
+// ── ETIQUETAS DE MATERIAL (QR do código do artigo) ──────────────────────────────────────
+// Gera uma etiqueta imprimível com um QR code que codifica exactamente o valor do campo
+// "Código" do material — o mesmo texto que o leitor "📷 Ler código" já procura por
+// correspondência exacta (ver resolveScannedCode). Fecha o ciclo: assim que um material
+// fica codificado (manualmente ou pelo assistente da Reconciliação), já pode ter uma
+// etiqueta física impressa e colada, pronta a ser lida pelo leitor.
+function printMaterialLabel(code, name, locLabel, whLabel){
+  var c=(code||'').trim();
+  if(!c){showToast('Este material ainda não tem código — define um código antes de imprimir a etiqueta',true);return;}
+  var n=name||'';
+  var loc=[whLabel,locLabel].filter(Boolean).join(' · ');
+  var cSafe=c.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiqueta '+c+'</title>'+
+  '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'+
+  '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;padding:16px}'+
+  '.label{border:2px solid #0f4a20;border-radius:12px;padding:16px;max-width:300px;margin:0 auto}'+
+  '.header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0f4a20}'+
+  '.logo{width:34px;height:34px;background:#1a6b2f;border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900}'+
+  '.mat-code{font-size:22px;font-weight:900;color:#0f4a20;text-align:center;margin:8px 0 4px;word-break:break-all}'+
+  '.mat-name{font-size:12px;color:#333;text-align:center;margin-bottom:4px;font-weight:600}'+
+  '.mat-loc{font-size:10px;color:#888;text-align:center;margin-bottom:12px}'+
+  '.qr-wrap{text-align:center;margin:10px 0}'+
+  '.footer{font-size:9px;color:#aaa;text-align:center;margin-top:10px}</style></head><body>'+
+  '<div class="label">'+
+  '<div class="header"><div class="logo">L</div><div><div style="font-size:15px;font-weight:900;color:#1a6b2f;letter-spacing:2px">LUELE WMS</div><div style="font-size:9px;color:#888">Etiqueta de material</div></div></div>'+
+  '<div class="qr-wrap"><div id="qrp"></div></div>'+
+  '<div class="mat-code">'+escapeHtml(c)+'</div>'+
+  (n?'<div class="mat-name">'+escapeHtml(n)+'</div>':'')+
+  (loc?'<div class="mat-loc">'+escapeHtml(loc)+'</div>':'')+
+  '<div class="footer">'+new Date().toLocaleDateString('pt-PT')+' · LUELE WMS</div>'+
+  '</div>'+
+  '<script>function onload(){new QRCode(document.getElementById("qrp"),{text:"'+cSafe+'",width:160,height:160,colorDark:"#0f4a20",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},600);};<\/script>'+
+  '</body></html>';
+  var w=window.open('','_blank','width=400,height=600');
+  if(w){w.document.write(html);w.document.close();}
+}
+// Lê os valores actuais dos campos Código/Nome de um modal de edição aberto (em- ou ep-)
+// e imprime a etiqueta com esses valores — não é preciso gravar primeiro.
+function printLabelFromEditModal(prefix){
+  var code=document.getElementById(prefix+'-code')?.value.trim()||'';
+  var name=document.getElementById(prefix+'-name')?.value.trim()||'';
+  printMaterialLabel(code,name,'','');
+}
+// Imprime a etiqueta directamente a partir de um botão da lista de materiais (sem abrir o
+// modal de edição), localizando o material pelo mesmo trio type/idx/matId usado por editMat.
+function printLabelForItem(type,idx,matId){
+  var mat=null,loc='',wh='';
+  if(type==='log'){var ci=parseInt(idx);if(appData.logistica[ci]){mat=appData.logistica[ci].materials.find(function(m){return m.id===matId;});loc=appData.logistica[ci].label||'';wh='Logística';}}
+  else if(type==='vini'){var va=Array.isArray(appData.vini)?appData.vini:[];mat=va.find(function(m){return m.id===matId;});loc='Vini Galpão';wh='Vini Galpão';}
+  else if(type==='emas'){var ea=Array.isArray(appData.emas)?appData.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});loc='Emas — Zona '+((mat&&mat.zone)||'A');wh='Emas';}
+  else if(type==='patio'){mat=(appData.patio||[]).find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
+  if(!mat){showToast('Material não encontrado',true);return;}
+  printMaterialLabel(mat.code,mat.name,loc,wh);
+}
 function deleteContainer(idx){
 if(currentUser.role!=='admin'){showToast('Sem permissão para esta ação.',true);return;}
 openModal(
@@ -5378,6 +5441,9 @@ window.closeScanModal = closeScanModal;
 window.handleScanResult = handleScanResult;
 window.resolveScannedCode = resolveScannedCode;
 window.printContainerQR = printContainerQR;
+window.printMaterialLabel = printMaterialLabel;
+window.printLabelFromEditModal = printLabelFromEditModal;
+window.printLabelForItem = printLabelForItem;
 window.deleteContainer = deleteContainer;
 window.renameContainer = renameContainer;
 window.handleReconFile = handleReconFile;

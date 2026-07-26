@@ -591,6 +591,20 @@ tbody tr:hover td{background:var(--bg)}
         </div>
         <div id="dash-forecast"></div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔁 Materiais que mais rodam (últimos 3 meses)</span></div>
+          <canvas id="chart-topmovers" height="160"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">💰 Consumo por centro de custo (últimos 6 meses)</span></div>
+          <canvas id="chart-costcenter" height="160"></canvas>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><span class="card-title">⏱️ Tempo médio em trânsito no Pátio</span></div>
+        <div id="dash-patio-dwell"></div>
+      </div>
     </div>
     
     <div class="page" id="page-search">
@@ -783,15 +797,27 @@ tbody tr:hover td{background:var(--bg)}
     </div>
     
     <div class="page" id="page-history">
-      <div class="page-header"><div><div class="page-title">Histórico</div><div class="page-sub">Registo completo de movimentos</div></div><button class="btn btn-export" onclick="exportHistory()">⬇ Exportar Excel</button></div>
-      <div class="filters-bar">
-        <input class="filter-input" id="hist-search" placeholder="🔍  Pesquisar..." oninput="renderHistory()" style="width:200px">
-        <select class="filter-select" id="hist-type" onchange="renderHistory()"><option value="">Todos os tipos</option><option value="ENTRADA">Entrada</option><option value="SAÍDA">Saída</option><option value="EDIÇÃO">Edição</option><option value="TRANSFERÊNCIA">Transferência</option><option value="AJUSTE">Ajuste</option></select>
-        <select class="filter-select" id="hist-wh" onchange="renderHistory()"><option value="">Todos os armazéns</option><option value="Logística">Logística</option><option value="Vini Galpão">Vini Galpão</option><option value="Emas">Emas</option><option value="Pátio">Pátio</option></select>
+      <div class="page-header"><div><div class="page-title">Histórico</div><div class="page-sub">Registo completo de movimentos e de alterações a materiais</div></div><button class="btn btn-export" id="hist-export-btn" onclick="exportHistory()">⬇ Exportar Excel</button></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-secondary btn-sm" id="hist-tab-moves" onclick="switchHistoryTab('moves')" style="background:var(--green3);border-color:var(--green4);color:var(--green)">📦 Movimentos de Stock</button>
+        <button class="btn btn-secondary btn-sm" id="hist-tab-audit" onclick="switchHistoryTab('audit')">✏ Alterações de Campos</button>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Localização</th><th>Armazém</th><th>Qtd</th><th>Utilizador</th><th>Acções</th></tr></thead><tbody id="history-tbody"></tbody></table></div>
+      <div id="hist-panel-moves">
+        <div class="filters-bar">
+          <input class="filter-input" id="hist-search" placeholder="🔍  Pesquisar..." oninput="renderHistory()" style="width:200px">
+          <select class="filter-select" id="hist-type" onchange="renderHistory()"><option value="">Todos os tipos</option><option value="ENTRADA">Entrada</option><option value="SAÍDA">Saída</option><option value="EDIÇÃO">Edição</option><option value="TRANSFERÊNCIA">Transferência</option><option value="AJUSTE">Ajuste</option></select>
+          <select class="filter-select" id="hist-wh" onchange="renderHistory()"><option value="">Todos os armazéns</option><option value="Logística">Logística</option><option value="Vini Galpão">Vini Galpão</option><option value="Emas">Emas</option><option value="Pátio">Pátio</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Localização</th><th>Armazém</th><th>Qtd</th><th>Utilizador</th><th>Acções</th></tr></thead><tbody id="history-tbody"></tbody></table></div>
+      </div>
+      <div id="hist-panel-audit" style="display:none">
+        <div class="filters-bar">
+          <input class="filter-input" id="audit-search" placeholder="🔍  Pesquisar material ou utilizador..." oninput="renderAuditLog()" style="width:280px">
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Data/Hora</th><th>Material</th><th>Localização</th><th>Utilizador</th><th>Alterações</th></tr></thead><tbody id="audit-tbody"></tbody></table></div>
+      </div>
     </div>
-    
+
     <div class="page" id="page-alerts">
       <div class="page-header"><div><div class="page-title">Alertas de Stock</div><div class="page-sub">Materiais abaixo do stock mínimo definido</div></div></div>
       <div id="alerts-list"></div>
@@ -1049,9 +1075,11 @@ let selShelf = null;
 let appData = null;
 let historyData = [];
 let sfsData = [];
+let auditData = [];
 let unsubStock = null;
 let unsubHistory = null;
 let unsubSFS = null;
+let unsubAudit = null;
 let unsubInventory = null;
 let unsubUsers = null;
 function escapeHtml(str) {
@@ -1107,9 +1135,9 @@ try {
   showToast('❌ ERRO: '+e.message+' (código: '+e.code+')', true);
 }
 }
-async function logHistory(type,mat,loc,wh,qty,unit) {
+async function logHistory(type,mat,loc,wh,qty,unit,extra) {
 try {
-  await addDoc(collection(db,'wms','history','entries'),{
+  var payload={
     type:type,
     material:mat,
     location:loc,
@@ -1119,11 +1147,58 @@ try {
     unit:unit,
     user:currentUser?currentUser.name:'Sistema',
     ts:serverTimestamp()
-  });
+  };
+  // Parâmetro opcional para metadados extra (ex: patioDays — quantos dias um material
+  // esteve em trânsito no Pátio até esta saída/transferência). Não altera nenhuma
+  // chamada existente, que continua a funcionar sem o passar.
+  if(extra&&typeof extra==='object'){Object.assign(payload,extra);}
+  await addDoc(collection(db,'wms','history','entries'),payload);
   console.log('✅ logHistory OK:', type, mat);
 } catch(e) {
   console.error('❌ logHistory FAILED:', e.code, e.message);
 }
+}
+// Regista uma alteração de campos num material (auditoria) — usada nos ecrãs de edição
+// para saber quem mudou o quê, com valor antigo e novo, sem misturar com o histórico de
+// movimentos de stock (que tem um propósito e um limite de leitura diferentes).
+async function logFieldChanges(matName,loc,wh,changes){
+  if(!changes||!changes.length)return;
+  try{
+    await addDoc(collection(db,'wms','audit','entries'),{
+      material:matName,
+      location:loc,
+      wh:wh,
+      changes:changes,
+      user:currentUser?currentUser.name:'Sistema',
+      ts:serverTimestamp()
+    });
+    console.log('✅ logFieldChanges OK:', matName, changes.length+' campo(s)');
+  }catch(e){
+    console.error('❌ logFieldChanges FAILED:', e.code, e.message);
+  }
+}
+// Compara os valores antigos/novos de um material e devolve só os campos que mudaram
+// de facto (ignora undefined/null tratando-os como string vazia, para não gerar "mudanças"
+// falsas quando um campo simplesmente não existia antes).
+function computeFieldChanges(before,after,fieldDefs){
+  var changes=[];
+  fieldDefs.forEach(function(f){
+    var key=f[0],label=f[1];
+    var b=(before&&before[key]!==undefined&&before[key]!==null)?String(before[key]):'';
+    var a=(after&&after[key]!==undefined&&after[key]!==null)?String(after[key]):'';
+    if(b!==a)changes.push({field:key,label:label,before:b,after:a});
+  });
+  return changes;
+}
+// Calcula quantos dias um material esteve em trânsito no Pátio, a partir do arrivedAt
+// gravado quando chegou lá — usado para alimentar a média de "tempo em trânsito" do
+// dashboard sempre que um material SAI do Pátio (saída ou transferência). Devolve um
+// objecto pronto a passar como "extra" ao logHistory, ou {} se não houver data de chegada.
+function patioDaysExtra(arrivedAt){
+  if(!arrivedAt)return{};
+  var days=(Date.now()-new Date(arrivedAt).getTime())/86400000;
+  if(isNaN(days)||days<0)return{};
+  return{patioDays:Math.round(days*10)/10};
 }
 function startListeners() {
 unsubStock=onSnapshot(doc(db,'wms','stock'),
@@ -1215,7 +1290,7 @@ try{
 }
 };
 function doLogout(){
-  if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubInventory)unsubInventory();if(unsubUsers)unsubUsers();
+  if(unsubStock)unsubStock();if(unsubHistory)unsubHistory();if(unsubSFS)unsubSFS();if(unsubAudit)unsubAudit();if(unsubInventory)unsubInventory();if(unsubUsers)unsubUsers();
   signOut(auth).catch(function(e){console.error('signOut:',e);});
   // O ecrã de login volta a aparecer sozinho através do onAuthStateChanged.
 };
@@ -1275,6 +1350,7 @@ function enterApp(email,profile){
   document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   try{startListeners();}catch(e){console.error('startListeners:',e);}
   try{startSFSListener();}catch(e){console.error('startSFS:',e);}
+  try{startAuditListener();}catch(e){console.error('startAudit:',e);}
   try{startInventoryListener();}catch(e){console.error('startInventory:',e);}
   loadUsersFromFirebase().catch(function(e){console.warn('users preload:',e);});
   // Test Firestore write permission on login
@@ -2635,6 +2711,73 @@ el.innerHTML=list.map(function(h){
   '</tr>';
 }).join('');
 }
+// Alterna entre o separador "Movimentos de Stock" (histórico já existente) e o novo
+// separador "Alterações de Campos" (auditoria) na página Histórico — mantém o botão de
+// exportação a apontar sempre para a exportação correspondente ao separador visível.
+function switchHistoryTab(tab){
+  var movesPanel=document.getElementById('hist-panel-moves');
+  var auditPanel=document.getElementById('hist-panel-audit');
+  var btnMoves=document.getElementById('hist-tab-moves');
+  var btnAudit=document.getElementById('hist-tab-audit');
+  var exportBtn=document.getElementById('hist-export-btn');
+  var onCls='background:var(--green3);border-color:var(--green4);color:var(--green)';
+  if(tab==='audit'){
+    if(movesPanel)movesPanel.style.display='none';
+    if(auditPanel)auditPanel.style.display='block';
+    if(btnAudit)btnAudit.style.cssText=onCls;
+    if(btnMoves)btnMoves.style.cssText='';
+    if(exportBtn)exportBtn.setAttribute('onclick','exportAuditLog()');
+    renderAuditLog();
+  } else {
+    if(movesPanel)movesPanel.style.display='block';
+    if(auditPanel)auditPanel.style.display='none';
+    if(btnMoves)btnMoves.style.cssText=onCls;
+    if(btnAudit)btnAudit.style.cssText='';
+    if(exportBtn)exportBtn.setAttribute('onclick','exportHistory()');
+    renderHistory();
+  }
+}
+function renderAuditLog(){
+  var el=document.getElementById('audit-tbody');
+  if(!el)return;
+  var q=(document.getElementById('audit-search')?.value||'').toLowerCase();
+  var list=auditData.filter(function(a){
+    if(!q)return true;
+    var hay=((a.material||'')+' '+(a.location||'')+' '+(a.user||'')).toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+  if(!list.length){
+    el.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3)">Sem alterações registadas'+(q?' para a pesquisa':'')+'</td></tr>';
+    return;
+  }
+  el.innerHTML=list.map(function(a){
+    var dt=a.ts?new Date(a.ts).toLocaleString('pt-PT'):'—';
+    var changesHtml=(a.changes||[]).map(function(c){
+      return '<div style="font-size:11px;margin-bottom:2px"><strong>'+escapeHtml(c.label||c.field||'')+':</strong> '+
+        '<span style="color:var(--text3);text-decoration:line-through">'+escapeHtml(c.before||'—')+'</span> → '+
+        '<span style="color:var(--green);font-weight:600">'+escapeHtml(c.after||'—')+'</span></div>';
+    }).join('');
+    return '<tr>'+
+      '<td style="font-size:12px;color:var(--text3)">'+escapeHtml(dt)+'</td>'+
+      '<td style="font-weight:500">'+escapeHtml(a.material||'')+'</td>'+
+      '<td style="font-size:12px">'+escapeHtml(a.location||'')+' · '+escapeHtml(a.wh||'')+'</td>'+
+      '<td style="font-size:12px">'+escapeHtml(a.user||'')+'</td>'+
+      '<td>'+(changesHtml||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+function exportAuditLog(){
+  if(!auditData.length){showToast('Sem alterações registadas para exportar',true);return;}
+  var wb=XLSX.utils.book_new();
+  var d=[['Data/Hora','Material','Localização','Armazém','Utilizador','Campo Alterado','Valor Anterior','Valor Novo']];
+  auditData.forEach(function(a){
+    (a.changes||[]).forEach(function(c){
+      d.push([a.ts?new Date(a.ts).toLocaleString('pt-PT'):'',a.material||'',a.location||'',a.wh||'',a.user||'',c.label||c.field||'',c.before||'',c.after||'']);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Alterações');
+  xlsxDl(wb,'LUELE_Auditoria');
+}
 function renderDashboard(){
 if(!appData)return;
 const all=getAllMaterials();
@@ -2671,9 +2814,13 @@ if(hEl)hEl.innerHTML=historyData.slice(0,8).map(function(h){return(
 if(typeof Chart !== 'undefined'){
   renderMonthlyChart();
   renderPieChart(logM,viniM,emasM,patioM);
+  renderTopMovers();
+  renderCostCenterTrend();
 }
 // ── FORECAST
 renderForecast();
+// ── PAINEL DE INDICADORES ADICIONAIS
+renderPatioDwellStat();
 }
 function renderMonthlyChart(){
 var canvas=document.getElementById('chart-monthly');
@@ -2805,6 +2952,76 @@ html+='</tbody></table></div>';
 html+='<div style="margin-top:12px;font-size:11px;color:var(--text3);padding:0 4px">💡 Previsão baseada nas saídas dos últimos 3 meses. Quanto mais histórico existir, mais precisa será a previsão.</div>';
 el.innerHTML=html;
 }
+// Ranking dos materiais com mais movimentos (entradas+saídas) nos últimos 3 meses —
+// ajuda a perceber quais artigos rodam mais e merecem mais atenção na gestão de stock.
+function renderTopMovers(){
+  var canvas=document.getElementById('chart-topmovers');
+  if(!canvas||typeof Chart==='undefined')return;
+  if(canvas._chartInstance){canvas._chartInstance.destroy();canvas._chartInstance=null;}
+  var months3=[];
+  for(var i=2;i>=0;i--){var d=new Date();d.setMonth(d.getMonth()-i);months3.push(d.toISOString().slice(0,7));}
+  var counts={};
+  historyData.forEach(function(h){
+    if(h.type!=='ENTRADA'&&h.type!=='SAÍDA')return;
+    if(!h.ts||!months3.some(function(m){return h.ts.startsWith(m);}))return;
+    var key=h.material||'—';
+    counts[key]=(counts[key]||0)+1;
+  });
+  var ranked=Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  if(!ranked.length){var ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);return;}
+  canvas._chartInstance=new Chart(canvas,{
+    type:'bar',
+    data:{labels:ranked.map(function(r){return r[0];}),datasets:[{label:'Movimentos',data:ranked.map(function(r){return r[1];}),backgroundColor:'rgba(37,99,235,0.7)',borderColor:'#2563eb',borderWidth:1,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+}
+// Tendência de consumo (quantidade retirada em Saídas Fora do Sistema) por centro de
+// custo/requisitante nos últimos 6 meses — ajuda a perceber que áreas consomem mais.
+function renderCostCenterTrend(){
+  var canvas=document.getElementById('chart-costcenter');
+  if(!canvas||typeof Chart==='undefined')return;
+  if(canvas._chartInstance){canvas._chartInstance.destroy();canvas._chartInstance=null;}
+  var months6=[];
+  for(var i=5;i>=0;i--){var d=new Date();d.setMonth(d.getMonth()-i);months6.push(d.toISOString().slice(0,7));}
+  var totals={};
+  sfsData.forEach(function(s){
+    if(!s.ts||!months6.some(function(m){return s.ts.startsWith(m);}))return;
+    var key=(s.destino||'').trim()||'Sem destino indicado';
+    totals[key]=(totals[key]||0)+(parseFloat(s.qty)||0);
+  });
+  var ranked=Object.entries(totals).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  if(!ranked.length){var ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);return;}
+  canvas._chartInstance=new Chart(canvas,{
+    type:'bar',
+    data:{labels:ranked.map(function(r){return r[0].length>22?r[0].slice(0,20)+'…':r[0];}),datasets:[{label:'Quantidade retirada',data:ranked.map(function(r){return Math.round(r[1]*100)/100;}),backgroundColor:'rgba(217,119,6,0.7)',borderColor:'#d97706',borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:9}},grid:{display:false}}}}
+  });
+}
+// Tempo médio em trânsito no Pátio: combina a média histórica (materiais que já saíram,
+// usando o patioDays gravado em logHistory) com a média actual (materiais ainda lá,
+// calculada a partir do arrivedAt) — assim há sempre um número útil mesmo sem histórico.
+function renderPatioDwellStat(){
+  var el=document.getElementById('dash-patio-dwell');
+  if(!el)return;
+  var samples=historyData.filter(function(h){return typeof h.patioDays==='number';}).map(function(h){return h.patioDays;});
+  var currentInTransit=((appData&&appData.patio)||[]).filter(function(m){return m.arrivedAt;}).map(function(m){return (Date.now()-new Date(m.arrivedAt).getTime())/86400000;});
+  if(!samples.length&&!currentInTransit.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sem dados suficientes ainda — vai sendo calculado à medida que os materiais entram e saem do Pátio.</div>';
+    return;
+  }
+  var avgCompleted=samples.length?(samples.reduce(function(a,b){return a+b;},0)/samples.length):null;
+  var avgCurrent=currentInTransit.length?(currentInTransit.reduce(function(a,b){return a+b;},0)/currentInTransit.length):null;
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:4px">';
+  html+='<div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px">';
+  html+='<div style="font-size:26px;font-weight:800;color:var(--green)">'+(avgCompleted!==null?Math.round(avgCompleted*10)/10+' dias':'—')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:4px">Média histórica — materiais que já saíram do Pátio ('+samples.length+' registo'+(samples.length===1?'':'s')+')</div>';
+  html+='</div>';
+  html+='<div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px">';
+  html+='<div style="font-size:26px;font-weight:800;color:var(--amber)">'+(avgCurrent!==null?Math.round(avgCurrent*10)/10+' dias':'—')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:4px">Média actual — materiais ainda em trânsito ('+currentInTransit.length+')</div>';
+  html+='</div></div>';
+  el.innerHTML=html;
+}
 function startSFSListener(){
 try{
 const q=query(collection(db,'wms','sfs','records'),orderBy('ts','desc'),limit(100));
@@ -2821,6 +3038,25 @@ updateBadges();
 });
 });
 }catch(e){console.warn('SFS listener:',e);}
+}
+// Escuta o registo de auditoria (alterações de campos em materiais) — mesmo padrão de
+// query com índice + fallback simples do histórico de movimentos, para não partir se o
+// índice do Firestore ainda não tiver sido criado automaticamente.
+function startAuditListener(){
+try{
+const q=query(collection(db,'wms','audit','entries'),orderBy('ts','desc'),limit(200));
+unsubAudit=onSnapshot(q,snap=>{
+auditData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+if(document.getElementById('hist-panel-audit')&&document.getElementById('hist-panel-audit').style.display!=='none')renderAuditLog();
+},err=>{
+unsubAudit=onSnapshot(collection(db,'wms','audit','entries'),snap=>{
+auditData=snap.docs.map(d=>({id:d.id,...d.data(),ts:d.data().ts?.toDate?.()?.toISOString()||new Date().toISOString()}));
+auditData.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+auditData=auditData.slice(0,200);
+if(document.getElementById('hist-panel-audit')&&document.getElementById('hist-panel-audit').style.display!=='none')renderAuditLog();
+});
+});
+}catch(e){console.warn('Audit listener:',e);}
 }
 function renderSFS(){
 const q=(document.getElementById('sfs-search')?.value||'').toLowerCase();
@@ -3691,7 +3927,7 @@ else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logisti
 appData=nd;
 closeModal();
 await saveStock(nd);
-await logHistory('TRANSFERÊNCIA',srcMat.name,srcLoc+' → '+destLoc,srcWh+' → '+destLoc.split(' ')[0],String(qty),srcMat.unit);
+await logHistory('TRANSFERÊNCIA',srcMat.name,srcLoc+' → '+destLoc,srcWh+' → '+destLoc.split(' ')[0],String(qty),srcMat.unit,srcMat.warehouse==='Pátio'?patioDaysExtra(srcMat.arrivedAt):undefined);
 showToast('✓ Transferência concluída!');
 spawnParticles();
 refreshAll();
@@ -3819,11 +4055,18 @@ async function confirmEditMat(type,idx,matId){
   else if(type==='vini'){var arr=Array.isArray(nd.vini)?nd.vini:[];mat=arr.find(function(m){return m.id===matId;});loc='Vini Galpão';wh='Vini Galpão';}
   else if(type==='emas'){var arr2=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=arr2.find(function(m){return m.id===matId;});loc='Emas — Zona '+(mat?.zone||idx||'A');wh='Emas';nd.emas=arr2;}
   else if(type==='patio'){mat=nd.patio?.find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
-  if(mat){Object.assign(mat,{code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder,lot:lot,expiryDate:expiryDate});}
+  var fieldChanges=[];
+  if(mat){
+    var editFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['reorderPoint','Ponto de Encomenda'],['lot','Nº de Lote'],['expiryDate','Data de Validade']];
+    var newVals={code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder,lot:lot,expiryDate:expiryDate};
+    fieldChanges=computeFieldChanges(mat,newVals,editFieldDefs);
+    Object.assign(mat,newVals);
+  }
   appData=nd;
   closeModal();
   await saveStock(nd);
   await logHistory('EDIÇÃO',name,loc,wh,qty,unit);
+  if(fieldChanges.length)await logFieldChanges(name,loc,wh,fieldChanges);
   showToast('✓ Material actualizado!');
   refreshAll();
 };
@@ -3862,10 +4105,14 @@ async function confirmEditPatio(matId){
   if(!name){showToast('Escreve o nome do material',true);return;}
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
-  Object.assign(mat,{code,name,qty,unit,minStock:min,lot,expiryDate});
+  const editPatioFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['lot','Nº de Lote'],['expiryDate','Data de Validade']];
+  const newValsPatio={code,name,qty,unit,minStock:min,lot,expiryDate};
+  const fieldChangesPatio=computeFieldChanges(mat,newValsPatio,editPatioFieldDefs);
+  Object.assign(mat,newValsPatio);
   closeModal();
   await saveStock(JSON.parse(JSON.stringify(appData)));
   await logHistory('EDIÇÃO',name,'Pátio','Pátio',qty,unit);
+  if(fieldChangesPatio.length)await logFieldChanges(name,'Pátio','Pátio',fieldChangesPatio);
   showToast('✓ Material actualizado!');
   renderPatio();
 };
@@ -3914,7 +4161,7 @@ else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logisti
 appData=nd;
 closeModal();
 await saveStock(nd);
-await logHistory('TRANSFERÊNCIA',mat.name,'Pátio → '+destLoc,'Pátio',String(qty),mat.unit);
+await logHistory('TRANSFERÊNCIA',mat.name,'Pátio → '+destLoc,'Pátio',String(qty),mat.unit,patioDaysExtra(mat.arrivedAt));
 showToast('✓ Transferido para '+destLoc+'!');
 spawnParticles();
 renderPatio();
@@ -4860,9 +5107,10 @@ async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   else if(type==='emas'){var ea=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});if(mat){var rem3=parseFloat(mat.qty)-qty;if(rem3<=0)nd.emas=ea.filter(function(m){return m.id!==matId;});else mat.qty=String(rem3);nd.emas=ea;}}
   else if(type==='patio'){var pa=nd.patio||[];mat=pa.find(function(m){return m.id===matId;});if(mat){var rem4=parseFloat(mat.qty)-qty;if(rem4<=0)nd.patio=pa.filter(function(m){return m.id!==matId;});else mat.qty=String(rem4);}}
   if(!mat){showToast('Material não encontrado',true);return;}
+  var sfsExtra=(type==='patio'&&pp)?patioDaysExtra(pp.arrivedAt):undefined;
   appData=nd;closeModal();
   await saveStock(nd);
-  await logHistory('SAÍDA',mat.name,loc,wh,String(qty),mat.unit);
+  await logHistory('SAÍDA',mat.name,loc,wh,String(qty),mat.unit,sfsExtra);
   try{await addDoc(collection(db,'wms','sfs','records'),{number:sfsNum,material:mat.name,code:mat.code||'',qty:String(qty),unit:mat.unit,origem:locFull,destino:dest,obs:obs,wh:wh,emitidoPor:currentUser.name,ts:serverTimestamp()});}catch(e){console.error('SFS:',e);}
   showToast('✓ SFS '+sfsNum+' emitida! Retirado de: '+locFull);
   generateSFSPDF({sfsNum,matName:mat.name,matCode:mat.code||'',qty,unit:mat.unit,origem:locFull,destino:dest,obs,emitidoPor:currentUser.name});
@@ -5361,6 +5609,9 @@ window.confirmAddShelf = confirmAddShelf;
 window.xlsxDl = xlsxDl;
 window.exportFullStock = exportFullStock;
 window.exportHistory = exportHistory;
+window.switchHistoryTab = switchHistoryTab;
+window.renderAuditLog = renderAuditLog;
+window.exportAuditLog = exportAuditLog;
 window.exportAlerts = exportAlerts;
 window.exportLogistica = exportLogistica;
 window.exportVini = exportVini;

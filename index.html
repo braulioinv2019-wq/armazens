@@ -2620,12 +2620,36 @@ renderEmas();
 function getCriticalMaterials(){
   return getAllMaterials().filter(function(m){return !!m.critical;});
 }
+// Agrupa artigos críticos pelo nome: o mesmo artigo pode existir em vários locais/armazéns
+// (ex: MARMITEX em 3 contentores diferentes) — aqui o que interessa é o total consolidado,
+// não uma linha repetida por localização. Soma qty/mínimo/ponto de encomenda de todas as
+// ocorrências e o nível de urgência (getAlertLevel) passa a reflectir o total agregado.
+function groupCriticalMaterials(list){
+  var groups={},order=[];
+  list.forEach(function(m){
+    var key=(m.name||'').trim().toUpperCase();
+    if(!groups[key]){
+      groups[key]={name:m.name,code:m.code||'',unit:m.unit||'',qty:0,minStock:0,reorderPoint:0,locs:[],whSet:{},items:[]};
+      order.push(key);
+    }
+    var g=groups[key];
+    g.qty+=parseFloat(m.qty)||0;
+    g.minStock+=parseFloat(m.minStock)||0;
+    g.reorderPoint+=parseFloat(m.reorderPoint)||0;
+    if(!g.code&&m.code)g.code=m.code;
+    if(!g.unit&&m.unit)g.unit=m.unit;
+    g.locs.push((m.warehouse||'')+' — '+(m.locFull||'')+': '+(m.qty||0)+' '+(m.unit||''));
+    g.whSet[m.warehouse]=true;
+    g.items.push(m);
+  });
+  return order.map(function(k){return groups[k];});
+}
 function renderCriticalPage(){
   var el=document.getElementById('critical-list');
   if(!el)return;
   var q=(document.getElementById('critical-search')?.value||'').toLowerCase().trim();
   var whF=document.getElementById('critical-wh')?.value||'';
-  var list=getCriticalMaterials().filter(function(m){
+  var raw=getCriticalMaterials().filter(function(m){
     if(whF&&m.warehouse!==whF)return false;
     if(q){
       var hay=((m.name||'')+' '+(m.code||'')+' '+(m.locFull||'')).toLowerCase();
@@ -2633,6 +2657,7 @@ function renderCriticalPage(){
     }
     return true;
   });
+  var list=groupCriticalMaterials(raw);
   if(!list.length){
     el.innerHTML='<div class="empty-state" style="padding:32px"><div class="empty-icon">⭐</div><div class="empty-text">Sem artigos críticos'+(q||whF?' para os filtros seleccionados':'')+'</div><div class="empty-sub">Para marcar um artigo como crítico, abre-o em Editar (✏) e activa a opção "⭐ Marcar como ARTIGO CRÍTICO".</div></div>';
     return;
@@ -2651,19 +2676,22 @@ function renderCriticalPage(){
   html+='<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--red)">'+nCrit+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Abaixo do stock mínimo</div></div>';
   html+='<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--amber)">'+nWarn+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">No ponto de encomenda</div></div>';
   html+='</div>';
-  html+='<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Código</th><th>Material</th><th>Armazém</th><th>Localização</th><th>Stock</th><th>Mínimo</th><th></th></tr></thead><tbody>';
-  list.forEach(function(m){
-    var lvl=getAlertLevel(m);
+  html+='<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Código</th><th>Material</th><th>Localizações</th><th>Stock Total</th><th>Mínimo</th><th></th></tr></thead><tbody>';
+  list.forEach(function(g){
+    var lvl=getAlertLevel(g);
     var badge=lvl==='critical'?'<span class="badge badge-out">🔴 Crítico</span>':lvl==='warning'?'<span class="badge badge-alert">🟡 Encomendar</span>':'<span class="badge badge-in">✅ OK</span>';
+    var nLocs=g.locs.length;
+    var whList=Object.keys(g.whSet).join(', ');
+    var qtyShown=Math.round(g.qty*100)/100;
+    var minShown=g.minStock>0?(Math.round(g.minStock*100)/100):'—';
     html+='<tr>'+
       '<td>'+badge+'</td>'+
-      '<td style="font-size:11px;font-weight:700;color:var(--green)">'+escapeHtml(m.code||'—')+'</td>'+
-      '<td style="font-weight:500">⭐ '+escapeHtml(m.name)+'</td>'+
-      '<td style="font-size:12px">'+escapeHtml(m.warehouse||'')+'</td>'+
-      '<td style="font-size:12px;color:var(--text3)">'+escapeHtml(m.locFull||'')+'</td>'+
-      '<td style="font-weight:600;color:var(--amber)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</td>'+
-      '<td style="font-size:12px">'+escapeHtml(m.minStock||'—')+'</td>'+
-      '<td><button class="mat-btn" style="border-color:#8b5cf6;color:#8b5cf6" onclick="unmarkCritical('+m.id+')" title="Retirar da lista de críticos">✕</button></td>'+
+      '<td style="font-size:11px;font-weight:700;color:var(--green)">'+escapeHtml(g.code||'—')+'</td>'+
+      '<td style="font-weight:500">⭐ '+escapeHtml(g.name)+'</td>'+
+      '<td style="font-size:12px;color:var(--text3)" title="'+escapeHtml(g.locs.join('\n'))+'">'+escapeHtml(whList)+(nLocs>1?' <span style="color:#8b5cf6;font-weight:600">('+nLocs+' locais)</span>':'')+'</td>'+
+      '<td style="font-weight:600;color:var(--amber)">'+escapeHtml(String(qtyShown))+' '+escapeHtml(g.unit)+'</td>'+
+      '<td style="font-size:12px">'+escapeHtml(String(minShown))+'</td>'+
+      '<td><button class="mat-btn" style="border-color:#8b5cf6;color:#8b5cf6" onclick="unmarkCriticalGroup(\''+escapeHtml(g.name).replace(/'/g,"\\'")+'\')" title="Retirar da lista de críticos (todas as localizações)">✕</button></td>'+
     '</tr>';
   });
   html+='</tbody></table></div>';
@@ -2687,17 +2715,38 @@ async function unmarkCritical(matId){
   renderCriticalPage();
   updateBadges();
 }
+// Retira a marca de crítico de TODAS as ocorrências de um material (todas as localizações/
+// armazéns), usado pelo botão ✕ na lista agrupada de Artigos Críticos.
+async function unmarkCriticalGroup(name){
+  var key=(name||'').trim().toUpperCase();
+  if(!confirm('Retirar "'+name+'" da lista de artigos críticos em TODAS as localizações?'))return;
+  var nd=JSON.parse(JSON.stringify(appData));
+  var changed=[];
+  (nd.logistica||[]).forEach(function(c){(c.materials||[]).forEach(function(m){if(m.critical&&(m.name||'').trim().toUpperCase()===key){m.critical=false;changed.push({name:m.name,loc:c.label,wh:'Logística'});}});});
+  var va=Array.isArray(nd.vini)?nd.vini:[];va.forEach(function(m){if(m.critical&&(m.name||'').trim().toUpperCase()===key){m.critical=false;changed.push({name:m.name,loc:'Vini Galpão',wh:'Vini Galpão'});}});
+  var ea=Array.isArray(nd.emas)?nd.emas:[];ea.forEach(function(m){if(m.critical&&(m.name||'').trim().toUpperCase()===key){m.critical=false;changed.push({name:m.name,loc:'Emas — Zona '+(m.zone||'A'),wh:'Emas'});}});
+  (nd.patio||[]).forEach(function(m){if(m.critical&&(m.name||'').trim().toUpperCase()===key){m.critical=false;changed.push({name:m.name,loc:'Pátio',wh:'Pátio'});}});
+  if(!changed.length){showToast('Material não encontrado',true);return;}
+  appData=nd;
+  await saveStock(nd);
+  for(var i=0;i<changed.length;i++){
+    await logFieldChanges(changed[i].name,changed[i].loc,changed[i].wh,[{field:'critical',label:'Artigo Crítico',before:'true',after:'false'}]);
+  }
+  showToast('✓ Artigo retirado da lista de críticos em '+changed.length+' localização'+(changed.length===1?'':'ões'));
+  renderCriticalPage();
+  updateBadges();
+}
 function exportCriticalItems(){
-  var list=getCriticalMaterials();
+  var list=groupCriticalMaterials(getCriticalMaterials());
   if(!list.length){showToast('Sem artigos críticos marcados para exportar',true);return;}
   var rank=function(m){var l=getAlertLevel(m);return l==='critical'?0:l==='warning'?1:2;};
   list.sort(function(a,b){var d=rank(a)-rank(b);if(d!==0)return d;return (a.name||'').localeCompare(b.name||'','pt');});
   var wb=XLSX.utils.book_new();
-  var d=[['Estado','Código','Material','Armazém','Localização','Stock Actual','Unidade','Stock Mínimo','Ponto de Encomenda','Nº Lote','Validade']];
-  list.forEach(function(m){
-    var lvl=getAlertLevel(m);
+  var d=[['Estado','Código','Material','Nº Localizações','Localizações (armazém — local: qtd)','Stock Total','Unidade','Stock Mínimo Total','Ponto de Encomenda Total']];
+  list.forEach(function(g){
+    var lvl=getAlertLevel(g);
     var estado=lvl==='critical'?'CRÍTICO — abaixo do mínimo':lvl==='warning'?'ATENÇÃO — ponto de encomenda':'OK';
-    d.push([estado,m.code||'',m.name,m.warehouse||'',m.locFull||'',m.qty,m.unit,m.minStock||'',m.reorderPoint||'',m.lot||'',m.expiryDate?formatExpiryDate(m.expiryDate):'']);
+    d.push([estado,g.code||'',g.name,g.locs.length,g.locs.join(' | '),Math.round(g.qty*100)/100,g.unit,g.minStock||'',g.reorderPoint||'']);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Artigos Críticos');
   xlsxDl(wb,'LUELE_ArtigosCriticos');
@@ -5736,6 +5785,7 @@ window.getCriticalMaterials = getCriticalMaterials;
 window.renderCriticalPage = renderCriticalPage;
 window.exportCriticalItems = exportCriticalItems;
 window.unmarkCritical = unmarkCritical;
+window.unmarkCriticalGroup = unmarkCriticalGroup;
 window.exportAlerts = exportAlerts;
 window.exportLogistica = exportLogistica;
 window.exportVini = exportVini;

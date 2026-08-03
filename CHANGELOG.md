@@ -465,3 +465,36 @@ acompanhadas de perto e reportadas à chefia. Agora isso é possível:
   encomenda, depois OK) com desempate alfabético, filtro por armazém, pesquisa por nome,
   código e localização, combinação de filtros, e um artigo marcado sem limites de stock
   definidos continua a ser listado — todas as verificações passaram.
+
+---
+
+## Actualização — Artigos Críticos: uma linha por material, não por localização
+
+Reportaste que "MARMITEX" aparecia repetido 3 vezes na lista de Artigos Críticos, uma vez
+por cada contentor onde existe. Corrigido: a lista agora agrupa por nome do material e
+mostra **uma única linha com o total consolidado**, seja qual for o número de localizações.
+
+- **Stock Total** = soma da quantidade em todos os locais onde o artigo está marcado como
+  crítico.
+- **Coluna "Localizações"** mostra os armazéns onde o artigo existe e, quando está em mais
+  de um sítio, indica quantos locais (ex: "Logística, Vini Galpão (3 locais)"); ao passar o
+  rato por cima aparece o detalhe local a local com a quantidade de cada um.
+- **Mínimo** passa a ser a soma dos stocks mínimos definidos em cada localização, e o nível
+  de urgência (🔴 crítico / 🟡 encomendar / ✅ OK) é calculado sobre o total, não sobre cada
+  linha isolada — assim o alerta reflecte a situação real do artigo no armazém como um todo.
+- O botão "✕" retira a marca de crítico em **todas** as localizações desse artigo de uma só
+  vez (antes só desmarcava a linha clicada); cada localização afectada fica registada na
+  auditoria, como já acontecia.
+- A exportação para Excel foi actualizada da mesma forma: uma linha por artigo, com o
+  número de localizações e o detalhe de cada uma numa coluna própria, e os totais de stock/
+  mínimo/ponto de encomenda somados.
+
+### Verificação feita nesta actualização
+- `node --check` ao script principal — sem erros de sintaxe.
+- Testes automáticos (Node.js) com 5 cenários: MARMITEX em 3 locais (incluindo uma variante
+  em minúsculas) agrupa correctamente numa só linha com a quantidade somada (40) e o código
+  aproveitado da localização que o tinha definido; o nível de urgência do grupo reflecte os
+  totais (40 em stock vs 30 de mínimo somado = OK; noutro cenário, 3 em stock vs 6 de
+  mínimo somado = crítico); um artigo crítico numa única localização continua a agrupar sem
+  regressão; e os armazéns distintos de um grupo ficam correctamente identificados para a
+  coluna de Localizações — todas as verificações passaram.

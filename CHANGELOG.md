@@ -431,3 +431,37 @@ agendamento já estão prontos e publicados; passos detalhados em `backup/BACKUP
   correcta das folhas de Excel a partir dos registos (incluindo campos em falta), e a
   lógica que decide quais backups antigos apagar (mantém os dos últimos 14 dias, remove os
   mais antigos, nunca apaga o backup do próprio dia) — todas as verificações passaram.
+
+---
+
+## Actualização — Artigos Críticos (marcação manual + área dedicada + relatório)
+
+Até agora, "crítico" no sistema significava apenas "abaixo do stock mínimo" — um cálculo
+automático. Mas há famílias de material que são estratégicas mesmo quando o stock está
+confortável (óleos e graxas, acetileno, FeSi, floculantes, pneus), e que precisam de ser
+acompanhadas de perto e reportadas à chefia. Agora isso é possível:
+
+- **Marcar um artigo como crítico**: no ecrã de edição de qualquer material (Logística,
+  Vini, Emas e Pátio) há uma opção "⭐ Marcar como ARTIGO CRÍTICO". É uma decisão manual,
+  independente do nível de stock.
+- **Nova área "⭐ Artigos Críticos"** no menu lateral, com o número de artigos marcados
+  visível no próprio menu. Mostra três contadores no topo (total de críticos, quantos estão
+  abaixo do mínimo, quantos estão no ponto de encomenda) e a lista completa ordenada pelos
+  mais urgentes primeiro, com pesquisa e filtro por armazém.
+- **Estrela ⭐ nas listas de material** dos armazéns, para se ver logo quais artigos estão
+  marcados como críticos sem ter de ir a outra página.
+- **Exportação para Excel** dos artigos críticos, com estado (crítico / atenção / OK),
+  código, localização, stock actual, mínimo, ponto de encomenda, lote e validade — pronto a
+  enviar como resposta a um pedido de ponto de situação.
+- **Retirar a marca** directamente a partir da lista, sem abrir o ecrã de edição; a
+  alteração fica registada na auditoria (quem retirou e quando), tal como qualquer outra
+  alteração de campo.
+
+### Verificação feita nesta actualização
+- `node --check` ao script principal — sem erros de sintaxe.
+- Testes automáticos (Node.js) com 9 cenários: só aparecem os artigos marcados manualmente
+  (um artigo com stock baixo mas *não* marcado não entra na lista, e um artigo marcado com
+  stock saudável entra), ordenação por urgência (abaixo do mínimo primeiro, depois ponto de
+  encomenda, depois OK) com desempate alfabético, filtro por armazém, pesquisa por nome,
+  código e localização, combinação de filtros, e um artigo marcado sem limites de stock
+  definidos continua a ser listado — todas as verificações passaram.

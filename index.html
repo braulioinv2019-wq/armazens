@@ -519,6 +519,10 @@ tbody tr:hover td{background:var(--bg)}
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg> Alertas
         <span class="nav-badge nav-badge-amber" id="badge-alerts" style="display:none">0</span>
       </div>
+      <div class="nav-item" onclick="navTo('critical',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> Artigos Críticos
+        <span class="nav-badge" id="badge-critical" style="background:#8b5cf6;display:none">0</span>
+      </div>
       <div class="nav-item" onclick="navTo('reports',this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Relatórios
       </div>
@@ -822,7 +826,16 @@ tbody tr:hover td{background:var(--bg)}
       <div class="page-header"><div><div class="page-title">Alertas de Stock</div><div class="page-sub">Materiais abaixo do stock mínimo definido</div></div></div>
       <div id="alerts-list"></div>
     </div>
-    
+
+    <div class="page" id="page-critical">
+      <div class="page-header"><div><div class="page-title">⭐ Artigos Críticos</div><div class="page-sub">Materiais marcados manualmente como estratégicos/críticos, em todos os armazéns</div></div><button class="btn btn-export" onclick="exportCriticalItems()">⬇ Exportar Excel</button></div>
+      <div class="filters-bar">
+        <input class="filter-input" id="critical-search" placeholder="🔍  Pesquisar..." oninput="renderCriticalPage()" style="width:220px">
+        <select class="filter-select" id="critical-wh" onchange="renderCriticalPage()"><option value="">Todos os armazéns</option><option value="Logística">Logística</option><option value="Vini Galpão">Vini Galpão</option><option value="Emas">Emas</option><option value="Pátio">Pátio</option></select>
+      </div>
+      <div id="critical-list"></div>
+    </div>
+
     <div class="page" id="page-reports">
       <div class="page-header"><div><div class="page-title">Relatórios</div><div class="page-sub">Exportar dados para Excel</div></div></div>
       <div class="report-grid">
@@ -1727,6 +1740,7 @@ function navTo(page,el){
 if(page==='sfs')setTimeout(renderSFS,100);
 if(page==='history')setTimeout(renderHistory,100);
 if(page==='alerts')setTimeout(renderAlerts,100);
+if(page==='critical')setTimeout(renderCriticalPage,100);
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 if(el)el.classList.add('active');
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1737,6 +1751,7 @@ if(page==='vini')renderVini();
 if(page==='emas')renderEmas();
 if(page==='history')renderHistory();
 if(page==='alerts')renderAlerts();
+if(page==='critical')renderCriticalPage();
 if(page==='patio')renderPatio();
 if(page==='inventory')renderInventory();
 if(page==='users')renderUsers();
@@ -2135,6 +2150,8 @@ const expCount=getExpiringMaterials(30).length;
 const totalAlerts=a.length+expCount;
 const b=document.getElementById('badge-alerts');
 if(totalAlerts){b.textContent=totalAlerts;b.style.display='inline';}else b.style.display='none';
+const bc=document.getElementById('badge-critical');
+if(bc){const nc=getCriticalMaterials().length;if(nc){bc.textContent=nc;bc.style.display='inline';}else bc.style.display='none';}
 if(appData)document.getElementById('badge-log').textContent=appData.logistica.filter(c=>c.materials.length>0).length;
 }
 function refreshAll(){
@@ -2151,6 +2168,7 @@ if(selContainer!==null&&appData.logistica[selContainer]){
 }
 if(act==='page-vini')renderVini();
 if(act==='page-alerts')renderAlerts();if(act==='page-emas')renderEmas();
+if(act==='page-critical')renderCriticalPage();
 if(act==='page-patio')renderPatio();
 updateBadges();
 }
@@ -2278,7 +2296,7 @@ function renderSimpleMatList(mats, type, idx){
     html+='<div class="mat-item">';
     html+='<div style="flex:1">';
     if(m.code) html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>';
-    html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
+    html+='<div class="mat-name">'+(m.critical?'<span title="Artigo crítico" style="color:#8b5cf6">⭐ </span>':'')+escapeHtml(m.name)+'</div>';
     if(alvl==='critical') html+='<div style="font-size:10px;color:var(--red)">🔴 Stock crítico</div>';
     else if(alvl==='warning') html+='<div style="font-size:10px;color:var(--amber)">🟡 Ponto encomenda</div>';
     html+=renderExpiryTag(m);
@@ -2468,7 +2486,7 @@ for(var i=0;i<mats.length;i++){
   html+='<div class="mat-item">';
   html+='<div style="flex:1">';
   if(m.code)html+='<div style="font-size:10px;font-weight:700;color:var(--green)">'+escapeHtml(m.code)+'</div>';
-  html+='<div class="mat-name">'+escapeHtml(m.name)+'</div>';
+  html+='<div class="mat-name">'+(m.critical?'<span title="Artigo crítico" style="color:#8b5cf6">⭐ </span>':'')+escapeHtml(m.name)+'</div>';
   if(alvl==='critical')html+='<div class="mat-alert-tag" style="color:var(--red)">🔴 Stock crítico ('+escapeHtml(m.qty)+'/'+escapeHtml(m.minStock)+' '+escapeHtml(m.unit)+')</div>';
   else if(alvl==='warning')html+='<div class="mat-alert-tag" style="color:var(--amber)">🟡 Ponto encomenda ('+escapeHtml(m.qty)+'/'+escapeHtml(m.reorderPoint)+' '+escapeHtml(m.unit)+')</div>';
   html+=renderExpiryTag(m);
@@ -2595,6 +2613,95 @@ function toggleEmasZone(zone){
 selEmasZone=selEmasZone===zone?null:zone;
 renderEmas();
 };
+// ── ARTIGOS CRÍTICOS ────────────────────────────────────────────────────────────
+// Um artigo é "crítico" quando alguém o marca manualmente (campo m.critical). Isto é
+// independente do nível de stock: serve para acompanhar famílias estratégicas (óleos,
+// graxas, acetileno, FeSi, floculantes, pneus...) mesmo quando o stock está confortável.
+function getCriticalMaterials(){
+  return getAllMaterials().filter(function(m){return !!m.critical;});
+}
+function renderCriticalPage(){
+  var el=document.getElementById('critical-list');
+  if(!el)return;
+  var q=(document.getElementById('critical-search')?.value||'').toLowerCase().trim();
+  var whF=document.getElementById('critical-wh')?.value||'';
+  var list=getCriticalMaterials().filter(function(m){
+    if(whF&&m.warehouse!==whF)return false;
+    if(q){
+      var hay=((m.name||'')+' '+(m.code||'')+' '+(m.locFull||'')).toLowerCase();
+      if(hay.indexOf(q)<0)return false;
+    }
+    return true;
+  });
+  if(!list.length){
+    el.innerHTML='<div class="empty-state" style="padding:32px"><div class="empty-icon">⭐</div><div class="empty-text">Sem artigos críticos'+(q||whF?' para os filtros seleccionados':'')+'</div><div class="empty-sub">Para marcar um artigo como crítico, abre-o em Editar (✏) e activa a opção "⭐ Marcar como ARTIGO CRÍTICO".</div></div>';
+    return;
+  }
+  // Ordena pelos mais urgentes primeiro: stock crítico, depois ponto de encomenda, depois o resto.
+  var rank=function(m){var l=getAlertLevel(m);return l==='critical'?0:l==='warning'?1:2;};
+  list.sort(function(a,b){
+    var d=rank(a)-rank(b);
+    if(d!==0)return d;
+    return (a.name||'').localeCompare(b.name||'','pt');
+  });
+  var nCrit=list.filter(function(m){return getAlertLevel(m)==='critical';}).length;
+  var nWarn=list.filter(function(m){return getAlertLevel(m)==='warning';}).length;
+  var html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
+  html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#8b5cf6">'+list.length+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Artigos críticos</div></div>';
+  html+='<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--red)">'+nCrit+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Abaixo do stock mínimo</div></div>';
+  html+='<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--amber)">'+nWarn+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">No ponto de encomenda</div></div>';
+  html+='</div>';
+  html+='<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Código</th><th>Material</th><th>Armazém</th><th>Localização</th><th>Stock</th><th>Mínimo</th><th></th></tr></thead><tbody>';
+  list.forEach(function(m){
+    var lvl=getAlertLevel(m);
+    var badge=lvl==='critical'?'<span class="badge badge-out">🔴 Crítico</span>':lvl==='warning'?'<span class="badge badge-alert">🟡 Encomendar</span>':'<span class="badge badge-in">✅ OK</span>';
+    html+='<tr>'+
+      '<td>'+badge+'</td>'+
+      '<td style="font-size:11px;font-weight:700;color:var(--green)">'+escapeHtml(m.code||'—')+'</td>'+
+      '<td style="font-weight:500">⭐ '+escapeHtml(m.name)+'</td>'+
+      '<td style="font-size:12px">'+escapeHtml(m.warehouse||'')+'</td>'+
+      '<td style="font-size:12px;color:var(--text3)">'+escapeHtml(m.locFull||'')+'</td>'+
+      '<td style="font-weight:600;color:var(--amber)">'+escapeHtml(m.qty)+' '+escapeHtml(m.unit)+'</td>'+
+      '<td style="font-size:12px">'+escapeHtml(m.minStock||'—')+'</td>'+
+      '<td><button class="mat-btn" style="border-color:#8b5cf6;color:#8b5cf6" onclick="unmarkCritical('+m.id+')" title="Retirar da lista de críticos">✕</button></td>'+
+    '</tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+// Retira a marca de crítico directamente a partir da lista, sem ter de abrir o modal.
+async function unmarkCritical(matId){
+  if(!confirm('Retirar este artigo da lista de artigos críticos?'))return;
+  var nd=JSON.parse(JSON.stringify(appData));
+  var found=null,loc='',wh='';
+  (nd.logistica||[]).forEach(function(c){(c.materials||[]).forEach(function(m){if(m.id===matId){found=m;loc=c.label;wh='Logística';}});});
+  if(!found){var va=Array.isArray(nd.vini)?nd.vini:[];va.forEach(function(m){if(m.id===matId){found=m;loc='Vini Galpão';wh='Vini Galpão';}});}
+  if(!found){var ea=Array.isArray(nd.emas)?nd.emas:[];ea.forEach(function(m){if(m.id===matId){found=m;loc='Emas — Zona '+(m.zone||'A');wh='Emas';}});}
+  if(!found){(nd.patio||[]).forEach(function(m){if(m.id===matId){found=m;loc='Pátio';wh='Pátio';}});}
+  if(!found){showToast('Material não encontrado',true);return;}
+  found.critical=false;
+  appData=nd;
+  await saveStock(nd);
+  await logFieldChanges(found.name,loc,wh,[{field:'critical',label:'Artigo Crítico',before:'true',after:'false'}]);
+  showToast('✓ Artigo retirado da lista de críticos');
+  renderCriticalPage();
+  updateBadges();
+}
+function exportCriticalItems(){
+  var list=getCriticalMaterials();
+  if(!list.length){showToast('Sem artigos críticos marcados para exportar',true);return;}
+  var rank=function(m){var l=getAlertLevel(m);return l==='critical'?0:l==='warning'?1:2;};
+  list.sort(function(a,b){var d=rank(a)-rank(b);if(d!==0)return d;return (a.name||'').localeCompare(b.name||'','pt');});
+  var wb=XLSX.utils.book_new();
+  var d=[['Estado','Código','Material','Armazém','Localização','Stock Actual','Unidade','Stock Mínimo','Ponto de Encomenda','Nº Lote','Validade']];
+  list.forEach(function(m){
+    var lvl=getAlertLevel(m);
+    var estado=lvl==='critical'?'CRÍTICO — abaixo do mínimo':lvl==='warning'?'ATENÇÃO — ponto de encomenda':'OK';
+    d.push([estado,m.code||'',m.name,m.warehouse||'',m.locFull||'',m.qty,m.unit,m.minStock||'',m.reorderPoint||'',m.lot||'',m.expiryDate?formatExpiryDate(m.expiryDate):'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Artigos Críticos');
+  xlsxDl(wb,'LUELE_ArtigosCriticos');
+}
 function renderAlerts(){
   var el=document.getElementById('alerts-list');
   if(!el)return;
@@ -4026,6 +4133,11 @@ function editMat(type,idx,matId){
   html+='<div><label class="modal-label">STOCK MÍNIMO 🔴</label><input class="form-input" id="em-min" type="number" value="'+(mat.minStock||'')+'" placeholder="Ex: 5" style="width:100%"></div>';
   html+='</div>';
   html+='<div style="margin-bottom:12px"><label class="modal-label">PONTO DE ENCOMENDA 🟡</label><input class="form-input" id="em-reorder" type="number" value="'+(mat.reorderPoint||'')+'" placeholder="Ex: 10" style="width:100%;margin-top:4px"></div>';
+  html+='<div style="margin-bottom:12px;padding:10px 12px;background:#f5f0ff;border:1px solid #d8c9ff;border-radius:8px">'+
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#5b21b6">'+
+    '<input type="checkbox" id="em-critical" '+(mat.critical?'checked':'')+' style="width:16px;height:16px;cursor:pointer">'+
+    '⭐ Marcar como ARTIGO CRÍTICO</label>'+
+    '<div style="font-size:10px;color:var(--text3);margin-top:4px;padding-left:24px">Artigos críticos aparecem na área "Artigos Críticos" e no relatório respectivo, independentemente do nível de stock.</div></div>';
   html+='<div style="font-size:10px;color:var(--text3);margin-bottom:12px">🔴 Alerta crítico quando stock ≤ mínimo &nbsp;·&nbsp; 🟡 Alerta de encomenda quando stock ≤ ponto de encomenda</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
   html+='<div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="em-lot" value="'+escapeHtml(mat.lot||'')+'" placeholder="Opcional" style="width:100%"></div>';
@@ -4048,6 +4160,7 @@ async function confirmEditMat(type,idx,matId){
   var reorder=document.getElementById('em-reorder')?.value||'';
   var lot=document.getElementById('em-lot')?.value.trim()||'';
   var expiryDate=document.getElementById('em-expiry')?.value||'';
+  var critical=!!document.getElementById('em-critical')?.checked;
   if(!name){showToast('Escreve o nome do material',true);return;}
   var nd=JSON.parse(JSON.stringify(appData));
   var mat=null; var loc=''; var wh='';
@@ -4057,8 +4170,8 @@ async function confirmEditMat(type,idx,matId){
   else if(type==='patio'){mat=nd.patio?.find(function(m){return m.id===matId;});loc='Pátio';wh='Pátio';}
   var fieldChanges=[];
   if(mat){
-    var editFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['reorderPoint','Ponto de Encomenda'],['lot','Nº de Lote'],['expiryDate','Data de Validade']];
-    var newVals={code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder,lot:lot,expiryDate:expiryDate};
+    var editFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['reorderPoint','Ponto de Encomenda'],['lot','Nº de Lote'],['expiryDate','Data de Validade'],['critical','Artigo Crítico']];
+    var newVals={code:code,name:name,qty:qty,unit:unit,minStock:min,reorderPoint:reorder,lot:lot,expiryDate:expiryDate,critical:critical};
     fieldChanges=computeFieldChanges(mat,newVals,editFieldDefs);
     Object.assign(mat,newVals);
   }
@@ -4088,6 +4201,12 @@ function editPatioMat(matId){
       <div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="ep-lot" value="${escapeHtml(mat.lot||'')}" placeholder="Opcional" style="width:100%"></div>
       <div><label class="modal-label">DATA DE VALIDADE</label><input class="form-input" id="ep-expiry" type="date" value="${mat.expiryDate||''}" style="width:100%"></div>
     </div>
+    <div style="margin-bottom:12px;padding:10px 12px;background:#f5f0ff;border:1px solid #d8c9ff;border-radius:8px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#5b21b6">
+        <input type="checkbox" id="ep-critical" ${mat.critical?'checked':''} style="width:16px;height:16px;cursor:pointer">
+        ⭐ Marcar como ARTIGO CRÍTICO</label>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;padding-left:24px">Artigos críticos aparecem na área "Artigos Críticos" e no relatório respectivo, independentemente do nível de stock.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-secondary" onclick="printLabelFromEditModal('ep')" style="border-color:var(--green2);color:var(--green)" title="Imprime uma etiqueta QR com o código actual">🏷️ Imprimir Etiqueta</button>
@@ -4102,11 +4221,12 @@ async function confirmEditPatio(matId){
   const min=document.getElementById('ep-min')?.value||'';
   const lot=document.getElementById('ep-lot')?.value.trim()||'';
   const expiryDate=document.getElementById('ep-expiry')?.value||'';
+  const critical=!!document.getElementById('ep-critical')?.checked;
   if(!name){showToast('Escreve o nome do material',true);return;}
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
-  const editPatioFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['lot','Nº de Lote'],['expiryDate','Data de Validade']];
-  const newValsPatio={code,name,qty,unit,minStock:min,lot,expiryDate};
+  const editPatioFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['lot','Nº de Lote'],['expiryDate','Data de Validade'],['critical','Artigo Crítico']];
+  const newValsPatio={code,name,qty,unit,minStock:min,lot,expiryDate,critical};
   const fieldChangesPatio=computeFieldChanges(mat,newValsPatio,editPatioFieldDefs);
   Object.assign(mat,newValsPatio);
   closeModal();
@@ -5612,6 +5732,10 @@ window.exportHistory = exportHistory;
 window.switchHistoryTab = switchHistoryTab;
 window.renderAuditLog = renderAuditLog;
 window.exportAuditLog = exportAuditLog;
+window.getCriticalMaterials = getCriticalMaterials;
+window.renderCriticalPage = renderCriticalPage;
+window.exportCriticalItems = exportCriticalItems;
+window.unmarkCritical = unmarkCritical;
 window.exportAlerts = exportAlerts;
 window.exportLogistica = exportLogistica;
 window.exportVini = exportVini;

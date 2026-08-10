@@ -4244,7 +4244,10 @@ function editPatioMat(matId){
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
       <div><label class="modal-label">QUANTIDADE</label><input class="form-input" id="ep-qty" type="number" value="${mat.qty}" style="width:100%"></div>
       <div><label class="modal-label">UNIDADE</label><select class="form-select" id="ep-unit" style="width:100%">${unitOpts(mat.unit)}</select></div>
-      <div><label class="modal-label">STOCK MÍNIMO</label><input class="form-input" id="ep-min" type="number" value="${mat.minStock||''}" style="width:100%"></div>
+      <div><label class="modal-label">STOCK MÍNIMO 🔴</label><input class="form-input" id="ep-min" type="number" value="${mat.minStock||''}" style="width:100%"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="modal-label">PONTO DE ENCOMENDA 🟡</label><input class="form-input" id="ep-reorder" type="number" value="${mat.reorderPoint||''}" placeholder="Ex: 10" style="width:100%"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><label class="modal-label">Nº DE LOTE</label><input class="form-input" id="ep-lot" value="${escapeHtml(mat.lot||'')}" placeholder="Opcional" style="width:100%"></div>
@@ -4268,14 +4271,15 @@ async function confirmEditPatio(matId){
   const qty=document.getElementById('ep-qty')?.value||'0';
   const unit=document.getElementById('ep-unit')?.value||'un';
   const min=document.getElementById('ep-min')?.value||'';
+  const reorder=document.getElementById('ep-reorder')?.value||'';
   const lot=document.getElementById('ep-lot')?.value.trim()||'';
   const expiryDate=document.getElementById('ep-expiry')?.value||'';
   const critical=!!document.getElementById('ep-critical')?.checked;
   if(!name){showToast('Escreve o nome do material',true);return;}
   const mat=appData.patio?.find(m=>m.id===matId);
   if(!mat)return;
-  const editPatioFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['lot','Nº de Lote'],['expiryDate','Data de Validade'],['critical','Artigo Crítico']];
-  const newValsPatio={code,name,qty,unit,minStock:min,lot,expiryDate,critical};
+  const editPatioFieldDefs=[['code','Código'],['name','Nome'],['qty','Quantidade'],['unit','Unidade'],['minStock','Stock Mínimo'],['reorderPoint','Ponto de Encomenda'],['lot','Nº de Lote'],['expiryDate','Data de Validade'],['critical','Artigo Crítico']];
+  const newValsPatio={code,name,qty,unit,minStock:min,reorderPoint:reorder,lot,expiryDate,critical};
   const fieldChangesPatio=computeFieldChanges(mat,newValsPatio,editPatioFieldDefs);
   Object.assign(mat,newValsPatio);
   closeModal();

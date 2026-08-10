@@ -498,3 +498,30 @@ mostra **uma única linha com o total consolidado**, seja qual for o número de 
   mínimo somado = crítico); um artigo crítico numa única localização continua a agrupar sem
   regressão; e os armazéns distintos de um grupo ficam correctamente identificados para a
   coluna de Localizações — todas as verificações passaram.
+
+---
+
+## Actualização — Ponto de Encomenda também no Pátio
+
+Perguntaste porque é que os artigos do Pátio nunca tinham ponto de encomenda preenchido.
+A causa: o Pátio usa um formulário de edição próprio (por ser "material em trânsito"), e
+esse formulário só tinha o campo "Stock Mínimo" — o campo "Ponto de Encomenda" nunca foi
+incluído nele, ao contrário do formulário usado pela Logística, Vini e Emas. Não era stock
+a desaparecer nem um cálculo errado: o campo simplesmente não existia para preencher.
+
+- O modal de edição do Pátio (✏ na lista do Pátio) tem agora o campo "🟡 PONTO DE
+  ENCOMENDA", igual ao dos outros armazéns.
+- A partir de agora, um artigo do Pátio com ponto de encomenda definido passa a aparecer
+  correctamente na página "Alertas" (🟡 no ponto de encomenda) e a contar para o número de
+  alertas do dashboard, tal como já acontecia com Stock Mínimo.
+- A alteração fica registada na auditoria por material, como qualquer outro campo editado.
+
+### Verificação feita nesta actualização
+- `node --check` ao script principal — sem erros de sintaxe.
+- Testes automáticos (Node.js) com 4 cenários: definir o ponto de encomenda pela primeira
+  vez fica correctamente registado como alteração na auditoria; um artigo do Pátio com
+  stock saudável mas sem ponto de encomenda definido continua "OK"; o mesmo artigo, depois
+  de definido o ponto de encomenda e com o stock a cair até esse valor, passa correctamente
+  a "🟡 ponto de encomenda"; e quando tanto o stock mínimo como o ponto de encomenda são
+  ultrapassados, o stock mínimo continua a ter prioridade (🔴 crítico), sem alterar o
+  comportamento já existente para os outros armazéns — todas as verificações passaram.

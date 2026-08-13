@@ -525,3 +525,21 @@ a desaparecer nem um cálculo errado: o campo simplesmente não existia para pre
   a "🟡 ponto de encomenda"; e quando tanto o stock mínimo como o ponto de encomenda são
   ultrapassados, o stock mínimo continua a ter prioridade (🔴 crítico), sem alterar o
   comportamento já existente para os outros armazéns — todas as verificações passaram.
+
+---
+
+## Actualização — Reconciliação Primavera: código manda mais do que a descrição
+
+Pediste para rever a reconciliação com o Primavera porque alguns artigos têm o mesmo código mas descrições diferentes nos dois sistemas (ex: artigo 012.0050 é "Toner 828" no Primavera mas tem outro nome no WMS) — e que o sistema use o código como prova de que é o mesmo artigo, só sugerindo alterações quando tiver pelo menos 80% de certeza.
+
+**O que estava a acontecer:** a comparação já casava os artigos pelo código (correcto), mas quando encontrava o mesmo código nos dois lados com nomes diferentes, escolhia silenciosamente o nome do sistema para mostrar — sem avisar de que havia uma diferença. Se as quantidades batessem certo, a linha parecia "tudo igual" e a diferença de descrição passava completamente despercebida.
+
+**O que mudou:**
+- A comparação agora detecta sempre que o código é igual nos dois sistemas mas a descrição não bate certo (ignorando diferenças de acentos/maiúsculas, que não contam como divergência real).
+- Nova secção "📝 Sugestões de descrição" na página de Reconciliação: lista todos os artigos com o mesmo código onde a descrição diverge, mostrando lado a lado a descrição do Primavera e a do sistema, e as localizações onde o artigo está guardado. Como o código é a prova definitiva de que é o mesmo artigo (é a chave que o Primavera usa, muito mais fiável do que o nome), estas sugestões aparecem sempre com certeza — não é uma adivinha, é um facto confirmado pelo código.
+- Botão "✓ Actualizar descrição" corrige o nome em todas as localizações desse código de uma só vez (por exemplo se o mesmo artigo estiver em 2 contentores diferentes), com registo no histórico de alterações. Botão "Ignorar" descarta a sugestão sem alterar nada.
+- Também apareceu uma etiqueta "⚠️ DESCRIÇÃO DIFERENTE" directamente na tabela principal da reconciliação, e um novo filtro "Mesmo código, descrição diferente" no menu de filtros, para quem preferir ver tudo numa lista só.
+
+**Assistente de codificação por nome (para artigos sem código) — limiar subido para 80%:** este é o assistente diferente, usado quando um material no sistema não tem código nenhum atribuído e o sistema tenta adivinhar qual artigo do Primavera corresponde, comparando só os nomes (não há código para comparar, porque o do sistema está vazio). Antes, uma semelhança de nome de apenas 50% já aparecia como sugestão (nível "Baixa"), o que gerava muitos falsos positivos. Agora só aparece sugestão quando a semelhança do nome for de pelo menos 80% — tudo abaixo disso fica escondido, como pediste ("nada abaixo disso"). Os níveis de confiança mostrados passam a ser só "Alta" (80–94%) e "Muito Alta" (95–100%).
+
+Testado com 8 cenários automáticos (`test_primavera_matching.cjs`): detecção correcta do exemplo do Toner 828 (mesmo código, nomes completamente diferentes → sugestão), diferenças só de acentuação/maiúsculas não geram sugestão (não é uma divergência real), artigos que só existem num dos dois sistemas nunca geram sugestão de descrição, e o assistente de codificação por nome filtra correctamente correspondências parciais (60% de semelhança) que antes apareciam com o limiar de 50% e agora ficam de fora com o limiar de 80%. Todos os testes passaram.

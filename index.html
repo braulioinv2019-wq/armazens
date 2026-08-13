@@ -895,6 +895,7 @@ tbody tr:hover td{background:var(--bg)}
         </div>
       </div>
       <div id="recon-summary"></div>
+      <div id="recon-desc-suggest-wrap"></div>
       <div id="recon-suggest-wrap"></div>
       <div class="filters-bar" id="recon-filters" style="display:none">
         <input class="filter-input" id="recon-search" placeholder="🔍  Pesquisar por nome ou código..." oninput="renderReconciliationTable()" style="width:240px">
@@ -903,6 +904,7 @@ tbody tr:hover td{background:var(--bg)}
           <option value="all">Todos os artigos comparados</option>
           <option value="primavera-only">Só no Primavera (não existe no sistema)</option>
           <option value="system-only">Só no sistema (não existe no Primavera)</option>
+          <option value="name-mismatch">Mesmo código, descrição diferente</option>
         </select>
       </div>
       <div class="card" id="recon-result-card" style="display:none">
@@ -1843,14 +1845,18 @@ function compareWithPrimavera(primaveraMap){
     var s=systemByCode[code];
     var pQty=p?+p.qty.toFixed(3):null;
     var sQty=s?+s.qty.toFixed(3):null;
+    var nameMismatch=!!(p&&s&&normNameForMatch(p.name)!==normNameForMatch(s.name)&&normNameForMatch(p.name)&&normNameForMatch(s.name));
     rowsOut.push({
       code:code,
       name:(s&&s.name)||(p&&p.name)||'',
+      primaveraName:p?p.name:'',
+      systemName:s?s.name:'',
       primaveraQty:pQty,
       systemQty:sQty,
       diff:(p&&s)?+(p.qty-s.qty).toFixed(3):null,
       onlyPrimavera:!!p&&!s,
       onlySystem:!!s&&!p,
+      nameMismatch:nameMismatch,
       locations:s?s.locations:[]
     });
   });
@@ -1869,6 +1875,7 @@ function compareWithPrimavera(primaveraMap){
   if(cardEl)cardEl.style.display='block';
   if(expBtn)expBtn.style.display='inline-flex';
   renderReconciliationTable();
+  renderDescriptionSuggestions();
   renderCodeSuggestions();
   showToast('✓ Comparação concluída — '+rowsOut.length+' artigos analisados');
 }
@@ -1900,6 +1907,7 @@ function renderReconciliationTable(){
     if(mode==='diff')return r.diff!==null&&r.diff!==0;
     if(mode==='primavera-only')return r.onlyPrimavera;
     if(mode==='system-only')return r.onlySystem;
+    if(mode==='name-mismatch')return r.nameMismatch;
     return true;
   });
   var tbody=document.getElementById('recon-tbody');
@@ -1920,6 +1928,7 @@ function renderReconciliationTable(){
     var tag='';
     if(r.onlyPrimavera)tag=' <span style="background:var(--amber-bg,#fff7e6);color:var(--amber);font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px">SÓ PRIMAVERA</span>';
     if(r.onlySystem)tag=' <span style="background:var(--blue-bg,#eef4ff);color:var(--blue);font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px">SÓ SISTEMA</span>';
+    if(r.nameMismatch)tag+=' <span title="Mesmo código, descrição diferente no Primavera: '+escapeHtml(r.primaveraName)+'" style="background:var(--amber-bg,#fff7e6);color:var(--amber);font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px">⚠️ DESCRIÇÃO DIFERENTE</span>';
     return '<tr>'+
       '<td style="font-family:monospace;color:var(--green)">'+escapeHtml(r.code)+'</td>'+
       '<td>'+escapeHtml(r.name||'—')+tag+'</td>'+
@@ -1998,7 +2007,7 @@ function buildCodeSuggestions(){
       var s=nameSimilarity(t.name,c.name);
       if(s>bestScore){bestScore=s;best=c;}
     });
-    if(best&&bestScore>=0.5&&!dismissed[suggestionKey(t,best)]){
+    if(best&&bestScore>=0.8&&!dismissed[suggestionKey(t,best)]){
       out.push({target:t,suggestion:best,score:bestScore});
     }
   });
@@ -2013,12 +2022,12 @@ function renderCodeSuggestions(){
   if(!suggestions.length){wrap.innerHTML='';return;}
   wrap.innerHTML='<div class="card" style="margin-bottom:16px">'+
     '<div class="card-header"><span class="card-title">💡 Sugestões de codificação ('+suggestions.length+')</span></div>'+
-    '<div style="padding:12px 16px;font-size:12px;color:var(--text3)">Materiais no sistema sem código, com um nome parecido a um artigo que só aparece no Primavera. Confirma se é o mesmo artigo antes de aceitar.</div>'+
+    '<div style="padding:12px 16px;font-size:12px;color:var(--text3)">Materiais no sistema sem código, com um nome muito parecido (≥80% de certeza) a um artigo que só aparece no Primavera. Correspondências com menos certeza não aparecem aqui — confirma sempre antes de aceitar.</div>'+
     '<div class="table-wrap"><table><thead><tr><th>Material no sistema</th><th>Localização</th><th>Sugestão do Primavera</th><th>Confiança</th><th>Acções</th></tr></thead><tbody>'+
     suggestions.map(function(s,i){
       var pct=Math.round(s.score*100);
-      var conf=pct>=90?'Alta':pct>=70?'Média':'Baixa';
-      var confColor=pct>=90?'var(--green)':pct>=70?'var(--amber)':'var(--text3)';
+      var conf=pct>=95?'Muito Alta':'Alta';
+      var confColor=pct>=95?'var(--green)':'var(--amber)';
       return '<tr>'+
         '<td>'+escapeHtml(s.target.name)+'</td>'+
         '<td style="font-size:11px;color:var(--text3)">'+escapeHtml(s.target.locFull)+'</td>'+
@@ -2039,6 +2048,79 @@ function dismissCodeSuggestion(i){
   if(!reconciliationData.dismissed)reconciliationData.dismissed={};
   reconciliationData.dismissed[suggestionKey(s.target,s.suggestion)]=true;
   renderCodeSuggestions();
+}
+// Sugestões de descrição: quando o MESMO código existe no Primavera e no sistema mas a
+// descrição não bate certo, o código é a prova (é o mesmo artigo, 100% de certeza — ver
+// nota mais abaixo sobre o limiar de 80%), só falta sincronizar o nome. Diferente do
+// assistente de codificação acima, que tenta ADIVINHAR o código por semelhança de nome
+// quando o sistema não tem código nenhum.
+function descSuggestionKey(code){return 'desc|'+code;}
+function buildDescriptionSuggestions(){
+  if(!reconciliationData)return[];
+  var dismissed=reconciliationData.dismissed||{};
+  return reconciliationData.rows.filter(function(r){
+    return r.nameMismatch&&!dismissed[descSuggestionKey(r.code)];
+  }).sort(function(a,b){return (a.code||'').localeCompare(b.code||'');});
+}
+function renderDescriptionSuggestions(){
+  var wrap=document.getElementById('recon-desc-suggest-wrap');
+  if(!wrap)return;
+  var list=buildDescriptionSuggestions();
+  window._descSuggestions=list;
+  if(!list.length){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div class="card" style="margin-bottom:16px">'+
+    '<div class="card-header"><span class="card-title">📝 Sugestões de descrição — mesmo código, nome diferente ('+list.length+')</span></div>'+
+    '<div style="padding:12px 16px;font-size:12px;color:var(--text3)">O código do artigo é igual no Primavera e no sistema — logo é o mesmo artigo (100% de certeza, o código manda mais do que a descrição). Só a descrição não coincide. Confirma e actualiza a descrição do sistema para a do Primavera, em todas as localizações desse código.</div>'+
+    '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Descrição no sistema</th><th>Descrição no Primavera</th><th>Localizações</th><th>Acções</th></tr></thead><tbody>'+
+    list.map(function(r,i){
+      return '<tr>'+
+        '<td style="font-family:monospace;color:var(--green)">'+escapeHtml(r.code)+'</td>'+
+        '<td>'+escapeHtml(r.systemName||'—')+'</td>'+
+        '<td>'+escapeHtml(r.primaveraName||'—')+'</td>'+
+        '<td style="font-size:11px;color:var(--text3)">'+(r.locations&&r.locations.length?escapeHtml(r.locations.join(', ')):'—')+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="btn btn-primary btn-sm" onclick="updateDescriptionFromPrimavera('+i+')" title="Actualiza o nome no sistema para o nome do Primavera, em todas as localizações desse código">✓ Actualizar descrição</button> '+
+          '<button class="btn btn-secondary btn-sm" onclick="dismissDescriptionSuggestion('+i+')">Ignorar</button>'+
+        '</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div></div>';
+}
+function dismissDescriptionSuggestion(i){
+  var r=window._descSuggestions&&window._descSuggestions[i];
+  if(!r||!reconciliationData)return;
+  if(!reconciliationData.dismissed)reconciliationData.dismissed={};
+  reconciliationData.dismissed[descSuggestionKey(r.code)]=true;
+  renderDescriptionSuggestions();
+}
+async function updateDescriptionFromPrimavera(i){
+  var r=window._descSuggestions&&window._descSuggestions[i];
+  if(!r){showToast('Sugestão já não é válida — actualiza a comparação e tenta novamente',true);return;}
+  if(!appData){showToast('Sistema não carregado',true);return;}
+  if(!confirm('Actualizar a descrição de todos os artigos com o código "'+r.code+'" para "'+r.primaveraName+'" (nome do Primavera)?'))return;
+  var nd=JSON.parse(JSON.stringify(appData));
+  var changed=[];
+  function apply(m,loc,wh){
+    if((m.code||'').trim()===r.code){
+      var oldName=m.name;
+      if(oldName!==r.primaveraName){m.name=r.primaveraName;changed.push({name:r.primaveraName,oldName:oldName,loc:loc,wh:wh});}
+    }
+  }
+  (nd.logistica||[]).forEach(function(c){(c.materials||[]).forEach(function(m){apply(m,c.label,'Logística');});});
+  var va=Array.isArray(nd.vini)?nd.vini:[];va.forEach(function(m){apply(m,'Vini Galpão','Vini Galpão');});
+  var ea=Array.isArray(nd.emas)?nd.emas:getEmasArr();nd.emas=ea;ea.forEach(function(m){apply(m,'Emas — Zona '+(m.zone||'A'),'Emas');});
+  (nd.patio||[]).forEach(function(m){apply(m,'Pátio','Pátio');});
+  if(!changed.length){showToast('Nenhum material encontrado com esse código',true);return;}
+  appData=nd;
+  await saveStock(nd);
+  for(var k=0;k<changed.length;k++){
+    await logFieldChanges(changed[k].name,changed[k].loc,changed[k].wh,[{field:'name',label:'Nome',before:changed[k].oldName,after:changed[k].name}]);
+  }
+  showToast('✓ Descrição actualizada em '+changed.length+' localização'+(changed.length===1?'':'ões'));
+  refreshAll();
+  if(reconciliationData&&reconciliationData.primaveraMap){
+    compareWithPrimavera(reconciliationData.primaveraMap);
+  }
 }
 function findMatRef(nd,warehouse,location,id){
   if(warehouse==='Logística'){
@@ -5884,6 +5966,9 @@ window.buildCodeSuggestions = buildCodeSuggestions;
 window.renderCodeSuggestions = renderCodeSuggestions;
 window.dismissCodeSuggestion = dismissCodeSuggestion;
 window.acceptCodeSuggestion = acceptCodeSuggestion;
+window.renderDescriptionSuggestions = renderDescriptionSuggestions;
+window.dismissDescriptionSuggestion = dismissDescriptionSuggestion;
+window.updateDescriptionFromPrimavera = updateDescriptionFromPrimavera;
 window.openGroupEntryModal = openGroupEntryModal;
 window.addGroupEntryItem = addGroupEntryItem;
 window.removeGroupEntryItem = removeGroupEntryItem;

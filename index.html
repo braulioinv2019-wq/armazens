@@ -466,11 +466,11 @@ tbody tr:hover td{background:var(--bg)}
       <div class="login-subtitle">Introduz as tuas credenciais para aceder ao sistema</div>
       <div class="form-group">
         <label class="form-label">UTILIZADOR</label>
-        <input class="form-field" id="login-user" type="text" placeholder="utilizador@luele.co.ao" autocomplete="off">
+        <input class="form-field" aria-label="Email do utilizador" autocomplete="username" id="login-user" type="text" placeholder="utilizador@luele.co.ao">
       </div>
       <div class="form-group">
         <label class="form-label">PASSWORD</label>
-        <input class="form-field" id="login-pass" type="password" placeholder="••••••••">
+        <input class="form-field" aria-label="Palavra-passe" autocomplete="current-password" id="login-pass" type="password" placeholder="••••••••">
       </div>
       <div class="login-error" id="login-error">Utilizador ou password incorrectos.</div>
       <button class="login-btn" onclick="doLogin()">Entrar no Sistema</button>
@@ -1144,10 +1144,12 @@ try {
     if(syncEl) syncEl.innerHTML = '<span class="sync-dot"></span>Sincronizado';
   }, 2000);
   console.log('✅ saveStock OK — '+Object.keys(data).join(', '));
+  return true;
 } catch(e) {
   console.error('❌ saveStock FAILED:', e.code, e.message);
   if(syncEl) syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block"></span> ERRO ao guardar!';
   showToast('❌ ERRO: '+e.message+' (código: '+e.code+')', true);
+  return false;
 }
 }
 async function logHistory(type,mat,loc,wh,qty,unit,extra) {
@@ -1454,7 +1456,7 @@ function openUndoImportModal(){
     }
     appData = nd;
     closeModal();
-    await saveStock(nd);
+    if(!await saveStock(nd))return;
     showToast('✓ '+removed+' materiais removidos de '+dest);
     refreshAll();
   };
@@ -1690,7 +1692,8 @@ function applyImport(newOnes, sameQty, resolved, dest, zone, logIdx, targetMats)
   }
   closeModal();
   var nd = JSON.parse(JSON.stringify(appData));
-  saveStock(nd).then(function(){
+  saveStock(nd).then(function(saved){
+    if(!saved)return;
     var wh = dest.startsWith('emas')?'Emas':dest==='vini'?'Vini Galpão':dest==='patio'?'Pátio':'Logística';
     logHistory('ENTRADA','Importação Excel — '+window._importLabel,window._importLabel,wh,String(added+updated),'materiais');
     var msg='✓ '+added+' novo(s), '+updated+' actualizado(s)';
@@ -1761,7 +1764,7 @@ if(page==='users')renderUsers();
 function showToast(msg,err=false){
 const t=document.getElementById('toast');
 const icon=err?'⚠️':'✅';
-t.innerHTML='<span class="toast-icon">'+icon+'</span><span class="toast-msg">'+msg+'</span>';
+t.innerHTML='<span class="toast-icon">'+escapeHtml(icon)+'</span><span class="toast-msg">'+escapeHtml(msg)+'</span>';
 t.className='toast'+(err?' error':'')+' show';
 t.style.display='flex';
 clearTimeout(t._timer);
@@ -2112,7 +2115,7 @@ async function updateDescriptionFromPrimavera(i){
   (nd.patio||[]).forEach(function(m){apply(m,'Pátio','Pátio');});
   if(!changed.length){showToast('Nenhum material encontrado com esse código',true);return;}
   appData=nd;
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   for(var k=0;k<changed.length;k++){
     await logFieldChanges(changed[k].name,changed[k].loc,changed[k].wh,[{field:'name',label:'Nome',before:changed[k].oldName,after:changed[k].name}]);
   }
@@ -2152,7 +2155,7 @@ async function acceptCodeSuggestion(i,alsoRename){
   mat.code=s.suggestion.code;
   if(alsoRename)mat.name=s.suggestion.name;
   appData=nd;
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   await logHistory('EDIÇÃO',mat.name,s.target.locFull,s.target.warehouse,String(mat.qty||''),mat.unit||'');
   showToast('✓ Código '+s.suggestion.code+' atribuído a "'+mat.name+'"'+(alsoRename&&oldName!==mat.name?' (nome actualizado)':''));
   refreshAll();
@@ -2791,7 +2794,7 @@ async function unmarkCritical(matId){
   if(!found){showToast('Material não encontrado',true);return;}
   found.critical=false;
   appData=nd;
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   await logFieldChanges(found.name,loc,wh,[{field:'critical',label:'Artigo Crítico',before:'true',after:'false'}]);
   showToast('✓ Artigo retirado da lista de críticos');
   renderCriticalPage();
@@ -2810,7 +2813,7 @@ async function unmarkCriticalGroup(name){
   (nd.patio||[]).forEach(function(m){if(m.critical&&(m.name||'').trim().toUpperCase()===key){m.critical=false;changed.push({name:m.name,loc:'Pátio',wh:'Pátio'});}});
   if(!changed.length){showToast('Material não encontrado',true);return;}
   appData=nd;
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   for(var i=0;i<changed.length;i++){
     await logFieldChanges(changed[i].name,changed[i].loc,changed[i].wh,[{field:'critical',label:'Artigo Crítico',before:'true',after:'false'}]);
   }
@@ -3412,7 +3415,7 @@ const n=document.getElementById('nc-name').value.trim();
 if(!l)return;
 const nd=JSON.parse(JSON.stringify(appData));
 nd.logistica.push({id:Date.now(),label:l,name:n,materials:[]});
-await saveStock(nd);closeModal();
+if(!await saveStock(nd))return;closeModal();
 };
 function openAddShelfModal(){
 openModal(`<div class="modal-header"><span class="modal-title">Nova prateleira</span><button class="modal-close" onclick="closeModal()">✕</button></div>
@@ -3425,7 +3428,7 @@ const l=document.getElementById('ns-label').value.trim();const n=parseInt(docume
 if(!l)return;
 const lvs='ABCDE'.slice(0,n).split('');
 const nd=JSON.parse(JSON.stringify(appData));nd.vini.push({id:Date.now(),label:l,levels:lvs.map(lv=>({id:l+lv,label:'Nível '+lv,materials:[]}))});
-await saveStock(nd);closeModal();
+if(!await saveStock(nd))return;closeModal();
 };
 function xlsxDl(wb,name){XLSX.writeFile(wb,name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');}
 function exportFullStock(){
@@ -3599,6 +3602,7 @@ const expiryDate=document.getElementById('ge-expiry')?.value||'';
 const ref=document.getElementById('ge-ref')?.value.trim()||'';
 const obs=document.getElementById('ge-obs')?.value.trim()||'';
 if(!name){showToast('Escreve o nome do material',true);return;}
+if(!Number.isFinite(Number(qty))||Number(qty)<=0){showToast('Introduz uma quantidade positiva e finita',true);return;}
 const mat={id:Date.now(),code,name,qty,unit,minStock:min,geNum,supplier,ref,lot,expiryDate};
 const nd=JSON.parse(JSON.stringify(appData));
 let loc='';
@@ -3620,7 +3624,7 @@ loc='Contentor '+nd.logistica[i].label;
 }
 appData=nd;
 closeModal();
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('ENTRADA',name,loc,'Logística',qty,unit);
 generateGEPDF({geNum,name,code,qty,unit,dest:loc,supplier,ref,obs,lot,expiryDate,processadoPor:currentUser.name});
 showToast('✓ Entrada registada — GE gerado!');
@@ -3812,7 +3816,7 @@ async function confirmCorrectExit(historyId){
   }
   appData=nd;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   var deltaLabel=(delta>0?'+':'')+delta;
   await logHistory('AJUSTE','Correcção de saída — '+h.material+(obs?' ('+obs+')':''),h.location,h.warehouse||h.wh,deltaLabel,h.unit);
   try{await updateDoc(doc(db,'wms','history','entries',historyId),{corrected:true,correctedBy:currentUser.name,correctedQty:String(correctedQty),correctedDelta:deltaLabel,correctedAt:serverTimestamp()});}catch(e){console.error('Marcar correcção:',e);}
@@ -3943,7 +3947,7 @@ async function confirmGroupEntry(geNum){
   });
   appData=nd;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   var whLabel=target.kind==='log'?'Logística':(target.kind==='vini'?'Vini Galpão':(target.kind==='emas'?'Emas':'Pátio'));
   for(var j=0;j<receiptItems.length;j++){
     await logHistory('ENTRADA',receiptItems[j].name,target.loc,whLabel,String(receiptItems[j].qty),receiptItems[j].unit);
@@ -4044,7 +4048,7 @@ mat.unit=unit;
 }
 appData=nd;
 closeModal();
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('ENTRADA',mat.name,loc,wh,String(addQty),unit);
 showToast('✓ Stock actualizado!');
 spawnParticles();
@@ -4156,7 +4160,7 @@ const m=arr.find(m=>m.id===matId);if(m){srcLoc='Emas — Zona '+(m.zone||'A');sr
 } else if(srcMat.warehouse==='Pátio'){
 const m=nd.patio?.find(m=>m.id===matId);if(m){srcLoc='Pátio';srcWh='Pátio';const rem=parseFloat(m.qty)-qty;if(rem<=0)nd.patio=nd.patio.filter(x=>x.id!==matId);else m.qty=String(rem);}
 }
-const newMat={id:Date.now(),code:srcMat.code||'',name:srcMat.name,qty:String(qty),unit:srcMat.unit,minStock:srcMat.minStock||''};
+const newMat={id:Date.now(),code:srcMat.code||'',name:srcMat.name,qty:String(qty),unit:srcMat.unit,minStock:srcMat.minStock||'',lot:srcMat.lot||'',expiryDate:srcMat.expiryDate||'',supplier:srcMat.supplier||'',ref:srcMat.ref||'',geNum:srcMat.geNum||'',reorderPoint:srcMat.reorderPoint||'',critical:!!srcMat.critical};
 let destLoc='';
 if(dest==='patio'){if(!nd.patio)nd.patio=[];nd.patio.push({...newMat,arrivedAt:new Date().toISOString(),status:'transit'});destLoc='Pátio';}
 else if(dest==='vini'){if(!Array.isArray(nd.vini))nd.vini=[];nd.vini.push(newMat);destLoc='Vini Galpão';}
@@ -4164,7 +4168,7 @@ else if(dest.startsWith('emas:')){const zone=dest.split(':')[1];if(!Array.isArra
 else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logistica[i].materials.push(newMat);destLoc='Contentor '+nd.logistica[i].label;}
 appData=nd;
 closeModal();
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('TRANSFERÊNCIA',srcMat.name,srcLoc+' → '+destLoc,srcWh+' → '+destLoc.split(' ')[0],String(qty),srcMat.unit,srcMat.warehouse==='Pátio'?patioDaysExtra(srcMat.arrivedAt):undefined);
 showToast('✓ Transferência concluída!');
 spawnParticles();
@@ -4308,7 +4312,7 @@ async function confirmEditMat(type,idx,matId){
   }
   appData=nd;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   await logHistory('EDIÇÃO',name,loc,wh,qty,unit);
   if(fieldChanges.length)await logFieldChanges(name,loc,wh,fieldChanges);
   showToast('✓ Material actualizado!');
@@ -4365,7 +4369,7 @@ async function confirmEditPatio(matId){
   const fieldChangesPatio=computeFieldChanges(mat,newValsPatio,editPatioFieldDefs);
   Object.assign(mat,newValsPatio);
   closeModal();
-  await saveStock(JSON.parse(JSON.stringify(appData)));
+  if(!await saveStock(JSON.parse(JSON.stringify(appData))))return;
   await logHistory('EDIÇÃO',name,'Pátio','Pátio',qty,unit);
   if(fieldChangesPatio.length)await logFieldChanges(name,'Pátio','Pátio',fieldChangesPatio);
   showToast('✓ Material actualizado!');
@@ -4398,14 +4402,16 @@ async function confirmQuickTransfer(matId){
 document.getElementById('tr-mat') && (document.getElementById('tr-mat').value='Pátio|GERAL|'+matId);
 const qty=parseFloat(document.getElementById('qtr-qty')?.value||'0');
 const dest=document.getElementById('qtr-dest')?.value||'';
-if(!qty||!dest){showToast('Preenche todos os campos',true);return;}
+if(!Number.isFinite(qty)||qty<=0||!dest){showToast('Introduz uma quantidade positiva e um destino',true);return;}
 const mat=appData.patio?.find(m=>m.id===matId);
 if(!mat)return;
+if(!Number.isFinite(Number(mat.qty))||qty>Number(mat.qty)){showToast('Stock insuficiente para transferir',true);return;}
+if(!(dest==='vini'||/^emas:[A-D]$/.test(dest)||(/^log:\d+$/.test(dest)&&appData.logistica[Number(dest.split(':')[1])]))){showToast('Destino inválido ou igual à origem',true);return;}
 const nd=JSON.parse(JSON.stringify(appData));
 const rem=parseFloat(mat.qty)-qty;
 if(rem<=0)nd.patio=nd.patio.filter(m=>m.id!==matId);
 else nd.patio.find(m=>m.id===matId).qty=String(rem);
-const newMat={id:Date.now(),code:mat.code||'',name:mat.name,qty:String(qty),unit:mat.unit,minStock:mat.minStock||''};
+const newMat={id:Date.now(),code:mat.code||'',name:mat.name,qty:String(qty),unit:mat.unit,minStock:mat.minStock||'',lot:mat.lot||'',expiryDate:mat.expiryDate||'',supplier:mat.supplier||'',ref:mat.ref||'',geNum:mat.geNum||'',reorderPoint:mat.reorderPoint||'',critical:!!mat.critical};
 let destLoc='';
 // NOTA: buildDestOptions() gera valores 'patio', 'vini', 'emas:A'..'emas:D' e 'log:N' —
 // os ramos abaixo tinham de corresponder exactamente a esses valores (antes comparavam
@@ -4415,7 +4421,7 @@ else if(dest.startsWith('emas:')){const zone=dest.split(':')[1];if(!Array.isArra
 else if(dest.startsWith('log:')){const i=parseInt(dest.split(':')[1]);nd.logistica[i].materials.push(newMat);destLoc='Contentor '+nd.logistica[i].label;}
 appData=nd;
 closeModal();
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('TRANSFERÊNCIA',mat.name,'Pátio → '+destLoc,'Pátio',String(qty),mat.unit,patioDaysExtra(mat.arrivedAt));
 showToast('✓ Transferido para '+destLoc+'!');
 spawnParticles();
@@ -4790,6 +4796,11 @@ async function confirmCounting(countId,itemCount){
 const count=invData.find(c=>c.id===countId);
 if(!count)return;
 const obs=document.getElementById('count-obs')?.value.trim()||'';
+if(itemCount!==count.items.length){showToast('Contagem incompleta: recarrega a lista',true);return;}
+for(let i=0;i<itemCount;i++){
+  const raw=document.getElementById('counted-'+i)?.value;
+  if(raw==null||String(raw).trim()===''||!Number.isFinite(Number(raw))||Number(raw)<0){showToast('Preenche todas as quantidades com valores não negativos',true);return;}
+}
 const diffs=[];
 let hasDiff=false;
 for(let i=0;i<itemCount;i++){
@@ -4875,7 +4886,7 @@ const m=nd.patio?.find(m=>m.id===item.id);if(m)m.qty=String(item.countedQty);
 appData=nd;
 count.adjusted=true;
 closeModal();
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await saveInventoryCount(count);
 await logHistory('AJUSTE','Ajuste de inventário '+count.number,count.location,'Inventário',String(count.differences.length),'diferenças');
 showToast('✓ Stock ajustado com sucesso!');
@@ -5200,6 +5211,18 @@ async function confirmGroupExit(sfsNum){
     items[i].qty = qty;
     if(!qty||qty<=0){showToast('Quantidade inválida para '+items[i].name,true);return;}
   }
+  var requested=new Map();
+  var live=getAllMaterials();
+  for(var item of items){
+    if(!Number.isFinite(item.qty)||item.qty<=0){showToast('Quantidade inválida',true);return;}
+    var key=JSON.stringify([item.warehouse,item.location,item.id]);
+    var total=(requested.get(key)||0)+item.qty;
+    requested.set(key,total);
+    var matches=live.filter(function(m){return m.warehouse===item.warehouse&&m.location===item.location&&m.id===item.id;});
+    if(matches.length!==1||!Number.isFinite(Number(matches[0].qty))||total>Number(matches[0].qty)){
+      showToast('Stock insuficiente ou localização ambígua para '+item.name,true);return;
+    }
+  }
   var nd = JSON.parse(JSON.stringify(appData));
   items.forEach(function(item){
     var qty = item.qty;
@@ -5228,7 +5251,7 @@ async function confirmGroupExit(sfsNum){
   });
   appData = nd;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   for(var j=0;j<items.length;j++){
     await logHistory('SAÍDA',items[j].name,items[j].locFull,items[j].warehouse,String(items[j].qty),items[j].unit);
   }
@@ -5359,12 +5382,12 @@ async function confirmSFSAction(type,idx,matId,sfsNum,loc,locFull,wh){
   var mat=null;
   if(type==='log'){var ci=parseInt(idx);var arr=nd.logistica[ci].materials;mat=arr.find(function(m){return m.id===matId;});if(mat){var rem=parseFloat(mat.qty)-qty;if(rem<=0)nd.logistica[ci].materials=arr.filter(function(m){return m.id!==matId;});else mat.qty=String(rem);}}
   else if(type==='vini'){var va=Array.isArray(nd.vini)?nd.vini:[];mat=va.find(function(m){return m.id===matId;});if(mat){var rem2=parseFloat(mat.qty)-qty;if(rem2<=0)nd.vini=va.filter(function(m){return m.id!==matId;});else mat.qty=String(rem2);}}
-  else if(type==='emas'){var ea=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});if(mat){var rem3=parseFloat(mat.qty)-qty;if(rem3<=0)nd.emas=ea.filter(function(m){return m.id!==matId;});else mat.qty=String(rem3);nd.emas=ea;}}
+  else if(type==='emas'){var ea=Array.isArray(nd.emas)?nd.emas:getEmasArr();mat=ea.find(function(m){return m.id===matId;});if(mat){var rem3=parseFloat(mat.qty)-qty;if(rem3<=0)nd.emas=ea.filter(function(m){return m.id!==matId;});else mat.qty=String(rem3);}}
   else if(type==='patio'){var pa=nd.patio||[];mat=pa.find(function(m){return m.id===matId;});if(mat){var rem4=parseFloat(mat.qty)-qty;if(rem4<=0)nd.patio=pa.filter(function(m){return m.id!==matId;});else mat.qty=String(rem4);}}
   if(!mat){showToast('Material não encontrado',true);return;}
   var sfsExtra=(type==='patio'&&pp)?patioDaysExtra(pp.arrivedAt):undefined;
   appData=nd;closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   await logHistory('SAÍDA',mat.name,loc,wh,String(qty),mat.unit,sfsExtra);
   try{await addDoc(collection(db,'wms','sfs','records'),{number:sfsNum,material:mat.name,code:mat.code||'',qty:String(qty),unit:mat.unit,origem:locFull,destino:dest,obs:obs,wh:wh,emitidoPor:currentUser.name,ts:serverTimestamp()});}catch(e){console.error('SFS:',e);}
   showToast('✓ SFS '+sfsNum+' emitida! Retirado de: '+locFull);
@@ -5508,7 +5531,7 @@ var unit=document.getElementById('add-unit-'+uid)?.value||'un';
 if(!name){showToast('Indica o nome do material',true);return;}
 c.materials.push({id:Date.now(),code:code,name:name,qty:qty,unit:unit,minStock:'',reorderPoint:''});
 appData=nd;
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('ENTRADA',name,'Contentor '+c.label,'Logística',qty,unit);
 showToast('✓ '+name+' adicionado ao contentor '+c.label);
 renderContainerPanel(c,parseInt(idx));
@@ -5537,7 +5560,7 @@ if(type==='vini'){
   wh='Pátio';
 }
 appData=nd;
-await saveStock(nd);
+if(!await saveStock(nd))return;
 await logHistory('ENTRADA',name,wh,wh,qty,unit);
 showToast('✓ '+name+' adicionado em '+wh);
 if(type==='vini')renderVini();
@@ -5763,7 +5786,7 @@ document.getElementById('del-ctn-btn').onclick=async function(){
   nd.logistica.splice(idx,1);
   selContainer=null;openContainerId=null;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   showToast('Contentor eliminado');
   renderLogistica();
 };
@@ -5790,7 +5813,7 @@ document.getElementById('ren-ctn-btn').onclick=async function(){
   nd.logistica[idx].label=label;
   nd.logistica[idx].name=name;
   closeModal();
-  await saveStock(nd);
+  if(!await saveStock(nd))return;
   showToast('✓ Contentor renomeado para '+label);
   renderLogistica();
   if(selContainer===idx)renderContainerPanel(nd.logistica[idx],idx);

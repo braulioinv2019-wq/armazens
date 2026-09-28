@@ -1,5 +1,30 @@
 # CHANGELOG — LUELE WMS (correção de erros)
 
+## 2026-09-27 — Integridade dos movimentos (primeira intervenção)
+
+- Bloqueia entradas individuais sem quantidade positiva e finita.
+- Valida saldo e destino da transferência rápida; mantém lote, validade, fornecedor,
+  referências, ponto de encomenda e criticidade nas duas transferências.
+- Revalida o saldo em memória nas saídas de grupo, somando linhas repetidas e
+  identificando artigos por armazém, localização e ID.
+- Corrige a saída total em Emas, que repunha a lista anterior.
+- Impede a conclusão de contagens com quantidades vazias, negativas ou inválidas.
+- Faz `saveStock` devolver sucesso/falha e interrompe 22 continuidades com `await`,
+  além da continuação da importação, quando a gravação falha.
+- Escapa texto nas notificações e acrescenta nomes acessíveis aos campos de login.
+- Actualiza a versão do cache para distribuir o novo HTML aos dispositivos.
+- Adiciona 17 testes locais de regressão e três diagnósticos de limitações conhecidas.
+
+Validação: `node tests/stock-regression.cjs` — 17/17; sintaxe do módulo e do service
+worker; `git diff --check`. Sem ligação dos testes ao Firebase real.
+
+**Ainda pendente:** concorrência entre dispositivos, atomicidade de stock/histórico/guias,
+regras de acesso, fusão de artigos, previsões e reconciliação do estado optimista após
+falha. A validação em memória não substitui uma transacção sobre o saldo no servidor.
+Os diagnósticos em `tests/known-limitations.cjs` reproduzem falhas conhecidas; não são
+uma certificação de segurança nem um teste de integração autenticado.
+
+
 Ficheiro corrigido: `index_corrigido.html` (o `index_original.html` foi mantido intacto, sem alterações, como referência/backup).
 
 Todas as alterações abaixo foram feitas de forma cirúrgica (só nos pontos descritos), sem reescrever nem "limpar" partes do código que não estavam em causa.

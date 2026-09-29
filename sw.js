@@ -10,10 +10,11 @@
 // conteúdo de forma relevante, muda o número em CACHE_NAME (ex: 'luele-wms-v2') — caso
 // contrário os dispositivos que já instalaram a app podem continuar presos numa versão
 // antiga em cache.
-const CACHE_NAME = 'luele-wms-v2-integridade-20260927';
+const CACHE_NAME = 'luele-wms-v3-painel-relatorios-20260929';
 
 const APP_SHELL = [
   './index.html',
+  './reporting.mjs?v=20260929',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -23,7 +24,7 @@ const APP_SHELL = [
 // domínio da app (GitHub Pages) e as bibliotecas estáticas que carregamos de CDN. Tudo o
 // resto (Firestore, Firebase Authentication, etc.) passa sempre directamente pela rede,
 // sem qualquer interferência deste service worker — nunca deve ficar "preso" em cache.
-const CDN_HOSTS = ['cdnjs.cloudflare.com'];
+const CDN_HOSTS = ['cdnjs.cloudflare.com','cdn.jsdelivr.net'];
 const FIREBASE_STATIC_HOST = 'www.gstatic.com';
 const FIREBASE_STATIC_PATH_PREFIX = '/firebasejs/';
 

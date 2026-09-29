@@ -1,5 +1,51 @@
 # CHANGELOG — LUELE WMS (correção de erros)
 
+## 2026-09-29 — Painel operacional e relatórios
+
+- Novo painel com filtro por armazém e pesquisa, prioridades de stock/validade,
+  contagens por concluir, diferenças por ajustar e estado de recepção dos dados.
+- Transferências continuam directas. Não se acrescentaram aprovações, recepções
+  pendentes nem alterações aos movimentos de stock.
+- Telegram/WhatsApp aparecem como não configurados; backups como não monitorizados.
+- O painel passa a usar indicadores sobre os dados disponíveis. Os anteriores gráficos
+  e previsões, baseados em históricos limitados e em somas de unidades diferentes,
+  deixam de ser apresentados como indicadores completos.
+- Todos os Excel passam por um gerador comum: folha de informação, data de Luanda,
+  âmbito, cabeçalhos verdes, linhas alternadas, filtros, larguras e texto ajustados.
+  Quantidades são números; códigos/lotes conservam zeros iniciais; valores zero
+  deixam de desaparecer. Totais separados por armazém e unidade.
+- Stock completo e relatórios de cada armazém incluem códigos, localização, limites,
+  lote, validade, fornecedor e referências. Suportam Emas no formato antigo por zonas.
+- Alertas incluem rupturas e validade; artigos críticos mantêm linhas por localização,
+  sem somar artigos diferentes apenas por terem o mesmo nome.
+- Histórico e auditoria consultam o servidor por páginas, em vez de exportarem só os
+  200 registos do ecrã. Os filtros da página de histórico são aplicados à exportação;
+  a central de relatórios exporta o histórico completo. Falhas cancelam a descarga,
+  sem entregar silenciosamente um relatório parcial. Limite explícito: 100.000 registos.
+- Inventário exporta todas as linhas e uma folha só de diferenças; branco não equivale
+  a zero. Contagens antigas sem linhas conservadas usam as diferenças disponíveis.
+- Reconciliação inclui todos os estados e não soma quantidades de unidades diferentes
+  no sistema. Quantidades inválidas no ficheiro Primavera bloqueiam a comparação.
+- Guias GE/SFS e folhas de inventário partilham apresentação A4, cabeçalhos de tabela
+  repetidos, paginação e texto escapado. Pré-visualização com impressão/PDF no próprio
+  ecrã substitui janelas que podiam ser bloqueadas.
+- Novas guias SFS em grupo guardam as linhas estruturadas; a reimpressão conserva
+  essas linhas, o emitente e a data. Guias antigas mantêm as observações disponíveis.
+- Excel: xlsx-js-style 1.2.0 (API SheetJS 0.18.5), CDN fixo com integridade SRI.
+- Service worker actualizado para distribuir HTML, módulo de relatórios e dependência.
+
+Validação: 17 regressões de stock + 26 testes de relatórios/painel, sintaxe JavaScript,
+reabertura dos XLSX e confirmação de estilos com OpenPyXL. Guias de 80 linhas longas
+renderizadas em 8/9 páginas e inspeccionadas, incluindo cabeçalhos repetidos e última
+linha; relatório de inventário em A4 horizontal. Nenhum teste escreveu no Firebase.
+
+Limites da validação: o navegador remoto não permite abrir os ficheiros locais de
+ensaio; a paginação foi revista com WeasyPrint. A impressão e descarga no Safari/iPad
+exigem confirmação no dispositivo. Históricos exportados são leituras paginadas, não
+uma fotografia transaccional. Materiais removidos quando o saldo esgota não aparecem
+como ruptura sem um catálogo permanente de artigos. Mantêm-se as limitações de
+concorrência e atomicidade identificadas na intervenção anterior.
+
 ## 2026-09-27 — Integridade dos movimentos (primeira intervenção)
 
 - Bloqueia entradas individuais sem quantidade positiva e finita.

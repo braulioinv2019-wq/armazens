@@ -2382,7 +2382,7 @@ function renderSimpleMatList(mats, type, idx){
     html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
     html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
     html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="label" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="Imprimir etiqueta">🏷️</button>';
-    html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
+    html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="'+(isZeroStock(m.qty)?'Remover da localização (saldo zero)':'Saída (gera guia SFS)')+'">'+(isZeroStock(m.qty)?'🗑 Remover':'⏏ Saída')+'</button>';
     html+='</div>';
   });
   html+='</div>';
@@ -2572,7 +2572,7 @@ for(var i=0;i<mats.length;i++){
   html+='<button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" data-act="transfer" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">⇄</button>';
   html+='<button class="mat-btn edit" data-act="edit" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✏</button>';
   html+='<button class="mat-btn" style="border-color:var(--green2);color:var(--green)" data-act="label" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="Imprimir etiqueta">🏷️</button>';
-  html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'">✕</button>';
+  html+='<button class="mat-btn" data-act="remove" data-t="'+type+'" data-x="'+idx+'" data-id="'+m.id+'" title="'+(isZeroStock(m.qty)?'Remover da localização (saldo zero)':'Saída (gera guia SFS)')+'">'+(isZeroStock(m.qty)?'🗑 Remover':'⏏ Saída')+'</button>';
   html+='</div>';
 }
 html+='</div>';
@@ -4132,7 +4132,7 @@ return`<tr style="border-bottom:1px solid var(--border)">
 <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="addStockToMat('patio','0',${m.id})" title="Dar entrada">+</button>
 <button class="mat-btn" style="border-color:var(--blue);color:var(--blue)" onclick="quickTransferFromPatio(${m.id})" title="Transferir">⇄</button>
 <button class="mat-btn" style="border-color:var(--green2);color:var(--green)" onclick="printLabelForItem('patio','0',${m.id})" title="Imprimir etiqueta">🏷️</button>
-<button class="mat-btn" style="border-color:var(--red);color:var(--red)" onclick="removeMat('patio','0',${m.id})" title="Saída (gera guia SFS)">⏏ Saída</button>
+<button class="mat-btn" style="border-color:var(--red);color:var(--red)" onclick="removeMat('patio','0',${m.id})" title="${isZeroStock(m.qty)?'Remover da localização (saldo zero)':'Saída (gera guia SFS)'}">${isZeroStock(m.qty)?'🗑 Remover':'⏏ Saída'}</button>
 </div>
 </td>
 </tr>`;
@@ -4826,6 +4826,47 @@ function generateCountSheet(count,items,isReport){
 function generateCountPDF(count){
 generateCountSheet(count,count.items?.length?count.items:(count.differences||[]),count.status==='completed');
 }
+function isZeroStock(qty){
+  return (typeof qty==='number'||typeof qty==='string') && String(qty).trim()!=='' && Number.isFinite(Number(qty)) && Number(qty)===0;
+}
+// Only the selected empty record is removed. History and SFS remain untouched.
+async function removeZeroStock(type,idx,matId,mat,loc,wh){
+  if(!currentUser){showToast('Inicie sessão para remover o artigo.',true);return;}
+  var container=type==='log'?appData.logistica[parseInt(idx)]:null;
+  var containerId=container?container.id:null;
+  if(!confirm('Remover "'+mat.name+'" de '+loc+'? O saldo é zero. O histórico será preservado e não será emitida uma SFS.'))return;
+  try{
+    var stockRef=doc(db,'wms','stock');
+    var auditRef=doc(collection(db,'wms','audit','entries'));
+    await runTransaction(db,async function(tx){
+      var snap=await tx.get(stockRef);
+      if(!snap.exists())throw new Error('Stock não encontrado.');
+      var data=snap.data(),arr;
+      if(type==='log'){
+        var matches=(data.logistica||[]).filter(function(c){return c.id===containerId;});
+        if(containerId==null||matches.length!==1)throw new Error('A localização mudou. Actualize a página.');
+        arr=matches[0].materials;
+      }else if(type==='emas'&&!Array.isArray(data.emas)){
+        arr=(data.emas||{})[mat.zone||idx||'A'];
+      }else if(['vini','emas','patio'].includes(type)){arr=data[type];}
+      if(!Array.isArray(arr))throw new Error('Localização não encontrada.');
+      var indexes=[];
+      arr.forEach(function(m,i){if(m.id===matId)indexes.push(i);});
+      if(indexes.length!==1)throw new Error('Artigo ausente ou identificador duplicado. Actualize a página.');
+      var record=arr[indexes[0]];
+      if(!isZeroStock(record.qty))throw new Error('O artigo já não tem saldo zero. Actualize a página.');
+      arr.splice(indexes[0],1);
+      tx.set(stockRef,data);
+      tx.set(auditRef,{
+        material:record.name||'',code:record.code||'',location:loc,wh:wh,
+        changes:[{field:'location',label:'Remoção de artigo com saldo zero',before:loc,after:'Removido da localização'}],
+        removedMaterial:record,user:currentUser.name,ts:serverTimestamp()
+      });
+    });
+    // The stock snapshot listener supplies the committed server state.
+    showToast('✓ Artigo removido da localização. Histórico preservado.');
+  }catch(e){showToast('Não foi possível remover: '+e.message,true);}
+}
 function removeMat(type,idx,matId){
   var mat=null,loc='',locFull='',wh='';
   if(type==='log'){var ci=parseInt(idx);mat=appData.logistica[ci]?.materials.find(function(m){return m.id===matId;});loc=appData.logistica[ci]?.label||'';locFull='Contentor '+loc;wh='Logística';}
@@ -4837,6 +4878,7 @@ function removeMat(type,idx,matId){
     loc='Pátio';locFull='Pátio (Trânsito)';wh='Pátio';
   }
   if(!mat)return;
+  if(isZeroStock(mat.qty))return removeZeroStock(type,idx,matId,mat,loc,wh);
   openSFSModal(mat,loc,locFull,wh,type,idx,matId);
 };
 async function openSFSModal(mat,loc,locFull,wh,type,idx,matId){

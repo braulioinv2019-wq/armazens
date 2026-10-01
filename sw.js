@@ -10,7 +10,7 @@
 // conteúdo de forma relevante, muda o número em CACHE_NAME (ex: 'luele-wms-v2') — caso
 // contrário os dispositivos que já instalaram a app podem continuar presos numa versão
 // antiga em cache.
-const CACHE_NAME = 'luele-wms-v3-painel-relatorios-20260929';
+const CACHE_NAME = 'luele-wms-v4-remover-zero-20261001';
 
 const APP_SHELL = [
   './index.html',
